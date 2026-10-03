@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { categories } from "@/db/schema";
+import { categories, transactions } from "@/db/schema";
 import { eq, or, and, isNull } from "drizzle-orm";
 
 export async function getCategories(userId?: string) {
@@ -58,10 +58,60 @@ export async function deleteCategory(categoryId: string, userId: string) {
     throw new Error("Kamu tidak memiliki izin untuk menghapus kategori ini.");
   }
 
+  // Cek apakah ada transaksi yang menggunakan kategori ini
+  const tx = await db.query.transactions.findFirst({
+    where: and(eq(transactions.categoryId, categoryId), eq(transactions.userId, userId)),
+  });
+
+  if (tx) {
+    throw new Error(
+      `Kategori "${cat.name}" tidak dapat dihapus karena sudah dipakai dalam riwayat transaksi. Kamu bisa mengedit namanya dengan /edit_kategori.`
+    );
+  }
+
   const [deleted] = await db
     .delete(categories)
     .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
     .returning();
 
   return deleted;
+}
+
+export async function updateCategory(
+  categoryId: string,
+  userId: string,
+  data: {
+    name?: string;
+    type?: "income" | "expense";
+    icon?: string;
+  }
+) {
+  const cat = await db.query.categories.findFirst({
+    where: eq(categories.id, categoryId),
+  });
+
+  if (!cat) {
+    throw new Error("Kategori tidak ditemukan.");
+  }
+
+  if (cat.isDefault || !cat.userId) {
+    throw new Error("Kategori bawaan sistem tidak dapat diubah!");
+  }
+
+  if (cat.userId !== userId) {
+    throw new Error("Kamu tidak memiliki izin untuk mengubah kategori ini.");
+  }
+
+  const updateValues: Partial<typeof categories.$inferInsert> = {};
+  if (data.name !== undefined) updateValues.name = data.name.trim();
+  if (data.type !== undefined) updateValues.type = data.type;
+  if (data.icon !== undefined) updateValues.icon = data.icon.trim();
+
+  const [updated] = await db
+    .update(categories)
+    .set(updateValues)
+    .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
+    .returning();
+
+  return updated;
 }

@@ -4,6 +4,8 @@ import {
   handleSaldo,
   handleSetDefaultDompet,
   handleTambahDompet,
+  handleEditDompet,
+  handleHapusDompet,
   handleTransfer,
   handleTarikTunai,
   handleCatat,
@@ -11,6 +13,9 @@ import {
   handleTambahAlokasi,
   handleRiwayat,
   handleKategori,
+  handleTambahKategori,
+  handleEditKategori,
+  handleHapusKategori,
   handleUtang,
   handleTambahUtang,
   handleLunasUtang,
@@ -37,13 +42,18 @@ bot.command("help", handleHelp);
 bot.command(["saldo", "dompet"], handleSaldo);
 bot.command(["dompet_utama", "set_dompet"], (ctx) => handleSetDefaultDompet(ctx, ctx.match));
 bot.command("tambah_dompet", (ctx) => handleTambahDompet(ctx, ctx.match));
+bot.command("edit_dompet", (ctx) => handleEditDompet(ctx, ctx.match));
+bot.command("hapus_dompet", (ctx) => handleHapusDompet(ctx, ctx.match));
 bot.command(["transfer", "tf"], (ctx) => handleTransfer(ctx, ctx.match));
 bot.command("tarik", (ctx) => handleTarikTunai(ctx, ctx.match));
 
-// 3. Command Transaksi
+// 3. Command Transaksi & Kategori
 bot.command("catat", (ctx) => handleCatat(ctx, ctx.match));
 bot.command("riwayat", (ctx) => handleRiwayat(ctx, ctx.match));
 bot.command("kategori", handleKategori);
+bot.command("tambah_kategori", (ctx) => handleTambahKategori(ctx, ctx.match));
+bot.command("edit_kategori", (ctx) => handleEditKategori(ctx, ctx.match));
+bot.command("hapus_kategori", (ctx) => handleHapusKategori(ctx, ctx.match));
 
 // 4. Command Alokasi Dana / Anggaran
 bot.command("alokasi", handleAlokasi);

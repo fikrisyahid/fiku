@@ -91,10 +91,35 @@ export async function deleteAccount(accountId: string, userId: string) {
     throw new Error("Dompet tidak ditemukan.");
   }
 
+  // Cek apakah akun memiliki transaksi
+  const tx = await db.query.transactions.findFirst({
+    where: and(eq(transactions.accountId, accountId), eq(transactions.userId, userId)),
+  });
+
+  if (tx) {
+    throw new Error(
+      `Dompet "${account.name}" tidak dapat dihapus karena sudah memiliki riwayat transaksi. Kamu bisa mengedit namanya atau mentransfer saldonya ke dompet lain.`
+    );
+  }
+
+  // Cek jika ini satu-satunya dompet
+  const allUserAccounts = await getUserAccounts(userId);
+  if (allUserAccounts.length <= 1) {
+    throw new Error("Kamu tidak bisa menghapus dompet terakhirmu!");
+  }
+
   const [deleted] = await db
     .delete(accounts)
     .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)))
     .returning();
+
+  // Jika yang dihapus adalah dompet utama, set dompet lain yang tersisa sebagai utama
+  if (deleted.isDefault) {
+    const remaining = allUserAccounts.find((a) => a.id !== deleted.id);
+    if (remaining) {
+      await setDefaultAccount(remaining.id, userId);
+    }
+  }
 
   return deleted;
 }

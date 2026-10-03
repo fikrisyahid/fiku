@@ -7,6 +7,8 @@ import {
   getUserAccounts,
   createAccount,
   setDefaultAccount,
+  updateAccount,
+  deleteAccount,
   transferBetweenAccounts,
 } from "@/app/actions/accounts";
 import {
@@ -22,7 +24,12 @@ import {
   createDebt,
   settleDebt,
 } from "@/app/actions/debts";
-import { getCategories } from "@/app/actions/categories";
+import {
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+} from "@/app/actions/categories";
 import { wipeoutUserData } from "@/app/actions/reset";
 import { getHelpMessage } from "./commands";
 
@@ -158,6 +165,22 @@ function matchesAccount(candidate: string, acc: { name: string; type: string }):
   if (normName.includes(normCandidate) && normCandidate.length >= 3) return true;
 
   return false;
+}
+
+export function findAccountFromList<T extends { id: string; name: string; type: string }>(
+  query: string,
+  accountsList: T[]
+): T | null {
+  const clean = query.trim();
+  const numIndex = parseInt(clean, 10);
+  if (!isNaN(numIndex) && numIndex >= 1 && numIndex <= accountsList.length) {
+    return accountsList[numIndex - 1];
+  }
+  return (
+    accountsList.find((a) => matchesAccount(clean, a)) ||
+    accountsList.find((a) => a.name.toLowerCase().includes(clean.toLowerCase())) ||
+    null
+  );
 }
 
 export function extractWalletAndDescription<T extends { name: string; type: string; isDefault?: boolean }>(
@@ -425,20 +448,8 @@ export async function handleSetDefaultDompet(ctx: Context, match: string) {
     return;
   }
 
-  // 1. Coba cari berdasarkan nomor urut (#1, #2, dst.)
-  const numIndex = parseInt(query, 10);
-  let targetAccount =
-    !isNaN(numIndex) && numIndex >= 1 && numIndex <= accountsList.length
-      ? accountsList[numIndex - 1]
-      : null;
-
-  // 2. Jika bukan nomor urut, cari berdasarkan pencocokan nama atau tipe dompet
-  if (!targetAccount) {
-    targetAccount =
-      accountsList.find((a) => matchesAccount(query, a)) ||
-      accountsList.find((a) => a.name.toLowerCase().includes(query.toLowerCase())) ||
-      null;
-  }
+  // Cari berdasarkan nomor urut (#1, #2, dst.) atau nama dompet
+  const targetAccount = findAccountFromList(query, accountsList);
 
   if (!targetAccount) {
     await ctx.reply(
@@ -508,6 +519,95 @@ export async function handleTambahDompet(ctx: Context, match: string) {
     );
   } catch (err) {
     await ctx.reply(`❌ Gagal membuat dompet: ${getErrorMessage(err)}`);
+  }
+}
+
+// 3b. /edit_dompet <nomor/nama_lama> <nama_baru> [tipe]
+export async function handleEditDompet(ctx: Context, match: string) {
+  const user = await getTelegramUser(ctx);
+  if (!user) return;
+
+  const parts = match.trim().split(/\s+/);
+  if (parts.length < 2 || !parts[0]) {
+    await ctx.reply(
+      `Format salah!\n*Penggunaan:* \`/edit_dompet <nomor/nama_lama> <nama_baru> [tipe]\`\n*Contoh:*\n👉 \`/edit_dompet BCA Bank-BCA\`\n👉 \`/edit_dompet 2 Gopay ewallet\``,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  const query = parts[0];
+  const newName = parts[1];
+  const newType = parts[2] ? parts[2].toLowerCase() : undefined;
+
+  if (newType && !["cash", "bank", "ewallet"].includes(newType)) {
+    await ctx.reply("Tipe dompet harus salah satu dari: `cash`, `bank`, atau `ewallet`", {
+      parse_mode: "Markdown",
+    });
+    return;
+  }
+
+  const accountsList = await getUserAccounts(user.id);
+  const targetAccount = findAccountFromList(query, accountsList);
+  if (!targetAccount) {
+    await ctx.reply(
+      `Dompet "${query}" tidak ditemukan.\nKetik /saldo untuk melihat nomor dan nama dompet kamu.`
+    );
+    return;
+  }
+
+  try {
+    const updated = await updateAccount(targetAccount.id, user.id, {
+      name: newName,
+      type: newType,
+    });
+
+    const icon = TYPE_ICONS[updated.type] || "💳";
+    await ctx.reply(
+      `✏️ *Dompet Berhasil Diperbarui!*\n` +
+        `───────────────────\n` +
+        `${icon} *${updated.name}* (${updated.type})\n` +
+        `└ Saldo: \`${formatRupiah(updated.balance)}\``,
+      { parse_mode: "Markdown" }
+    );
+  } catch (err) {
+    await ctx.reply(`❌ Gagal mengubah dompet: ${getErrorMessage(err)}`);
+  }
+}
+
+// 3c. /hapus_dompet <nomor/nama>
+export async function handleHapusDompet(ctx: Context, match: string) {
+  const user = await getTelegramUser(ctx);
+  if (!user) return;
+
+  const query = match.trim();
+  if (!query) {
+    await ctx.reply(
+      `Format salah!\n*Penggunaan:* \`/hapus_dompet <nomor/nama>\`\n*Contoh:*\n👉 \`/hapus_dompet 2\`\n👉 \`/hapus_dompet Dana\``,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  const accountsList = await getUserAccounts(user.id);
+  const targetAccount = findAccountFromList(query, accountsList);
+  if (!targetAccount) {
+    await ctx.reply(
+      `Dompet "${query}" tidak ditemukan.\nKetik /saldo untuk melihat nomor dan nama dompet kamu.`
+    );
+    return;
+  }
+
+  try {
+    const deleted = await deleteAccount(targetAccount.id, user.id);
+    await ctx.reply(
+      `🗑️ *Dompet Berhasil Dihapus!*\n` +
+        `───────────────────\n` +
+        `Dompet *${deleted.name}* telah dihapus dari daftar akun.`,
+      { parse_mode: "Markdown" }
+    );
+  } catch (err) {
+    await ctx.reply(`❌ Gagal menghapus dompet: ${getErrorMessage(err)}`);
   }
 }
 
@@ -856,18 +956,243 @@ export async function handleKategori(ctx: Context) {
   const user = await getTelegramUser(ctx);
   const catList = await getCategories(user?.id);
 
-  const expense = catList.filter((c) => c.type === "expense");
-  const income = catList.filter((c) => c.type === "income");
+  const defaultExpense = catList.filter((c) => (c.isDefault || !c.userId) && c.type === "expense");
+  const defaultIncome = catList.filter((c) => (c.isDefault || !c.userId) && c.type === "income");
+  const customCats = catList.filter((c) => !c.isDefault && c.userId === user?.id);
 
-  const text =
-    `🏷️ *DAFTAR KATEGORI TRANSAKSI*\n` +
-    `───────────────────\n\n` +
-    `💸 *PENGELUARAN:*\n` +
-    expense.map((c) => `• ${c.icon || "•"} ${c.name}`).join("\n") +
-    `\n\n💰 *PEMASUKAN:*\n` +
-    income.map((c) => `• ${c.icon || "•"} ${c.name}`).join("\n");
+  let text = `🏷️ *DAFTAR KATEGORI TRANSAKSI*\n───────────────────\n\n`;
+
+  text += `🌐 *KATEGORI SISTEM (BAWAAN)*\n`;
+  text += `💸 *Pengeluaran:*\n`;
+  text += defaultExpense.map((c) => `• ${c.icon || "•"} ${c.name}`).join("\n");
+  text += `\n\n💰 *Pemasukan:*\n`;
+  text += defaultIncome.map((c) => `• ${c.icon || "•"} ${c.name}`).join("\n");
+
+  text += `\n\n✨ *KATEGORI KUSTOM KAMU*\n`;
+  if (customCats.length === 0) {
+    text += `_Belum ada kategori kustom buatanmu._\n`;
+  } else {
+    text += customCats
+      .map((c, idx) => {
+        const typeBadge = c.type === "income" ? "in" : "out";
+        return `*#${idx + 1}* ${c.icon || "🏷️"} *${c.name}* (\`${typeBadge}\`)`;
+      })
+      .join("\n");
+  }
+
+  text +=
+    `\n\n───────────────────\n` +
+    `💡 *Kelola Kategori Kustom:*\n` +
+    `• Tambah: \`/tambah_kategori <nama> <in|out> [emoji]\`\n` +
+    `• Edit: \`/edit_kategori <nomor/nama> <nama_baru> [emoji]\`\n` +
+    `• Hapus: \`/hapus_kategori <nomor/nama>\`\n` +
+    `_(Kategori sistem dilindungi & tidak dapat diubah/dihapus)_`;
 
   await ctx.reply(text, { parse_mode: "Markdown" });
+}
+
+// 8b. /tambah_kategori <nama> <in|out> [emoji]
+export async function handleTambahKategori(ctx: Context, match: string) {
+  const user = await getTelegramUser(ctx);
+  if (!user) return;
+
+  const text = match.trim();
+  if (!text) {
+    await ctx.reply(
+      `Format salah!\n*Penggunaan:* \`/tambah_kategori <nama> <in|out> [emoji]\`\n*Contoh:*\n👉 \`/tambah_kategori Sedekah out 🤲\`\n👉 \`/tambah_kategori Bonus in 🎁\``,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  const parts = text.split(/\s+/);
+  // Cari index token tipe (in/income/masuk/out/expense/keluar)
+  const typeIndex = parts.findIndex((p) =>
+    ["in", "income", "masuk", "out", "expense", "keluar"].includes(p.toLowerCase())
+  );
+
+  if (typeIndex === -1) {
+    await ctx.reply(
+      `Tipe kategori harus ditentukan (\`in\` atau \`out\`).\n*Format:* \`/tambah_kategori <nama> <in|out> [emoji]\`\n*Contoh:* \`/tambah_kategori Sedekah out 🤲\``,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  const typeRaw = parts[typeIndex].toLowerCase();
+  const type: "income" | "expense" =
+    typeRaw === "in" || typeRaw === "income" || typeRaw === "masuk" ? "income" : "expense";
+
+  let name = "";
+  let icon: string | undefined;
+
+  if (typeIndex === 0) {
+    name = parts.slice(1, parts.length > 2 ? parts.length - 1 : 2).join(" ");
+    icon = parts.length > 2 ? parts[parts.length - 1] : undefined;
+  } else {
+    name = parts.slice(0, typeIndex).join(" ");
+    icon = parts.slice(typeIndex + 1).join(" ") || undefined;
+  }
+
+  if (!name.trim()) {
+    await ctx.reply("Nama kategori tidak boleh kosong.");
+    return;
+  }
+
+  try {
+    const newCat = await createCategory({
+      userId: user.id,
+      name: name.trim(),
+      type,
+      icon,
+    });
+
+    const typeLabel = newCat.type === "income" ? "Pemasukan (in)" : "Pengeluaran (out)";
+    await ctx.reply(
+      `✨ *Kategori Kustom Berhasil Dibuat!*\n` +
+        `───────────────────\n` +
+        `${newCat.icon} *${newCat.name}* (${typeLabel})\n` +
+        `└ Siap digunakan untuk mencatat transaksi!`,
+      { parse_mode: "Markdown" }
+    );
+  } catch (err) {
+    await ctx.reply(`❌ Gagal membuat kategori: ${getErrorMessage(err)}`);
+  }
+}
+
+// 8c. /edit_kategori <nomor/nama_lama> <nama_baru> [emoji]
+export async function handleEditKategori(ctx: Context, match: string) {
+  const user = await getTelegramUser(ctx);
+  if (!user) return;
+
+  const parts = match.trim().split(/\s+/);
+  if (parts.length < 2 || !parts[0]) {
+    await ctx.reply(
+      `Format salah!\n*Penggunaan:* \`/edit_kategori <nomor/nama_lama> <nama_baru> [emoji]\`\n*Contoh:*\n👉 \`/edit_kategori 1 Infaq 🕌\`\n👉 \`/edit_kategori Sedekah Sedekah-Subuh 🤲\``,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  const query = parts[0];
+  const newName = parts[1];
+  const newIcon = parts.slice(2).join(" ") || undefined;
+
+  const catList = await getCategories(user.id);
+
+  // 1. Cek apakah user mencoba mengubah kategori sistem bawaan
+  const defaultMatch = catList.find(
+    (c) => (c.isDefault || !c.userId) && c.name.toLowerCase() === query.toLowerCase()
+  );
+  if (defaultMatch) {
+    await ctx.reply(
+      `❌ Kategori bawaan sistem (*${defaultMatch.name}*) dilindungi dan tidak dapat diubah!\nKamu hanya dapat mengubah kategori kustom yang kamu buat sendiri.`,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  // 2. Cari di kategori kustom user
+  const customCats = catList.filter((c) => !c.isDefault && c.userId === user.id);
+  const numIndex = parseInt(query, 10);
+  let targetCat =
+    !isNaN(numIndex) && numIndex >= 1 && numIndex <= customCats.length
+      ? customCats[numIndex - 1]
+      : null;
+
+  if (!targetCat) {
+    targetCat =
+      customCats.find((c) => c.name.toLowerCase() === query.toLowerCase()) ||
+      customCats.find((c) => c.name.toLowerCase().includes(query.toLowerCase())) ||
+      null;
+  }
+
+  if (!targetCat) {
+    await ctx.reply(
+      `Kategori kustom "${query}" tidak ditemukan.\nKetik /kategori untuk melihat daftar kategori kustom kamu.`
+    );
+    return;
+  }
+
+  try {
+    const updated = await updateCategory(targetCat.id, user.id, {
+      name: newName,
+      icon: newIcon,
+    });
+
+    const typeLabel = updated.type === "income" ? "in" : "out";
+    await ctx.reply(
+      `✏️ *Kategori Kustom Berhasil Diperbarui!*\n` +
+        `───────────────────\n` +
+        `${updated.icon} *${updated.name}* (\`${typeLabel}\`)`,
+      { parse_mode: "Markdown" }
+    );
+  } catch (err) {
+    await ctx.reply(`❌ Gagal mengubah kategori: ${getErrorMessage(err)}`);
+  }
+}
+
+// 8d. /hapus_kategori <nomor/nama>
+export async function handleHapusKategori(ctx: Context, match: string) {
+  const user = await getTelegramUser(ctx);
+  if (!user) return;
+
+  const query = match.trim();
+  if (!query) {
+    await ctx.reply(
+      `Format salah!\n*Penggunaan:* \`/hapus_kategori <nomor/nama>\`\n*Contoh:*\n👉 \`/hapus_kategori 1\`\n👉 \`/hapus_kategori Sedekah\``,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  const catList = await getCategories(user.id);
+
+  // 1. Cek apakah user mencoba menghapus kategori sistem bawaan
+  const defaultMatch = catList.find(
+    (c) => (c.isDefault || !c.userId) && c.name.toLowerCase() === query.toLowerCase()
+  );
+  if (defaultMatch) {
+    await ctx.reply(
+      `❌ Kategori bawaan sistem (*${defaultMatch.name}*) dilindungi dan tidak dapat dihapus!`,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  // 2. Cari di kategori kustom user
+  const customCats = catList.filter((c) => !c.isDefault && c.userId === user.id);
+  const numIndex = parseInt(query, 10);
+  let targetCat =
+    !isNaN(numIndex) && numIndex >= 1 && numIndex <= customCats.length
+      ? customCats[numIndex - 1]
+      : null;
+
+  if (!targetCat) {
+    targetCat =
+      customCats.find((c) => c.name.toLowerCase() === query.toLowerCase()) ||
+      customCats.find((c) => c.name.toLowerCase().includes(query.toLowerCase())) ||
+      null;
+  }
+
+  if (!targetCat) {
+    await ctx.reply(
+      `Kategori kustom "${query}" tidak ditemukan.\nKetik /kategori untuk melihat daftar kategori kustom kamu.`
+    );
+    return;
+  }
+
+  try {
+    const deleted = await deleteCategory(targetCat.id, user.id);
+    await ctx.reply(
+      `🗑️ *Kategori Kustom Berhasil Dihapus!*\n` +
+        `───────────────────\n` +
+        `Kategori *${deleted.name}* telah dihapus dari daftar.`,
+      { parse_mode: "Markdown" }
+    );
+  } catch (err) {
+    await ctx.reply(`❌ Gagal menghapus kategori: ${getErrorMessage(err)}`);
+  }
 }
 
 // 9. /utang

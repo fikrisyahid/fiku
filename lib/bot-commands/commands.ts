@@ -46,6 +46,20 @@ export const BOT_COMMANDS: BotCommandDef[] = [
     category: "dompet",
   },
   {
+    command: "edit_dompet",
+    description: "Mengubah nama atau tipe dompet yang ada",
+    usage: "/edit_dompet <nomor_atau_nama_lama> <nama_baru> [tipe]",
+    example: "/edit_dompet BCA Bank-BCA bank",
+    category: "dompet",
+  },
+  {
+    command: "hapus_dompet",
+    description: "Menghapus dompet (selama belum ada riwayat transaksi)",
+    usage: "/hapus_dompet <nomor_atau_nama>",
+    example: "/hapus_dompet 3",
+    category: "dompet",
+  },
+  {
     command: "transfer",
     description: "Transfer / mutasi saldo antar dompet internal",
     usage: "/transfer <nominal> <dompet_asal> [ke] <dompet_tujuan> [catatan]",
@@ -80,6 +94,27 @@ export const BOT_COMMANDS: BotCommandDef[] = [
     description: "Melihat daftar kategori pengeluaran & pemasukan",
     usage: "/kategori",
     example: "/kategori",
+    category: "transaksi",
+  },
+  {
+    command: "tambah_kategori",
+    description: "Membuat kategori kustom baru (pengeluaran atau pemasukan)",
+    usage: "/tambah_kategori <nama> <in|out> [emoji]",
+    example: "/tambah_kategori Sedekah out 🤲",
+    category: "transaksi",
+  },
+  {
+    command: "edit_kategori",
+    description: "Mengubah nama atau emoji kategori kustom",
+    usage: "/edit_kategori <nomor_atau_nama> <nama_baru> [emoji]",
+    example: "/edit_kategori 1 Infaq 🕌",
+    category: "transaksi",
+  },
+  {
+    command: "hapus_kategori",
+    description: "Menghapus kategori kustom (hanya yang belum memiliki transaksi)",
+    usage: "/hapus_kategori <nomor_atau_nama>",
+    example: "/hapus_kategori 1",
     category: "transaksi",
   },
 
@@ -138,21 +173,25 @@ export function getHelpMessage(): string {
     `───────────────────\n\n` +
     `💰 *DOMPET & SALDO*\n` +
     `• \`/saldo\` — Cek saldo semua dompet\n` +
-    `• \`/dompet_utama <nomor/nama>\` — Atur dompet utama\n` +
+    `• \`/dompet_utama <no/nama>\` — Atur dompet utama\n` +
     `• \`/tambah_dompet <nama> <tipe> [saldo]\`\n` +
-    `  _Contoh:_ \`/tambah_dompet Mandiri bank 500k\`\n\n` +
+    `• \`/edit_dompet <no/nama> <nama_baru> [tipe]\`\n` +
+    `• \`/hapus_dompet <no/nama>\`\n\n` +
     `🔁 *TRANSFER & TARIK TUNAI*\n` +
     `• \`/tf <nominal> <asal> [ke] <tujuan>\` — Pindah saldo\n` +
     `  _Contoh:_ \`/tf 500k mandiri ke cash\`\n` +
-    `  _Contoh:_ \`/tf 100k bca gopay topup\`\n` +
     `• \`/tarik <nominal> [bank]\` — Tarik tunai ke Cash\n` +
     `  _Contoh:_ \`/tarik 500k mandiri\`\n\n` +
     `📝 *CATAT TRANSAKSI*\n` +
     `• \`/catat <in|out> <nominal> <keterangan> [dompet]\`\n` +
     `  _Contoh:_ \`/catat out 25k bensin vario cash\`\n` +
     `  _Contoh:_ \`/catat in 500k freelance bca\`\n` +
-    `• \`/riwayat [jumlah]\` — Riwayat transaksi terakhir\n` +
-    `• \`/kategori\` — Daftar kategori transaksi\n\n` +
+    `• \`/riwayat [jumlah]\` — Riwayat transaksi terakhir\n\n` +
+    `🏷️ *KATEGORI TRANSAKSI*\n` +
+    `• \`/kategori\` — Lihat kategori sistem & kustom\n` +
+    `• \`/tambah_kategori <nama> <in|out> [emoji]\`\n` +
+    `• \`/edit_kategori <no/nama> <nama_baru> [emoji]\`\n` +
+    `• \`/hapus_kategori <no/nama>\`\n\n` +
     `⚡ *TIP CATAT CEPAT (TEKS ALAMI)*\n` +
     `• \`-25k bensin vario cash\`\n` +
     `• \`-35k makan siang gopay\`\n` +
@@ -166,7 +205,6 @@ export function getHelpMessage(): string {
     `🤝 *UTANG & PIUTANG*\n` +
     `• \`/utang\` — Cek daftar catatan aktif\n` +
     `• \`/tambah_utang <orang> <nominal> <utang|piutang> [catatan]\`\n` +
-    `  _Contoh:_ \`/tambah_utang Budi 150k piutang\`\n` +
     `• \`/lunas <nomor>\` — Tandai catatan lunas\n\n` +
     `⚙️ *PENGATURAN*\n` +
     `• \`/reset\` — Hapus semua data & mulai dari awal`
