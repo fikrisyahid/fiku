@@ -70,6 +70,29 @@ async function main() {
   `;
   console.log("✅ Trigger perlindungan kategori default berhasil diaktifkan");
 
+  // 6. Buat tabel auth_otp_codes & sessions jika belum ada
+  await sql`
+    CREATE TABLE IF NOT EXISTS auth_otp_codes (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      code text NOT NULL,
+      expires_at timestamp with time zone NOT NULL,
+      used boolean DEFAULT false NOT NULL,
+      created_at timestamp with time zone DEFAULT now() NOT NULL
+    );
+  `;
+  console.log("✅ Tabel auth_otp_codes siap");
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id text PRIMARY KEY,
+      user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      expires_at timestamp with time zone NOT NULL,
+      created_at timestamp with time zone DEFAULT now() NOT NULL
+    );
+  `;
+  console.log("✅ Tabel sessions siap");
+
   console.log("🎉 Sinkronisasi skema database selesai!");
   process.exit(0);
 }

@@ -125,6 +125,34 @@ export const debts = pgTable("debts", {
 });
 
 /**
+ * 7. AUTH OTP CODES (Verifikasi Login Telegram)
+ * Menyimpan kode OTP 6-digit sementara yang dikirimkan bot Telegram ke chat pengguna.
+ */
+export const authOtpCodes = pgTable("auth_otp_codes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  code: text("code").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  used: boolean("used").default(false).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * 8. SESSIONS (Sesi Login Web)
+ * Menyimpan token sesi aktif untuk autentikasi browser web.
+ */
+export const sessions = pgTable("sessions", {
+  id: text("id").primaryKey(), // random crypto token
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
  * RELASI DRIZZLE ORM
  */
 export const usersRelations = relations(users, ({ many }) => ({
@@ -133,6 +161,22 @@ export const usersRelations = relations(users, ({ many }) => ({
   budgets: many(budgets),
   transactions: many(transactions),
   debts: many(debts),
+  authOtpCodes: many(authOtpCodes),
+  sessions: many(sessions),
+}));
+
+export const authOtpCodesRelations = relations(authOtpCodes, ({ one }) => ({
+  user: one(users, {
+    fields: [authOtpCodes.userId],
+    references: [users.id],
+  }),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
 }));
 
 export const accountsRelations = relations(accounts, ({ one, many }) => ({
