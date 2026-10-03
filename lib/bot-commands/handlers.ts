@@ -39,6 +39,149 @@ function makeProgressBar(percentage: number): string {
   return `[${"█".repeat(filled)}${"░".repeat(empty)}] ${percentage}%`;
 }
 
+function normalizeText(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+const TYPE_ALIASES: Record<string, string[]> = {
+  cash: ["cash", "tunai", "dompet", "fisik"],
+  bank: ["bank", "bca", "mandiri", "bri", "bni", "cimb", "jago", "jenius", "seabank", "rekening"],
+  ewallet: ["ewallet", "e-wallet", "gopay", "ovo", "dana", "shopeepay", "spay", "linkaja"],
+};
+
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  "Makan & Minum": [
+    "makan", "minum", "kopi", "coffee", "cafe", "kafe", "resto", "bakso",
+    "mie", "nasi", "sarapan", "lunch", "dinner", "jajan", "snack", "teh", "boba", "ayam", "padang"
+  ],
+  "Transport": [
+    "bensin", "bbm", "pertalite", "pertamax", "solar", "vario", "beat", "nmax", "pcx", "motor", "mobil",
+    "ojek", "gojek", "goride", "gocar", "grab", "grabfood", "maxim", "parkir", "tol", "kereta", "krl", "mrt", "busway"
+  ],
+  "Belanja": [
+    "belanja", "beli", "shopee", "tokped", "tokopedia", "tiktok", "lazada", "indomaret", "alfamart",
+    "supermarket", "baju", "celana", "sepatu", "skincare", "pasar"
+  ],
+  "Tagihan & Utilitas": [
+    "listrik", "pln", "air", "pdam", "wifi", "indihome", "biznet", "pulsa", "kuota", "telkomsel", "xl", "indosat", "sewa", "kontrakan", "kos", "iuran"
+  ],
+  "Kesehatan": [
+    "obat", "apotek", "dokter", "klinik", "rs", "rumah sakit", "vitamin", "bpjs"
+  ],
+  "Hiburan": [
+    "nonton", "bioskop", "cinema", "game", "steam", "topup", "ml", "ff", "netflix", "spotify", "youtube", "liburan", "hotel"
+  ],
+  "Pendidikan": [
+    "buku", "kursus", "les", "sekolah", "kuliah", "spp", "seminar"
+  ],
+  "Cicilan": [
+    "cicilan", "kredit", "paylater", "spaylater", "kredivo", "angsuran"
+  ],
+  "Gaji": [
+    "gaji", "salary", "payroll", "upah"
+  ],
+  "Freelance": [
+    "freelance", "proyek", "project", "sidejob", "jasa", "klien"
+  ],
+  "Investasi": [
+    "investasi", "saham", "reksadana", "crypto", "bibit", "ajaib", "emas"
+  ],
+  "Hadiah": [
+    "hadiah", "gift", "giveaway", "angpao", "thr"
+  ],
+};
+
+function matchesAccount(candidate: string, acc: { name: string; type: string }): boolean {
+  const normCandidate = normalizeText(candidate);
+  const normName = normalizeText(acc.name);
+  const normType = normalizeText(acc.type);
+
+  if (normCandidate === normName || normCandidate === normType) return true;
+
+  const aliases = TYPE_ALIASES[acc.type] || [];
+  if (aliases.includes(normCandidate)) return true;
+
+  const nameTokens = normName.split(" ");
+  if (nameTokens.includes(normCandidate)) return true;
+
+  if (normName.includes(normCandidate) && normCandidate.length >= 3) return true;
+
+  return false;
+}
+
+export function extractWalletAndDescription<T extends { name: string; type: string; isDefault?: boolean }>(
+  fullText: string,
+  accounts: T[]
+): { wallet: T; description: string; matchedKeyword: string | null } {
+  const words = fullText.trim().split(/\s+/);
+  const defaultWallet = accounts.find((a) => a.isDefault) || accounts[0];
+
+  if (words.length === 0) {
+    return {
+      wallet: defaultWallet,
+      description: "",
+      matchedKeyword: null,
+    };
+  }
+
+  // Cek suffix dari belakang: coba 3 kata, 2 kata, 1 kata
+  for (let len = Math.min(3, words.length); len >= 1; len--) {
+    const candidateTokens = words.slice(words.length - len);
+    const candidateStr = candidateTokens.join(" ");
+
+    for (const acc of accounts) {
+      if (matchesAccount(candidateStr, acc)) {
+        const remainingWords = words.slice(0, words.length - len);
+        const description = remainingWords.join(" ").trim();
+        return {
+          wallet: acc,
+          description: description || acc.name,
+          matchedKeyword: candidateStr,
+        };
+      }
+    }
+  }
+
+  return {
+    wallet: defaultWallet,
+    description: fullText.trim(),
+    matchedKeyword: null,
+  };
+}
+
+export function findMatchingCategory(
+  description: string,
+  type: "income" | "expense",
+  allCategories: { id: string; name: string; type: string; icon: string | null }[]
+) {
+  const normDesc = normalizeText(description);
+
+  // 1. Cek langsung nama kategori yang muncul di deskripsi
+  const directMatch = allCategories.find(
+    (c) => c.type === type && normDesc.includes(normalizeText(c.name))
+  );
+  if (directMatch) return directMatch;
+
+  // 2. Cek kamus sinonim/keyword kategori
+  for (const [catName, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+    const matchedKeyword = keywords.find((kw) => normDesc.includes(kw));
+    if (matchedKeyword) {
+      const found = allCategories.find(
+        (c) => c.name.toLowerCase().includes(catName.toLowerCase()) && c.type === type
+      );
+      if (found) return found;
+    }
+  }
+
+  // 3. Fallback: kategori Lainnya atau kategori pertama yang tipenya sesuai
+  const fallback =
+    allCategories.find((c) => c.type === type && c.name.toLowerCase().includes("lainnya")) ||
+    allCategories.find((c) => c.type === type) ||
+    allCategories[0];
+
+  return fallback;
+}
+
 /**
  * Helper untuk mengambil user dari Telegram ID
  */
@@ -179,7 +322,7 @@ export async function handleTambahDompet(ctx: Context, match: string) {
   }
 }
 
-// 4. /catat <in|out> <nominal> <keterangan>
+// 4. /catat <in|out> <nominal> <keterangan> [dompet]
 export async function handleCatat(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
@@ -187,7 +330,7 @@ export async function handleCatat(ctx: Context, match: string) {
   const parts = match.trim().split(/\s+/);
   if (parts.length < 3) {
     await ctx.reply(
-      `Format salah!\n*Penggunaan:* \`/catat <in|out> <nominal> <keterangan>\`\n*Contoh:* \`/catat out 25000 Makan Siang Bakso\``,
+      `Format salah!\n*Penggunaan:* \`/catat <in|out> <nominal> <keterangan> [dompet]\`\n*Contoh:* \`/catat out 25k bensin vario cash\``,
       { parse_mode: "Markdown" }
     );
     return;
@@ -200,10 +343,10 @@ export async function handleCatat(ctx: Context, match: string) {
   // Parse nominal (support e.g. 25000, 25k, 25rb, 1.5jt)
   const nominalStr = parts[1].toLowerCase();
   let amount = 0;
-  if (nominalStr.endsWith("jt") || nominalStr.endsWith("m")) {
-    amount = parseFloat(nominalStr.replace(/(jt|m)/, "")) * 1000000;
-  } else if (nominalStr.endsWith("rb") || nominalStr.endsWith("k")) {
-    amount = parseFloat(nominalStr.replace(/(rb|k)/, "")) * 1000;
+  if (nominalStr.endsWith("jt") || nominalStr.endsWith("m") || nominalStr.endsWith("juta")) {
+    amount = parseFloat(nominalStr.replace(/(jt|m|juta)/, "")) * 1000000;
+  } else if (nominalStr.endsWith("rb") || nominalStr.endsWith("k") || nominalStr.endsWith("ribu")) {
+    amount = parseFloat(nominalStr.replace(/(rb|k|ribu)/, "")) * 1000;
   } else {
     amount = parseFloat(nominalStr.replace(/[^0-9.]/g, ""));
   }
@@ -213,35 +356,30 @@ export async function handleCatat(ctx: Context, match: string) {
     return;
   }
 
-  const note = parts.slice(2).join(" ");
+  const rawText = parts.slice(2).join(" ");
 
-  // Cari dompet default (atau dompet pertama)
+  // Ambil daftar dompet user
   const accountsList = await getUserAccounts(user.id);
   if (accountsList.length === 0) {
     await ctx.reply("Kamu belum memiliki dompet. Ketik /start terlebih dahulu.");
     return;
   }
-  const defaultWallet = accountsList.find((a) => a.isDefault) || accountsList[0];
 
-  // Cari kategori yang sesuai dari note, atau fallback ke kategori umum
+  // Pisahkan secara cermat keterangan transaksi dan dompet di akhir string
+  const { wallet, description } = extractWalletAndDescription(rawText, accountsList);
+
+  // Cari kategori yang sesuai secara pintar
   const allCategories = await getCategories(user.id);
-  const matchedCategory =
-    allCategories.find((c) =>
-      note.toLowerCase().includes(c.name.toLowerCase()) && c.type === type
-    ) ||
-    allCategories.find((c) =>
-      c.type === type && (c.name.includes("Lainnya") || c.name.includes("Makan"))
-    ) ||
-    allCategories[0];
+  const matchedCategory = findMatchingCategory(description, type, allCategories);
 
   try {
     const res = await createTransaction({
       userId: user.id,
-      accountId: defaultWallet.id,
+      accountId: wallet.id,
       categoryId: matchedCategory.id,
       amount,
       type,
-      note,
+      note: description,
       source: "telegram",
     });
 
@@ -249,10 +387,10 @@ export async function handleCatat(ctx: Context, match: string) {
     await ctx.reply(
       `${icon} *Transaksi Berhasil Dicatat!*\n\n` +
         `• Tipe: *${type === "income" ? "Pemasukan" : "Pengeluaran"}*\n` +
-        `• Keterangan: *${note}*\n` +
+        `• Keterangan: *${description}*\n` +
         `• Kategori: ${matchedCategory.icon || "🏷️"} *${matchedCategory.name}*\n` +
         `• Nominal: *${formatRupiah(amount)}*\n` +
-        `• Sumber Dana: *${defaultWallet.name}*\n` +
+        `• Sumber Dompet: 💼 *${wallet.name}*\n` +
         `• Sisa Saldo: *${formatRupiah(res.updatedAccount.balance)}*`,
       { parse_mode: "Markdown" }
     );
@@ -529,7 +667,7 @@ export async function handleHelp(ctx: Context) {
   await ctx.reply(getHelpMessage(), { parse_mode: "Markdown" });
 }
 
-// 13. Smart Natural Text Parser (misal: "kopi 25rb" atau "-50000 bensin")
+// 13. Smart Natural Text Parser (misal: "-25k bensin vario cash" atau "kopi 25rb")
 export async function handleSmartText(ctx: Context) {
   const text = ctx.message?.text?.trim();
   if (!text || text.startsWith("/")) return;
@@ -540,7 +678,7 @@ export async function handleSmartText(ctx: Context) {
 
   if (!match) {
     await ctx.reply(
-      `Pesan diterima: "${text}"\n\n💡 *Tip Catat Cepat:* Ketik nominal dan keterangan, contoh:\n👉 \`makan siang 25rb\`\n👉 \`+5jt gaji bulanan\`\n\nKetik /help untuk panduan lengkap.`,
+      `Pesan diterima: "${text}"\n\n💡 *Tip Catat Cepat:* Ketik nominal, keterangan, dan opsional dompet di akhir kata, contoh:\n👉 \`-25k bensin vario cash\`\n👉 \`-35k makan siang gopay\`\n👉 \`+5jt gaji bulanan bca\`\n\nKetik /help untuk panduan lengkap.`,
       { parse_mode: "Markdown" }
     );
     return;
@@ -559,12 +697,16 @@ export async function handleSmartText(ctx: Context) {
 
   if (amount <= 0 || isNaN(amount)) return;
 
-  const isIncome = sign === "+" || text.toLowerCase().includes("gaji") || text.toLowerCase().includes("transfer masuk") || text.toLowerCase().includes("bonus");
+  const isIncome =
+    sign === "+" ||
+    text.toLowerCase().includes("gaji") ||
+    text.toLowerCase().includes("transfer masuk") ||
+    text.toLowerCase().includes("bonus");
   const type: "income" | "expense" = isIncome ? "income" : "expense";
 
-  // Ambil sisa teks sebagai keterangan
-  const note = text.replace(match[0], "").trim() || (type === "income" ? "Pemasukan" : "Pengeluaran");
+  // Ambil sisa teks selain nominal (keterangan + opsional dompet)
+  const rawText = text.replace(match[0], "").trim() || (type === "income" ? "Pemasukan" : "Pengeluaran");
 
   // Call handleCatat logic
-  await handleCatat(ctx, `${type === "income" ? "in" : "out"} ${amount} ${note}`);
+  await handleCatat(ctx, `${type === "income" ? "in" : "out"} ${amount} ${rawText}`);
 }

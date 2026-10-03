@@ -42,9 +42,9 @@ export const BOT_COMMANDS: BotCommandDef[] = [
   // TRANSAKSI
   {
     command: "catat",
-    description: "Catat pengeluaran (out) atau pemasukan (in)",
-    usage: "/catat <in|out> <nominal> <keterangan>",
-    example: "/catat out 25000 Nasi Padang",
+    description: "Catat pengeluaran (out) atau pemasukan (in) dengan pilihan dompet di akhir",
+    usage: "/catat <in|out> <nominal> <keterangan> [dompet]",
+    example: "/catat out 25k bensin vario cash",
     category: "transaksi",
   },
   {
@@ -110,11 +110,15 @@ export function getHelpMessage(): string {
     `• \`/tambah_dompet <nama> <tipe> [saldo]\`\n` +
     `  _Contoh: \`/tambah_dompet Mandiri bank 500000\`_\n\n` +
     `📝 *Transaksi:*\n` +
-    `• \`/catat <in|out> <nominal> <keterangan>\`\n` +
-    `  _Contoh: \`/catat out 35000 Kopi & Roti\`_\n` +
+    `• \`/catat <in|out> <nominal> <keterangan> [dompet]\`\n` +
+    `  _Contoh: \`/catat out 25k bensin vario cash\`_\n` +
+    `  _Contoh: \`/catat in 500k freelance bca\`_\n` +
     `• \`/riwayat [limit]\` — Riwayat transaksi\n` +
     `• \`/kategori\` — Daftar kategori sistem\n` +
-    `💡 *Tip:* Kamu juga bisa langsung chat santai seperti \`makan siang 25rb\`!\n\n` +
+    `💡 *Tip Catat Cepat (Tanpa Command):*\n` +
+    `  _Ketik: \`-25k bensin vario cash\`_\n` +
+    `  _Ketik: \`-35k makan siang gopay\`_\n` +
+    `  _Ketik: \`+5jt gaji bulanan bca\`_\n\n` +
     `🎯 *Alokasi Dana (Budget Range):*\n` +
     `• \`/alokasi\` — Cek status & persentase anggaran\n` +
     `• \`/tambah_alokasi <nama> <target> <kategori> [hari]\`\n` +
