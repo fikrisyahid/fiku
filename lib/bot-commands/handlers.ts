@@ -6,6 +6,7 @@ import { onboardUser } from "@/lib/onboarding";
 import {
   getUserAccounts,
   createAccount,
+  setDefaultAccount,
 } from "@/app/actions/accounts";
 import {
   createTransaction,
@@ -266,14 +267,88 @@ export async function handleSaldo(ctx: Context) {
   }
 
   const total = accountsList.reduce((sum, a) => sum + Number(a.balance), 0);
-  const rows = accountsList.map((a) => `• *${a.name}* (${a.type}): ${formatRupiah(a.balance)}`).join("\n");
+  const rows = accountsList
+    .map((a, idx) => {
+      const isDef = a.isDefault ? " ⭐ _(Utama)_" : "";
+      return `*#${idx + 1}* • *${a.name}* (${a.type}): ${formatRupiah(a.balance)}${isDef}`;
+    })
+    .join("\n");
 
   await ctx.reply(
     `💰 *Daftar Dompet (${user.fullName}):*\n\n` +
       `${rows}\n\n` +
-      `💵 *Total Saldo:* *${formatRupiah(total)}*`,
+      `💵 *Total Saldo:* *${formatRupiah(total)}*\n\n` +
+      `💡 _Ganti dompet utama:_ \`/dompet_utama <nomor/nama>\``,
     { parse_mode: "Markdown" }
   );
+}
+
+// 2b. /dompet_utama <nomor_atau_nama>
+export async function handleSetDefaultDompet(ctx: Context, match: string) {
+  const user = await getTelegramUser(ctx);
+  if (!user) return;
+
+  const accountsList = await getUserAccounts(user.id);
+  if (accountsList.length === 0) {
+    await ctx.reply("Belum ada dompet terdaftar. Ketik /start untuk inisialisasi dompet.");
+    return;
+  }
+
+  const query = match ? match.trim() : "";
+
+  if (!query) {
+    const rows = accountsList
+      .map((a, idx) => {
+        const isDef = a.isDefault ? " ⭐ _(Saat ini utama)_" : "";
+        return `*#${idx + 1}* • *${a.name}* (${a.type})${isDef}`;
+      })
+      .join("\n");
+
+    await ctx.reply(
+      `💼 *Pilih Dompet Utama*\n\n` +
+        `Dompet utama adalah dompet yang otomatis terpakai saat mencatat transaksi tanpa menyebutkan dompet.\n\n` +
+        `${rows}\n\n` +
+        `*Cara Ganti:* \`/dompet_utama <nomor atau nama>\`\n` +
+        `_Contoh: \`/dompet_utama 2\` atau \`/dompet_utama bca\`_`,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  // 1. Coba cari berdasarkan nomor urut (#1, #2, dst.)
+  const numIndex = parseInt(query, 10);
+  let targetAccount =
+    !isNaN(numIndex) && numIndex >= 1 && numIndex <= accountsList.length
+      ? accountsList[numIndex - 1]
+      : null;
+
+  // 2. Jika bukan nomor urut, cari berdasarkan pencocokan nama atau tipe dompet
+  if (!targetAccount) {
+    targetAccount =
+      accountsList.find((a) => matchesAccount(query, a)) ||
+      accountsList.find((a) => a.name.toLowerCase().includes(query.toLowerCase())) ||
+      null;
+  }
+
+  if (!targetAccount) {
+    await ctx.reply(
+      `Dompet "${query}" tidak ditemukan.\nKetik /saldo untuk melihat nomor dan nama dompet kamu.`
+    );
+    return;
+  }
+
+  try {
+    const updated = await setDefaultAccount(targetAccount.id, user.id);
+    await ctx.reply(
+      `⭐ *Dompet Utama Berhasil Diubah!*\n\n` +
+        `💼 Dompet Utama Sekarang: *${updated.name}* (${updated.type})\n` +
+        `Saldo Saat Ini: *${formatRupiah(updated.balance)}*\n\n` +
+        `Transaksi pengeluaran/pemasukan tanpa nama dompet di akhir akan otomatis menggunakan dompet ini.`,
+      { parse_mode: "Markdown" }
+    );
+  } catch (err: any) {
+    await ctx.reply(`❌ Gagal mengubah dompet utama: ${err.message}`);
+  }
 }
 
 // 3. /tambah_dompet <nama> <tipe> [saldo_awal]

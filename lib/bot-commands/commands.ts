@@ -32,6 +32,13 @@ export const BOT_COMMANDS: BotCommandDef[] = [
     category: "dompet",
   },
   {
+    command: "dompet_utama",
+    description: "Mengatur dompet default / utama untuk transaksi",
+    usage: "/dompet_utama <nomor_atau_nama>",
+    example: "/dompet_utama bca",
+    category: "dompet",
+  },
+  {
     command: "tambah_dompet",
     description: "Membuat dompet / rekening baru",
     usage: "/tambah_dompet <nama> <cash|bank|ewallet> [saldo_awal]",
@@ -107,6 +114,7 @@ export function getHelpMessage(): string {
     `📖 *Daftar Perintah Bot Keuangan Fana*\n\n` +
     `💰 *Saldo & Dompet:*\n` +
     `• \`/saldo\` — Cek saldo seluruh dompet\n` +
+    `• \`/dompet_utama <nomor/nama>\` — Atur dompet utama\n` +
     `• \`/tambah_dompet <nama> <tipe> [saldo]\`\n` +
     `  Contoh: \`/tambah_dompet Mandiri bank 500000\`\n\n` +
     `📝 *Transaksi:*\n` +

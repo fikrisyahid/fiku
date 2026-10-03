@@ -98,3 +98,24 @@ export async function deleteAccount(accountId: string, userId: string) {
 
   return deleted;
 }
+
+export async function setDefaultAccount(accountId: string, userId: string) {
+  // 1. Lepas status isDefault dari semua dompet milik user
+  await db
+    .update(accounts)
+    .set({ isDefault: false, updatedAt: new Date() })
+    .where(eq(accounts.userId, userId));
+
+  // 2. Set dompet terpilih menjadi default
+  const [updated] = await db
+    .update(accounts)
+    .set({ isDefault: true, updatedAt: new Date() })
+    .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)))
+    .returning();
+
+  if (!updated) {
+    throw new Error("Dompet tidak ditemukan.");
+  }
+
+  return updated;
+}

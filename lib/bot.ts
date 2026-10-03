@@ -2,6 +2,7 @@ import { Bot } from "grammy";
 import {
   handleStart,
   handleSaldo,
+  handleSetDefaultDompet,
   handleTambahDompet,
   handleCatat,
   handleAlokasi,
@@ -29,6 +30,7 @@ bot.command("help", handleHelp);
 
 // 2. Command Dompet & Saldo
 bot.command(["saldo", "dompet"], handleSaldo);
+bot.command(["dompet_utama", "set_dompet"], (ctx) => handleSetDefaultDompet(ctx, ctx.match));
 bot.command("tambah_dompet", (ctx) => handleTambahDompet(ctx, ctx.match));
 
 // 3. Command Transaksi
