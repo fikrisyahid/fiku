@@ -48,9 +48,21 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
       });
     }
 
+    if (!existingUser && telegramUsername) {
+      existingUser = await db.query.users.findFirst({
+        where: eq(users.telegramUsername, telegramUsername),
+      });
+    }
+
     if (!existingUser && email) {
       existingUser = await db.query.users.findFirst({
         where: eq(users.email, email),
+      });
+    }
+
+    if (!existingUser && fullName && fullName !== "Sobat Fana") {
+      existingUser = await db.query.users.findFirst({
+        where: eq(users.fullName, fullName),
       });
     }
 
@@ -95,6 +107,7 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
       const [newUser] = await db
         .insert(users)
         .values({
+          id: crypto.randomUUID(),
           fullName: fullName || "Sobat Fana",
           email: userEmail,
           phone: phone || null,

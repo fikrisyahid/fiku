@@ -10,9 +10,11 @@ const sql = postgres(connectionString);
 async function main() {
   console.log("🔄 Sinkronisasi dan update skema tabel di Supabase...");
 
-  // 1. Tambah telegram_id & telegram_username ke users
+  // 1. Tambah telegram_id & telegram_username ke users serta pastikan default id gen_random_uuid() & expired_at nullable
   await sql`
     ALTER TABLE users 
+    ALTER COLUMN id SET DEFAULT gen_random_uuid(),
+    ALTER COLUMN expired_at DROP NOT NULL,
     ADD COLUMN IF NOT EXISTS telegram_id text UNIQUE,
     ADD COLUMN IF NOT EXISTS telegram_username text;
   `;
