@@ -3,7 +3,7 @@ export interface BotCommandDef {
   description: string;
   usage: string;
   example: string;
-  category: "umum" | "dompet" | "transaksi" | "alokasi" | "utang";
+  category: "umum" | "dompet" | "transaksi" | "alokasi" | "utang" | "pengaturan";
 }
 
 export const BOT_COMMANDS: BotCommandDef[] = [
@@ -107,6 +107,15 @@ export const BOT_COMMANDS: BotCommandDef[] = [
     example: "/lunas 1",
     category: "utang",
   },
+
+  // PENGATURAN & WIPEOUT
+  {
+    command: "reset",
+    description: "Hapus seluruh data akun & keuangan (wipeout) ke posisi awal",
+    usage: "/reset",
+    example: "/reset",
+    category: "pengaturan",
+  },
 ];
 
 export function getHelpMessage(): string {
@@ -134,6 +143,8 @@ export function getHelpMessage(): string {
     `🤝 *Utang & Piutang:*\n` +
     `• \`/utang\` — Daftar utang & piutang\n` +
     `• \`/tambah_utang <orang> <nominal> <utang|piutang> [catatan]\`\n` +
-    `• \`/lunas <nomor>\` — Tandai lunas`
+    `• \`/lunas <nomor>\` — Tandai lunas\n\n` +
+    `⚙️ *Pengaturan & Akun:*\n` +
+    `• \`/reset\` — Hapus semua data & mulai dari awal`
   );
 }

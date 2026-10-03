@@ -22,6 +22,7 @@ import {
   settleDebt,
 } from "@/app/actions/debts";
 import { getCategories } from "@/app/actions/categories";
+import { wipeoutUserData } from "@/app/actions/reset";
 import { getHelpMessage } from "./commands";
 
 function formatRupiah(amount: number | string): string {
@@ -784,4 +785,84 @@ export async function handleSmartText(ctx: Context) {
 
   // Call handleCatat logic
   await handleCatat(ctx, `${type === "income" ? "in" : "out"} ${amount} ${rawText}`);
+}
+
+// 14. /reset (Wipeout Data - Langkah 1/2)
+export async function handleReset(ctx: Context) {
+  const user = await getTelegramUser(ctx);
+  if (!user) {
+    await ctx.reply("Akunmu belum terdaftar di sistem.");
+    return;
+  }
+
+  await ctx.reply(
+    `⚠️ *PERINGATAN KERAS: RESET & HAPUS TOTAL DATA (Langkah 1/2)*\n\n` +
+      `Tindakan ini akan menghapus *SEMUA* data keuanganmu secara permanen:\n` +
+      `❌ Semua riwayat transaksi\n` +
+      `❌ Semua dompet & saldo\n` +
+      `❌ Semua alokasi anggaran (budget)\n` +
+      `❌ Semua catatan utang & piutang\n` +
+      `❌ Profil akun kamu di sistem\n\n` +
+      `Data yang sudah dihapus *TIDAK BISA DIKEMBALIKAN*.\n` +
+      `Setelah di-reset, kamu akan kembali ke posisi awal (harus onboarding lagi lewat /start).\n\n` +
+      `Jika kamu *BENAR-BENAR YAKIN*, lanjutkan ke langkah berikutnya dengan mengetik perintah berikut:\n` +
+      `👉 \`/reset_konfirmasi SAYA_YAKIN_HAPUS_SEMUA\``,
+    { parse_mode: "Markdown" }
+  );
+}
+
+// 14b. /reset_konfirmasi <kode> (Wipeout Data - Langkah 2/2)
+export async function handleResetKonfirmasi(ctx: Context, match: string) {
+  const user = await getTelegramUser(ctx);
+  if (!user) return;
+
+  const code = match ? match.trim() : "";
+  if (code !== "SAYA_YAKIN_HAPUS_SEMUA") {
+    await ctx.reply(
+      `❌ *Kode Konfirmasi Salah!*\n\n` +
+        `Proses reset dibatalkan demi keamanan.\n` +
+        `Jika ingin mereset, ketik persis:\n\`/reset_konfirmasi SAYA_YAKIN_HAPUS_SEMUA\``,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  await ctx.reply(
+    `🚨 *KONFIRMASI TERAKHIR SEBELUM EKSEKUSI (Langkah 2/2)*\n\n` +
+      `Apakah kamu yakin 100% ingin menghapus seluruh data akun *${user.fullName}* sekarang juga?\n\n` +
+      `Ketik perintah di bawah ini untuk langsung mengeksekusi penghapusan:\n` +
+      `👉 \`/reset_final HAPUS_SEKARANG\``,
+    { parse_mode: "Markdown" }
+  );
+}
+
+// 14c. /reset_final <kode> (Wipeout Eksekusi)
+export async function handleResetFinal(ctx: Context, match: string) {
+  const user = await getTelegramUser(ctx);
+  if (!user) {
+    await ctx.reply("Akunmu sudah tidak terdaftar.");
+    return;
+  }
+
+  const code = match ? match.trim() : "";
+  if (code !== "HAPUS_SEKARANG") {
+    await ctx.reply(
+      `❌ *Eksekusi Dibatalkan!*\nKode verifikasi terakhir tidak sesuai. Seluruh datamu tetap aman tersimpan.`
+    );
+    return;
+  }
+
+  try {
+    await wipeoutUserData(user.id);
+    await ctx.reply(
+      `💥 *WIPEOUT BERHASIL! SEMUA DATA TELAH DIHAPUS.*\n\n` +
+        `Seluruh data transaksi, saldo dompet, alokasi anggaran, dan profil akunmu telah dihapus bersih dari database.\n\n` +
+        `Kamu sekarang berada di status awal (sebelum onboarding).\n` +
+        `Ketik /start kapan saja untuk memulai onboarding akun baru!`,
+      { parse_mode: "Markdown" }
+    );
+  } catch (err: any) {
+    console.error("Gagal wipeout:", err);
+    await ctx.reply(`❌ Terjadi kesalahan saat menghapus data: ${err.message}`);
+  }
 }

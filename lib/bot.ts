@@ -12,6 +12,9 @@ import {
   handleUtang,
   handleTambahUtang,
   handleLunasUtang,
+  handleReset,
+  handleResetKonfirmasi,
+  handleResetFinal,
   handleHelp,
   handleSmartText,
 } from "./bot-commands/handlers";
@@ -47,7 +50,12 @@ bot.command("utang", handleUtang);
 bot.command("tambah_utang", (ctx) => handleTambahUtang(ctx, ctx.match));
 bot.command("lunas", (ctx) => handleLunasUtang(ctx, ctx.match));
 
-// 6. Natural Text Parser untuk input cepat
+// 6. Command Reset / Wipeout Data
+bot.command("reset", handleReset);
+bot.command("reset_konfirmasi", (ctx) => handleResetKonfirmasi(ctx, ctx.match));
+bot.command("reset_final", (ctx) => handleResetFinal(ctx, ctx.match));
+
+// 7. Natural Text Parser untuk input cepat
 bot.on("message:text", handleSmartText);
 
 // Global Error Handler agar bot tidak pernah crash
