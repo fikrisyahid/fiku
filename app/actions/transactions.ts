@@ -68,6 +68,25 @@ export async function createTransaction(data: {
   }
 
   const currentBalance = parseFloat(account.balance);
+
+  // Validasi saldo: pengeluaran tidak boleh melebihi saldo yang ada
+  if (type === "expense" && amount > currentBalance) {
+    const fmtCurrent = new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(currentBalance);
+    const fmtAmount = new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(amount);
+
+    throw new Error(
+      `Saldo tidak mencukupi! Saldo "${account.name}" saat ini hanya ${fmtCurrent}, tidak cukup untuk pengeluaran sebesar ${fmtAmount}.`
+    );
+  }
+
   const newBalance =
     type === "income" ? currentBalance + amount : currentBalance - amount;
 

@@ -15,8 +15,6 @@ export async function submitWebOnboarding(formData: FormData): Promise<Onboardin
   const fullName = (formData.get("fullName") as string)?.trim();
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   const phone = (formData.get("phone") as string)?.trim() || null;
-  const initialBalanceRaw = (formData.get("initialBalance") as string)?.trim() || "0";
-  const initialBalance = parseFloat(initialBalanceRaw.replace(/[^0-9.-]/g, "")) || 0;
 
   if (!fullName || !email) {
     return { success: false, message: "Nama lengkap dan email wajib diisi!" };
@@ -27,7 +25,6 @@ export async function submitWebOnboarding(formData: FormData): Promise<Onboardin
       fullName,
       email,
       phone,
-      initialCashBalance: initialBalance,
     });
 
     const defaultAccount = res.accounts.find((a) => a.isDefault) || res.accounts[0];

@@ -163,48 +163,13 @@ export function OnboardingForm() {
             />
           </div>
 
-          <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800">
-            <div className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">
-              Pengaturan Dompet Pertama
+          <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-400 space-y-1.5">
+            <div className="font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+              <span>💼</span> 3 Dompet Template Siap Pakai
             </div>
-
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="walletName">Nama Dompet</Label>
-                <Input
-                  id="walletName"
-                  name="walletName"
-                  defaultValue="Cash (Dompet)"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="walletType">Tipe Dompet</Label>
-                <select
-                  id="walletType"
-                  name="walletType"
-                  defaultValue="cash"
-                  className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  <option value="cash" className="dark:bg-zinc-900">Cash / Tunai</option>
-                  <option value="bank" className="dark:bg-zinc-900">Bank (BCA/Mandiri/dll)</option>
-                  <option value="ewallet" className="dark:bg-zinc-900">e-Wallet (GoPay/OVO/dll)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="initialBalance">Saldo Awal (Rp)</Label>
-              <Input
-                id="initialBalance"
-                name="initialBalance"
-                type="number"
-                defaultValue="0"
-                min="0"
-                placeholder="0"
-              />
-            </div>
+            <p>
+              Setelah onboarding, akun kamu akan langsung memiliki 3 dompet: <strong>Cash (Utama)</strong>, <strong>Rekening Bank</strong>, dan <strong>e-Wallet</strong> dengan saldo <strong>Rp 0</strong> dan tanpa transaksi apapun.
+            </p>
           </div>
         </CardContent>
         <CardFooter className="pt-2 pb-6">
