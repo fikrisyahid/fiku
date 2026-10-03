@@ -24,8 +24,6 @@ import {
   handleResetFinal,
   handleHelp,
   handleSmartText,
-  handleSetPhone,
-  handleContactMessage,
 } from "./bot-commands/handlers";
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -71,11 +69,7 @@ bot.command("reset", handleReset);
 bot.command("reset_konfirmasi", (ctx) => handleResetKonfirmasi(ctx, ctx.match));
 bot.command("reset_final", (ctx) => handleResetFinal(ctx, ctx.match));
 
-// 7. Pengaturan Nomor HP
-bot.command(["nohp", "set_hp"], (ctx) => handleSetPhone(ctx, ctx.match));
-bot.on("message:contact", handleContactMessage);
-
-// 8. Natural Text Parser untuk input cepat
+// 7. Natural Text Parser untuk input cepat
 bot.on("message:text", handleSmartText);
 
 // Global Error Handler agar bot tidak pernah crash

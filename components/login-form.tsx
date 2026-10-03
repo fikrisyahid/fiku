@@ -27,8 +27,8 @@ import {
 
 export function LoginForm() {
   const router = useRouter();
-  const [step, setStep] = useState<"identifier" | "otp">("identifier");
-  const [identifier, setIdentifier] = useState("");
+  const [step, setStep] = useState<"username" | "otp">("username");
+  const [username, setUsername] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -47,8 +47,8 @@ export function LoginForm() {
   // Handle Request OTP
   async function handleRequestOtp(e?: React.FormEvent) {
     if (e) e.preventDefault();
-    if (!identifier.trim()) {
-      setErrorMessage("Silakan masukkan username Telegram atau nomor HP.");
+    if (!username.trim()) {
+      setErrorMessage("Silakan masukkan username Telegram kamu.");
       return;
     }
 
@@ -57,7 +57,7 @@ export function LoginForm() {
     setSuccessMessage(null);
 
     try {
-      const res = await requestTelegramOtp(identifier);
+      const res = await requestTelegramOtp(username);
       if (res.success) {
         setMaskedTarget(res.maskedTarget || "Telegram kamu");
         setSuccessMessage(res.message);
@@ -85,7 +85,7 @@ export function LoginForm() {
     setErrorMessage(null);
 
     try {
-      const res = await verifyTelegramOtp(identifier, otpCode);
+      const res = await verifyTelegramOtp(username, otpCode);
       if (res.success) {
         setSuccessMessage("Verifikasi berhasil! Mengalihkan ke dashboard...");
         setTimeout(() => {
@@ -106,17 +106,17 @@ export function LoginForm() {
     <Card className="w-full max-w-md shadow-xl border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm">
       <CardHeader className="text-center pb-3">
         <div className="mx-auto w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2 shadow-inner">
-          {step === "identifier" ? (
+          {step === "username" ? (
             <Send className="w-6 h-6 -translate-x-0.5" />
           ) : (
             <KeyRound className="w-6 h-6" />
           )}
         </div>
         <CardTitle className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          {step === "identifier" ? "Masuk ke Fana Web" : "Verifikasi Kode"}
+          {step === "username" ? "Masuk ke Fana Web" : "Verifikasi Kode"}
         </CardTitle>
         <CardDescription className="text-xs text-zinc-500 dark:text-zinc-400">
-          {step === "identifier"
+          {step === "username"
             ? "Otentikasi instan tanpa kata sandi via Bot Telegram"
             : `Kode 6 digit telah dikirimkan ke chat ${maskedTarget}`}
         </CardDescription>
@@ -137,22 +137,22 @@ export function LoginForm() {
           </div>
         )}
 
-        {step === "identifier" ? (
+        {step === "username" ? (
           <form onSubmit={handleRequestOtp} className="space-y-4">
             <div className="space-y-1.5">
               <Label
-                htmlFor="identifier"
+                htmlFor="username"
                 className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
               >
-                Username Telegram atau Nomor HP
+                Username Telegram
               </Label>
               <div className="relative">
                 <Input
-                  id="identifier"
+                  id="username"
                   type="text"
-                  placeholder="misal: @fikrisyahid14 atau 08123456789"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="misal: @fikrisyahid14"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   disabled={loading}
                   autoFocus
                   className="pr-10 h-11 text-sm bg-zinc-50 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 focus:ring-emerald-500"
@@ -195,7 +195,7 @@ export function LoginForm() {
                 <button
                   type="button"
                   onClick={() => {
-                    setStep("identifier");
+                    setStep("username");
                     setErrorMessage(null);
                     setSuccessMessage(null);
                   }}

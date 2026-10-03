@@ -159,13 +159,6 @@ export const BOT_COMMANDS: BotCommandDef[] = [
 
   // PENGATURAN & WIPEOUT
   {
-    command: "nohp",
-    description: "Daftarkan atau ubah nomor HP untuk login ke Fana Web",
-    usage: "/nohp [nomor_hp]",
-    example: "/nohp 08123456789",
-    category: "pengaturan",
-  },
-  {
     command: "reset",
     description: "Hapus seluruh data akun & keuangan (wipeout) ke posisi awal",
     usage: "/reset",
@@ -214,7 +207,6 @@ export function getHelpMessage(): string {
     `• \`/tambah_utang <orang> <nominal> <utang|piutang> [catatan]\`\n` +
     `• \`/lunas <nomor>\` — Tandai catatan lunas\n\n` +
     `⚙️ *PENGATURAN*\n` +
-    `• \`/nohp [nomor]\` — Daftarkan nomor HP untuk login Web\n` +
     `• \`/reset\` — Hapus semua data & mulai dari awal`
   );
 }

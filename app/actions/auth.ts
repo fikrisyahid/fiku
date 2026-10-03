@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { users, authOtpCodes, sessions } from "@/db/schema";
-import { eq, and, gt, or, sql } from "drizzle-orm";
+import { eq, and, gt, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { bot } from "@/lib/bot";
 import crypto from "crypto";
@@ -10,66 +10,33 @@ import crypto from "crypto";
 const SESSION_COOKIE_NAME = "fana_session";
 const SESSION_DURATION_DAYS = 30;
 
-function normalizeIdentifier(raw: string): { type: "username" | "phone"; value: string } {
-  const clean = raw.trim();
-  // Jika diawali @ atau mengandung huruf, anggap sebagai username Telegram
-  if (clean.startsWith("@") || /[a-zA-Z]/.test(clean)) {
-    return {
-      type: "username",
-      value: clean.replace(/^@/, "").toLowerCase(),
-    };
-  }
-  // Jika murni angka / simbol telepon
-  let phone = clean.replace(/[^0-9]/g, "");
-  if (phone.startsWith("0")) {
-    phone = "62" + phone.slice(1);
-  }
-  return {
-    type: "phone",
-    value: phone,
-  };
+function normalizeUsername(raw: string): string {
+  return raw.trim().replace(/^@/, "").toLowerCase();
 }
 
-export async function requestTelegramOtp(identifier: string): Promise<{
+export async function requestTelegramOtp(rawUsername: string): Promise<{
   success: boolean;
   message: string;
   maskedTarget?: string;
 }> {
-  if (!identifier || identifier.trim().length < 3) {
+  const username = normalizeUsername(rawUsername);
+  if (!username || username.length < 3) {
     return {
       success: false,
-      message: "Masukkan username Telegram atau nomor HP yang valid.",
+      message: "Masukkan username Telegram yang valid (contoh: @fikrisyahid14).",
     };
   }
 
-  const { type, value } = normalizeIdentifier(identifier);
-
-  // 1. Cari user di database berdasarkan username atau nomor HP
-  let user;
-  if (type === "username") {
-    user = await db.query.users.findFirst({
-      where: sql`lower(${users.telegramUsername}) = ${value.toLowerCase()}`,
-    });
-  } else {
-    const rawDigits = value.replace(/[^0-9]/g, "");
-    const localDigits = rawDigits.startsWith("62") ? "0" + rawDigits.slice(2) : rawDigits;
-    user = await db.query.users.findFirst({
-      where: or(
-        eq(users.phone, rawDigits),
-        eq(users.phone, localDigits),
-        eq(users.phone, "+" + rawDigits),
-        eq(users.phone, "+" + localDigits),
-        sql`regexp_replace(${users.phone}, '[^0-9]', '', 'g') = ${rawDigits}`
-      ),
-    });
-  }
+  // 1. Cari user di database berdasarkan username Telegram
+  const user = await db.query.users.findFirst({
+    where: sql`lower(${users.telegramUsername}) = ${username}`,
+  });
 
   // Jika belum terdaftar sama sekali
   if (!user) {
     return {
       success: false,
-      message:
-        "Akun belum terdaftar di Fana. Silakan buka bot Telegram kami terlebih dahulu dan ketik /start untuk mengaktifkan akunmu.",
+      message: `Username @${username} belum terdaftar di Fana. Silakan buka bot Telegram kami terlebih dahulu dan ketik /start untuk mengaktifkan akunmu.`,
     };
   }
 
@@ -120,11 +87,7 @@ export async function requestTelegramOtp(identifier: string): Promise<{
     };
   }
 
-  const masked = user.telegramUsername
-    ? `@${user.telegramUsername.slice(0, 3)}***`
-    : user.phone
-    ? `${user.phone.slice(0, 4)}****${user.phone.slice(-3)}`
-    : "chat Telegram kamu";
+  const masked = `@${username.slice(0, 3)}***`;
 
   return {
     success: true,
@@ -134,37 +97,21 @@ export async function requestTelegramOtp(identifier: string): Promise<{
 }
 
 export async function verifyTelegramOtp(
-  identifier: string,
+  rawUsername: string,
   code: string
 ): Promise<{
   success: boolean;
   message: string;
   user?: { id: string; fullName: string; email: string };
 }> {
-  if (!identifier || !code || code.trim().length !== 6) {
+  const username = normalizeUsername(rawUsername);
+  if (!username || !code || code.trim().length !== 6) {
     return { success: false, message: "Kode OTP harus berupa 6 angka." };
   }
 
-  const { type, value } = normalizeIdentifier(identifier);
-
-  let user;
-  if (type === "username") {
-    user = await db.query.users.findFirst({
-      where: sql`lower(${users.telegramUsername}) = ${value.toLowerCase()}`,
-    });
-  } else {
-    const rawDigits = value.replace(/[^0-9]/g, "");
-    const localDigits = rawDigits.startsWith("62") ? "0" + rawDigits.slice(2) : rawDigits;
-    user = await db.query.users.findFirst({
-      where: or(
-        eq(users.phone, rawDigits),
-        eq(users.phone, localDigits),
-        eq(users.phone, "+" + rawDigits),
-        eq(users.phone, "+" + localDigits),
-        sql`regexp_replace(${users.phone}, '[^0-9]', '', 'g') = ${rawDigits}`
-      ),
-    });
-  }
+  const user = await db.query.users.findFirst({
+    where: sql`lower(${users.telegramUsername}) = ${username}`,
+  });
 
   if (!user) {
     return { success: false, message: "Pengguna tidak ditemukan." };
