@@ -397,15 +397,15 @@ export async function handleSaldo(ctx: Context) {
     .map((a, idx) => {
       const icon = TYPE_ICONS[a.type] || "💳";
       const isDef = a.isDefault ? " ⭐ _(Utama)_" : "";
-      return `${icon} *#${idx + 1} ${a.name}*${isDef}\n└ Saldo: \`${formatRupiah(a.balance)}\``;
+      return `${icon} *#${idx + 1} ${a.name}*${isDef}\n└ \`${formatRupiah(a.balance)}\``;
     })
     .join("\n\n");
 
   await ctx.reply(
     `💰 *DOMPET & SALDO*\n` +
       `👤 *${user.fullName}*\n` +
-      `───────────────────\n` +
-      `${rows}\n` +
+      `───────────────────\n\n` +
+      `${rows}\n\n` +
       `───────────────────\n` +
       `📊 *Total Saldo:* \`${formatRupiah(total)}\`\n\n` +
       `💡 _Ganti dompet utama:_ \`/dompet_utama <nomor/nama>\``,
@@ -431,7 +431,7 @@ export async function handleSetDefaultDompet(ctx: Context, match: string) {
       .map((a, idx) => {
         const icon = TYPE_ICONS[a.type] || "💳";
         const isDef = a.isDefault ? " ⭐ _(Saat ini utama)_" : "";
-        return `${icon} *#${idx + 1} ${a.name}*${isDef}\n└ Saldo: \`${formatRupiah(a.balance)}\``;
+        return `${icon} *#${idx + 1} ${a.name}*${isDef}\n└ \`${formatRupiah(a.balance)}\``;
       })
       .join("\n\n");
 
@@ -653,12 +653,12 @@ export async function handleTransfer(ctx: Context, match: string) {
     await ctx.reply(
       `🔁 *Transfer Antar Dompet Berhasil!*\n` +
         `───────────────────\n` +
-        `💰 Nominal : \`${formatRupiah(res.amount)}\`\n` +
-        `📤 Dari    : *${res.fromAccount.name}*\n` +
+        `💰 \`${formatRupiah(res.amount)}\`\n` +
+        `📤 Dari : *${res.fromAccount.name}*\n` +
         `   └ Sisa  : \`${formatRupiah(res.fromAccount.balance)}\`\n` +
-        `📥 Ke      : *${res.toAccount.name}*\n` +
+        `📥 Ke   : *${res.toAccount.name}*\n` +
         `   └ Saldo : \`${formatRupiah(res.toAccount.balance)}\`\n` +
-        (note ? `📝 Catatan : _${note}_\n` : "") +
+        (note ? `📝 Catatan: _${note}_\n` : "") +
         `───────────────────\n` +
         `_Mutasi internal (total aset tidak berubah)._`,
       { parse_mode: "Markdown" }
@@ -732,12 +732,12 @@ export async function handleTarikTunai(ctx: Context, match: string) {
     await ctx.reply(
       `💵 *Penarikan Tunai Berhasil!*\n` +
         `───────────────────\n` +
-        `💰 Nominal : \`${formatRupiah(res.amount)}\`\n` +
+        `💰 \`${formatRupiah(res.amount)}\`\n` +
         `🏦 Dari    : *${res.fromAccount.name}*\n` +
         `   └ Sisa  : \`${formatRupiah(res.fromAccount.balance)}\`\n` +
         `💵 Masuk ke: *${res.toAccount.name}*\n` +
         `   └ Saldo : \`${formatRupiah(res.toAccount.balance)}\`\n` +
-        `📝 Catatan : _${note}_`,
+        (note ? `📝 Catatan: _${note}_` : ""),
       { parse_mode: "Markdown" }
     );
   } catch (err) {
@@ -802,14 +802,14 @@ export async function handleCatat(ctx: Context, match: string) {
     const isInc = type === "income";
     const statusIcon = isInc ? "🟢" : "🔴";
     const typeLabel = isInc ? "Pemasukan Dicatat" : "Pengeluaran Dicatat";
+    const walletIcon = TYPE_ICONS[wallet.type] || "💳";
     await ctx.reply(
       `${statusIcon} *${typeLabel}*\n` +
         `───────────────────\n` +
-        `📝 *${description}*\n` +
-        `💰 Nominal  : \`${formatRupiah(amount)}\`\n` +
-        `🏷️ Kategori : ${matchedCategory.icon || "🏷️"} ${matchedCategory.name}\n` +
-        `💼 Dompet   : ${wallet.name}\n` +
-        `   └ Sisa   : \`${formatRupiah(res.updatedAccount.balance)}\``,
+        `*${description}*\n` +
+        `├ 💰 \`${formatRupiah(amount)}\`\n` +
+        `├ 🏷️ ${matchedCategory.icon || "🏷️"} ${matchedCategory.name}\n` +
+        `└ ${walletIcon} ${wallet.name} (Sisa: \`${formatRupiah(res.updatedAccount.balance)}\`)`,
       { parse_mode: "Markdown" }
     );
   } catch (err) {
@@ -837,16 +837,26 @@ export async function handleAlokasi(ctx: Context) {
 
   let text = `🎯 *STATUS ALOKASI DANA*\n👤 *${user.fullName}*\n───────────────────\n\n`;
 
+  const fmtDate = (dStr: string) => {
+    const p = dStr.split("-");
+    return p.length === 3 ? `${p[2]}/${p[1]}` : dStr;
+  };
+
   for (const b of budgetList) {
-    const statusIcon = b.isActive ? "🟢 Aktif" : "⚪ Berakhir";
+    const statusIcon = b.isActive ? "🟢 Aktif" : "⚪ Selesai";
     const progBar = makeProgressBar(b.percentageUsed);
+    const catName = b.category?.name || "Kategori";
+    const catIcon = b.category?.icon || "🏷️";
+    const periodStr = `${fmtDate(b.periodStart)} s/d ${fmtDate(b.periodEnd)}`;
 
     text +=
-      `📌 *${b.name || b.category?.name || "Alokasi"}* (${statusIcon})\n` +
-      `   ${b.category?.icon || "🏷️"} ${b.category?.name || "-"} • \`${b.periodStart}\` s/d \`${b.periodEnd}\`\n` +
-      `   ${progBar}\n` +
-      `   └ Terpakai: \`${formatRupiah(b.spentAmount)}\` / \`${formatRupiah(b.amountLimit)}\`\n` +
-      `   └ Sisa    : \`${formatRupiah(b.remainingAmount)}\`\n\n`;
+      `📌 *${b.name || catName}* (${statusIcon})\n` +
+      `${catIcon} ${catName}\n` +
+      `🗓️ \`${periodStr}\`\n` +
+      `${progBar} \`${Math.round(b.percentageUsed)}%\`\n` +
+      `├ Pakai : \`${formatRupiah(b.spentAmount)}\`\n` +
+      `├ Limit : \`${formatRupiah(b.amountLimit)}\`\n` +
+      `└ Sisa  : \`${formatRupiah(b.remainingAmount)}\`\n\n`;
   }
 
   await ctx.reply(text, { parse_mode: "Markdown" });
@@ -937,7 +947,7 @@ export async function handleRiwayat(ctx: Context, match: string) {
   let text = `📜 *${txList.length} TRANSAKSI TERAKHIR*\n───────────────────\n\n`;
 
   for (const tx of txList) {
-    const sign = tx.type === "income" ? "🟢 +" : "🔴 -";
+    const sign = tx.type === "income" ? "🟢" : "🔴";
     const partsDate = (tx.transactionDate || "").split("-");
     const dateFormatted = partsDate.length === 3 ? `${partsDate[2]}/${partsDate[1]}` : tx.transactionDate;
     const catIcon = tx.category?.icon || "🏷️";
@@ -945,7 +955,8 @@ export async function handleRiwayat(ctx: Context, match: string) {
 
     text +=
       `${sign} *${title}*\n` +
-      `└ \`${formatRupiah(tx.amount)}\` • ${catIcon} ${tx.account?.name || ""} (${dateFormatted})\n\n`;
+      `├ \`${formatRupiah(tx.amount)}\`\n` +
+      `└ ${catIcon} ${tx.account?.name || "Dompet"} • ${dateFormatted}\n\n`;
   }
 
   await ctx.reply(text, { parse_mode: "Markdown" });
@@ -1220,9 +1231,9 @@ export async function handleUtang(ctx: Context) {
     const label = isUtang ? "Utang ke" : "Piutang dari";
     text +=
       `${icon} *#${idx + 1} ${label} ${d.contactName}*\n` +
-      `└ Nominal: \`${formatRupiah(d.amount)}\`\n` +
-      `└ Catatan: ${d.note || "-"}\n` +
-      `└ Tandai lunas: \`/lunas ${idx + 1}\`\n\n`;
+      `├ \`${formatRupiah(d.amount)}\`\n` +
+      `├ 📝 ${d.note || "-"}\n` +
+      `└ Lunas: \`/lunas ${idx + 1}\`\n\n`;
   });
 
   await ctx.reply(text, { parse_mode: "Markdown" });
@@ -1266,13 +1277,12 @@ export async function handleTambahUtang(ctx: Context, match: string) {
     const isUtang = type === "owed_by_me";
     const tag = isUtang ? "🔴 Utang Kita ke:" : "🟢 Piutang dari:";
     await ctx.reply(
-      `✅ *Catatan Berhasil Disimpan!*\n` +
+      `🤝 *Catatan Berhasil Disimpan!*\n` +
         `───────────────────\n` +
-        `👤 ${tag} *${newDebt.contactName}*\n` +
-        `💰 Nominal: \`${formatRupiah(newDebt.amount)}\`\n` +
-        `📝 Catatan: ${newDebt.note || "-"}\n` +
-        `───────────────────\n` +
-        `_Ketik /utang untuk melihat daftar catatan aktif._`,
+        `${tag} *${newDebt.contactName}*\n` +
+        `├ 💰 \`${formatRupiah(newDebt.amount)}\`\n` +
+        (newDebt.note ? `├ 📝 _${newDebt.note}_\n` : "") +
+        `└ Lunas: ketik \`/lunas\``,
       { parse_mode: "Markdown" }
     );
   } catch (err) {
@@ -1303,13 +1313,14 @@ export async function handleLunasUtang(ctx: Context, match: string) {
 
   try {
     await settleDebt(target.id, user.id);
+    const isUtang = target.type === "owed_by_me";
+    const label = isUtang ? "Utang ke" : "Piutang dari";
     await ctx.reply(
-      `🎉 *Catatan Diselesaikan (Lunas)!*\n` +
+      `🎉 *Catatan Telah Lunas!*\n` +
         `───────────────────\n` +
-        `👤 Kontak : *${target.contactName}*\n` +
-        `💰 Nominal: \`${formatRupiah(target.amount)}\`\n` +
-        `───────────────────\n` +
-        `_Status telah ditandai lunas._`,
+        `*${label} ${target.contactName}*\n` +
+        `├ \`${formatRupiah(target.amount)}\`\n` +
+        `└ Status: *LUNAS*`,
       { parse_mode: "Markdown" }
     );
   } catch (err) {
