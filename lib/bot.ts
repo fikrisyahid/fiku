@@ -47,3 +47,8 @@ bot.command("lunas", (ctx) => handleLunasUtang(ctx, ctx.match));
 
 // 6. Natural Text Parser untuk input cepat
 bot.on("message:text", handleSmartText);
+
+// Global Error Handler agar bot tidak pernah crash
+bot.catch((err) => {
+  console.error(`⚠️ Terjadi error pada update ${err.ctx.update.update_id}:`, err.error);
+});

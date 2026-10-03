@@ -108,21 +108,21 @@ export function getHelpMessage(): string {
     `💰 *Saldo & Dompet:*\n` +
     `• \`/saldo\` — Cek saldo seluruh dompet\n` +
     `• \`/tambah_dompet <nama> <tipe> [saldo]\`\n` +
-    `  _Contoh: \`/tambah_dompet Mandiri bank 500000\`_\n\n` +
+    `  Contoh: \`/tambah_dompet Mandiri bank 500000\`\n\n` +
     `📝 *Transaksi:*\n` +
     `• \`/catat <in|out> <nominal> <keterangan> [dompet]\`\n` +
-    `  _Contoh: \`/catat out 25k bensin vario cash\`_\n` +
-    `  _Contoh: \`/catat in 500k freelance bca\`_\n` +
+    `  Contoh: \`/catat out 25k bensin vario cash\`\n` +
+    `  Contoh: \`/catat in 500k freelance bca\`\n` +
     `• \`/riwayat [limit]\` — Riwayat transaksi\n` +
-    `• \`/kategori\` — Daftar kategori sistem\n` +
+    `• \`/kategori\` — Daftar kategori sistem\n\n` +
     `💡 *Tip Catat Cepat (Tanpa Command):*\n` +
-    `  _Ketik: \`-25k bensin vario cash\`_\n` +
-    `  _Ketik: \`-35k makan siang gopay\`_\n` +
-    `  _Ketik: \`+5jt gaji bulanan bca\`_\n\n` +
+    `• \`-25k bensin vario cash\`\n` +
+    `• \`-35k makan siang gopay\`\n` +
+    `• \`+5jt gaji bulanan bca\`\n\n` +
     `🎯 *Alokasi Dana (Budget Range):*\n` +
     `• \`/alokasi\` — Cek status & persentase anggaran\n` +
     `• \`/tambah_alokasi <nama> <target> <kategori> [hari]\`\n` +
-    `  _Contoh: \`/tambah_alokasi Jajan 500000 Makan & Minum 30\`_\n\n` +
+    `  Contoh: \`/tambah_alokasi Jajan 500000 Makan 30\`\n\n` +
     `🤝 *Utang & Piutang:*\n` +
     `• \`/utang\` — Daftar utang & piutang\n` +
     `• \`/tambah_utang <orang> <nominal> <utang|piutang> [catatan]\`\n` +
