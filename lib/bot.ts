@@ -23,6 +23,7 @@ import {
   handleResetKonfirmasi,
   handleResetFinal,
   handleHelp,
+  handleHelpCallback,
   handleSmartText,
 } from "./bot-commands/handlers";
 
@@ -34,9 +35,10 @@ if (!token) {
 
 export const bot = new Bot(token);
 
-// 1. Command Umum
+// 1. Command Umum & Help Interaktif
 bot.command("start", handleStart);
 bot.command("help", handleHelp);
+bot.callbackQuery(/^help_/, handleHelpCallback);
 
 // 2. Command Dompet & Saldo
 bot.command(["saldo", "dompet"], handleSaldo);

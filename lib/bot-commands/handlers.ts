@@ -31,7 +31,7 @@ import {
   deleteCategory,
 } from "@/app/actions/categories";
 import { wipeoutUserData } from "@/app/actions/reset";
-import { getHelpMessage } from "./commands";
+import { getHelpMenuContent } from "./commands";
 
 function getErrorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -1330,7 +1330,30 @@ export async function handleLunasUtang(ctx: Context, match: string) {
 
 // 12. /help
 export async function handleHelp(ctx: Context) {
-  await ctx.reply(getHelpMessage(), { parse_mode: "Markdown" });
+  const { text, keyboard } = getHelpMenuContent("main");
+  await ctx.reply(text, {
+    parse_mode: "Markdown",
+    reply_markup: keyboard,
+  });
+}
+
+// 12b. Callback query handler untuk tombol interaktif /help
+export async function handleHelpCallback(ctx: Context) {
+  const data = ctx.callbackQuery?.data;
+  if (!data || !data.startsWith("help_")) return;
+
+  const section = data.replace(/^help_/, "");
+  const { text, keyboard } = getHelpMenuContent(section);
+
+  try {
+    await ctx.editMessageText(text, {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
+  } catch (err) {
+    console.debug("Callback edit ignored:", err);
+  }
+  await ctx.answerCallbackQuery();
 }
 
 // 13. Smart Natural Text Parser (misal: "-25k bensin vario cash" atau "tarik 500k mandiri")
