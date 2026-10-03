@@ -61,15 +61,22 @@ export function OnboardingForm() {
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 space-y-1">
+          <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 space-y-2">
             <div className="text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-medium">
-              Dompet Utama ({result.account.name})
+              Dompet Keuangan Siap Pakai
             </div>
-            <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
-              {formattedBalance}
-            </div>
-            <div className="text-xs text-emerald-600/80 capitalize">
-              Tipe: {result.account.type}
+            <div className="space-y-1.5">
+              {(result.accounts || [result.account]).map((acc) => (
+                <div key={acc.id} className="flex justify-between items-center text-sm py-1 border-b border-emerald-100 dark:border-emerald-900/40 last:border-none">
+                  <div>
+                    <span className="font-medium text-zinc-900 dark:text-zinc-100">{acc.name}</span>
+                    <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 capitalize">{acc.type}</span>
+                  </div>
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                    {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(acc.balance))}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 

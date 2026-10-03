@@ -43,7 +43,30 @@ async function main() {
     ALTER TABLE transactions 
     ADD COLUMN IF NOT EXISTS budget_id uuid REFERENCES budgets(id) ON DELETE SET NULL;
   `;
-  console.log("✅ Kolom budget_id siap di transactions");
+  // 5. Trigger proteksi agar kategori default (is_default = true) tidak bisa dihapus
+  await sql`
+    CREATE OR REPLACE FUNCTION prevent_delete_default_category()
+    RETURNS TRIGGER AS $$
+    BEGIN
+      IF OLD.is_default = true THEN
+        RAISE EXCEPTION 'Kategori default tidak dapat dihapus!';
+      END IF;
+      RETURN OLD;
+    END;
+    $$ LANGUAGE plpgsql;
+  `;
+
+  await sql`
+    DROP TRIGGER IF EXISTS trg_prevent_delete_default_category ON categories;
+  `;
+
+  await sql`
+    CREATE TRIGGER trg_prevent_delete_default_category
+    BEFORE DELETE ON categories
+    FOR EACH ROW
+    EXECUTE FUNCTION prevent_delete_default_category();
+  `;
+  console.log("✅ Trigger perlindungan kategori default berhasil diaktifkan");
 
   console.log("🎉 Sinkronisasi skema database selesai!");
   process.exit(0);
