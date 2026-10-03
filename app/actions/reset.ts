@@ -3,12 +3,16 @@
 import { db } from "@/db";
 import { users, accounts, transactions, budgets, debts } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { lockUserSession } from "@/lib/crypto";
 
 /**
  * Menghapus seluruh data pengguna secara permanen (wipeout):
  * Transaksi, Dompet, Budget, Utang, dan Profil User.
  */
 export async function wipeoutUserData(userId: string) {
+  // 0. Bersihkan sesi RAM enkripsi
+  lockUserSession(userId);
+
   // 1. Hapus transactions terlebih dahulu
   await db.delete(transactions).where(eq(transactions.userId, userId));
 

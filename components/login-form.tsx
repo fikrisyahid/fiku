@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { requestTelegramOtp, verifyTelegramOtp } from "@/app/actions/auth";
+import { loginWithPin } from "@/app/actions/auth";
 import {
   Card,
   CardContent,
@@ -15,40 +15,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
-  Send,
   KeyRound,
-  ArrowLeft,
   RefreshCw,
   CheckCircle2,
   AlertCircle,
   ExternalLink,
   ShieldCheck,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export function LoginForm() {
   const router = useRouter();
-  const [step, setStep] = useState<"username" | "otp">("username");
   const [username, setUsername] = useState("");
-  const [otpCode, setOtpCode] = useState("");
+  const [pin, setPin] = useState("");
+  const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [maskedTarget, setMaskedTarget] = useState<string>("");
-  const [countdown, setCountdown] = useState(0);
 
-  // Timer countdown untuk kirim ulang OTP
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [countdown]);
-
-  // Handle Request OTP
-  async function handleRequestOtp(e?: React.FormEvent) {
-    if (e) e.preventDefault();
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
     if (!username.trim()) {
       setErrorMessage("Silakan masukkan username Telegram kamu.");
+      return;
+    }
+
+    if (!pin.trim() || pin.trim().length !== 6) {
+      setErrorMessage("Masukkan 6 digit PIN keamanan dengan benar.");
       return;
     }
 
@@ -57,12 +51,13 @@ export function LoginForm() {
     setSuccessMessage(null);
 
     try {
-      const res = await requestTelegramOtp(username);
+      const res = await loginWithPin(username, pin);
       if (res.success) {
-        setMaskedTarget(res.maskedTarget || "Telegram kamu");
-        setSuccessMessage(res.message);
-        setStep("otp");
-        setCountdown(60); // 60 detik cooldown kirim ulang
+        setSuccessMessage("Login berhasil! Mengalihkan ke dashboard...");
+        setTimeout(() => {
+          router.push("/");
+          router.refresh();
+        }, 600);
       } else {
         setErrorMessage(res.message);
       }
@@ -73,52 +68,17 @@ export function LoginForm() {
     }
   }
 
-  // Handle Verify OTP
-  async function handleVerifyOtp(e: React.FormEvent) {
-    e.preventDefault();
-    if (!otpCode.trim() || otpCode.trim().length !== 6) {
-      setErrorMessage("Masukkan 6 digit kode verifikasi dengan benar.");
-      return;
-    }
-
-    setLoading(true);
-    setErrorMessage(null);
-
-    try {
-      const res = await verifyTelegramOtp(username, otpCode);
-      if (res.success) {
-        setSuccessMessage("Verifikasi berhasil! Mengalihkan ke dashboard...");
-        setTimeout(() => {
-          router.push("/");
-          router.refresh();
-        }, 800);
-      } else {
-        setErrorMessage(res.message);
-      }
-    } catch {
-      setErrorMessage("Terjadi kesalahan saat memverifikasi kode.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
     <Card className="w-full max-w-md shadow-xl border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm">
       <CardHeader className="text-center pb-3">
         <div className="mx-auto w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2 shadow-inner">
-          {step === "username" ? (
-            <Send className="w-6 h-6 -translate-x-0.5" />
-          ) : (
-            <KeyRound className="w-6 h-6" />
-          )}
+          <KeyRound className="w-6 h-6" />
         </div>
         <CardTitle className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          {step === "username" ? "Masuk ke Fana Web" : "Verifikasi Kode"}
+          Masuk ke Fana Web
         </CardTitle>
         <CardDescription className="text-xs text-zinc-500 dark:text-zinc-400">
-          {step === "username"
-            ? "Otentikasi instan tanpa kata sandi via Bot Telegram"
-            : `Kode 6 digit telah dikirimkan ke chat ${maskedTarget}`}
+          Masukkan username Telegram dan 6 digit PIN keamanan akunmu
         </CardDescription>
       </CardHeader>
 
@@ -137,124 +97,88 @@ export function LoginForm() {
           </div>
         )}
 
-        {step === "username" ? (
-          <form onSubmit={handleRequestOtp} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="username"
-                className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
-              >
-                Username Telegram
-              </Label>
-              <div className="relative">
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="misal: @fikrisyahid14"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  disabled={loading}
-                  autoFocus
-                  className="pr-10 h-11 text-sm bg-zinc-50 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 focus:ring-emerald-500"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 font-semibold text-xs">
-                  TG
-                </span>
-              </div>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-normal">
-                💡 Bot Fana akan mengirimkan 6 digit kode OTP langsung ke chat Telegram kamu.
-              </p>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-all shadow-md shadow-emerald-600/20"
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label
+              htmlFor="username"
+              className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
             >
-              {loading ? (
-                <span className="inline-flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 animate-spin" /> Mengirim kode...
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-2">
-                  Kirim Kode ke Telegram <Send className="w-4 h-4" />
-                </span>
-              )}
-            </Button>
-          </form>
-        ) : (
-          <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label
-                  htmlFor="otp"
-                  className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
-                >
-                  6 Digit Kode OTP
-                </Label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep("username");
-                    setErrorMessage(null);
-                    setSuccessMessage(null);
-                  }}
-                  className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
-                >
-                  <ArrowLeft className="w-3 h-3" /> Ganti username
-                </button>
-              </div>
-
+              Username Telegram
+            </Label>
+            <div className="relative">
               <Input
-                id="otp"
+                id="username"
                 type="text"
-                maxLength={6}
-                placeholder="123456"
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ""))}
+                placeholder="misal: @fikrisyahid14"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 disabled={loading}
                 autoFocus
-                className="h-12 text-center text-2xl font-mono tracking-[0.5em] font-bold bg-zinc-50 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 focus:ring-emerald-500"
+                className="pr-10 h-11 text-sm bg-zinc-50 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 focus:ring-emerald-500"
               />
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 text-center">
-                Buka notifikasi di aplikasi Telegram kamu untuk melihat kode.
-              </p>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 font-semibold text-xs">
+                TG
+              </span>
             </div>
+          </div>
 
-            <Button
-              type="submit"
-              disabled={loading || otpCode.length !== 6}
-              className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-all shadow-md shadow-emerald-600/20"
-            >
-              {loading ? (
-                <span className="inline-flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 animate-spin" /> Memverifikasi...
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-2">
-                  Verifikasi & Masuk <ShieldCheck className="w-4 h-4" />
-                </span>
-              )}
-            </Button>
-
-            <div className="pt-2 text-center">
-              {countdown > 0 ? (
-                <span className="text-xs text-zinc-400">
-                  Kirim ulang kode dalam <b className="text-zinc-600 dark:text-zinc-300">{countdown}s</b>
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handleRequestOtp()}
-                  disabled={loading}
-                  className="text-xs text-emerald-600 dark:text-emerald-400 font-medium hover:underline inline-flex items-center gap-1"
-                >
-                  <RefreshCw className="w-3 h-3" /> Kirim Ulang Kode OTP
-                </button>
-              )}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label
+                htmlFor="pin"
+                className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
+              >
+                PIN Keamanan (6 Digit)
+              </Label>
+              <button
+                type="button"
+                onClick={() => setShowPin(!showPin)}
+                className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 flex items-center gap-1 transition-colors"
+              >
+                {showPin ? (
+                  <>
+                    <EyeOff className="w-3.5 h-3.5" /> Sembunyikan
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-3.5 h-3.5" /> Tampilkan
+                  </>
+                )}
+              </button>
             </div>
-          </form>
-        )}
+            <Input
+              id="pin"
+              type={showPin ? "text" : "password"}
+              maxLength={6}
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="••••••"
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ""))}
+              disabled={loading}
+              className="h-11 text-center text-xl font-mono tracking-[0.4em] font-bold bg-zinc-50 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 focus:ring-emerald-500"
+            />
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-normal">
+              💡 Belum punya PIN? Buka bot Telegram dan ketik <code className="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded text-emerald-600 dark:text-emerald-400">/set_pin &lt;6_digit&gt;</code>
+            </p>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={loading || !username.trim() || pin.length !== 6}
+            className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-all shadow-md shadow-emerald-600/20"
+          >
+            {loading ? (
+              <span className="inline-flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 animate-spin" /> Memverifikasi PIN...
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-2">
+                Masuk ke Dashboard <ShieldCheck className="w-4 h-4" />
+              </span>
+            )}
+          </Button>
+        </form>
       </CardContent>
 
       <CardFooter className="flex flex-col border-t border-zinc-100 dark:border-zinc-800/80 pt-3 pb-3 text-center">

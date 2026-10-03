@@ -136,6 +136,16 @@ async function main() {
   await sql`ALTER TABLE debts ADD COLUMN IF NOT EXISTS family_id uuid REFERENCES families(id) ON DELETE CASCADE;`;
   console.log("✅ Kolom family_id siap di accounts, categories, budgets, transactions, debts");
 
+  // 10. Tambah kolom enkripsi & PIN ke users
+  await sql`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS pin_hash text,
+    ADD COLUMN IF NOT EXISTS pin_salt text,
+    ADD COLUMN IF NOT EXISTS public_key text,
+    ADD COLUMN IF NOT EXISTS encrypted_private_key text;
+  `;
+  console.log("✅ Kolom pin_hash, pin_salt, public_key, encrypted_private_key siap di users");
+
   console.log("🎉 Sinkronisasi skema database selesai!");
   process.exit(0);
 }

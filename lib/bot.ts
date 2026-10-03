@@ -1,6 +1,9 @@
 import { Bot } from "grammy";
 import {
   handleStart,
+  handleSetPin,
+  handleBuka,
+  handleKunci,
   handleSaldo,
   handleSetDefaultDompet,
   handleTambahDompet,
@@ -49,6 +52,11 @@ export const bot = new Bot(token);
 bot.command("start", handleStart);
 bot.command("help", handleHelp);
 bot.callbackQuery(/^help_/, handleHelpCallback);
+
+// 1.5. Command Keamanan & PIN
+bot.command("set_pin", (ctx) => handleSetPin(ctx, ctx.match));
+bot.command("buka", (ctx) => handleBuka(ctx, ctx.match));
+bot.command("kunci", handleKunci);
 
 // 2. Command Dompet & Saldo
 bot.command(["saldo", "dompet"], handleSaldo);

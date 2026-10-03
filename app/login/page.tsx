@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 export const metadata = {
   title: "Masuk • Fana Finance",
-  description: "Masuk ke Dashboard Web Fana menggunakan kode verifikasi Telegram.",
+  description: "Masuk ke Dashboard Web Fana menggunakan 6-digit PIN keamanan.",
 };
 
 export default async function LoginPage() {
@@ -23,7 +23,7 @@ export default async function LoginPage() {
           Kelola Keuangan Jadi Mudah
         </h1>
         <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-          Masuk tanpa ribet menghafal kata sandi dengan kode verifikasi Telegram.
+          Masuk cepat & aman dengan username Telegram dan 6 digit PIN akunmu.
         </p>
       </div>
 

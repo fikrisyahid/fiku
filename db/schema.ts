@@ -22,6 +22,10 @@ export const users = pgTable("users", {
   telegramUsername: text("telegram_username"),
   activeMode: text("active_mode").default("personal").notNull(), // 'personal' | 'family'
   activeFamilyId: uuid("active_family_id"),
+  pinHash: text("pin_hash"),
+  pinSalt: text("pin_salt"),
+  publicKey: text("public_key"),
+  encryptedPrivateKey: text("encrypted_private_key"),
   expiredAt: timestamp("expired_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

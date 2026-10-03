@@ -31,6 +31,14 @@ import {
   deleteCategory,
 } from "@/app/actions/categories";
 import { wipeoutUserData } from "@/app/actions/reset";
+import { setupUserPinAction } from "@/app/actions/auth";
+import {
+  isUserSessionActive,
+  verifyPin,
+  decryptPrivateKeyWithPin,
+  unlockUserSession,
+  lockUserSession,
+} from "@/lib/crypto";
 import { getHelpMenuContent } from "./commands";
 
 function getErrorMessage(err: unknown): string {
@@ -355,6 +363,34 @@ async function getTelegramUser(ctx: Context, notifyIfNotRegistered = true) {
   return user;
 }
 
+/**
+ * Memastikan sesi enkripsi di RAM aktif sebelum menampilkan data sensitif (Read).
+ * Jika terkunci, minta user memasukkan PIN dengan /buka <pin>.
+ */
+export async function ensureSessionUnlocked(ctx: Context, user: typeof users.$inferSelect): Promise<boolean> {
+  // Jika user belum pernah set PIN, tidak diblokir (diizinkan membaca)
+  if (!user.pinHash) {
+    return true;
+  }
+
+  // Jika kunci user sudah aktif di RAM, lolos
+  if (isUserSessionActive(user.id)) {
+    return true;
+  }
+
+  await ctx.reply(
+    `🔒 *DATA KEUANGAN TERENKRIPSI*\n` +
+      `───────────────────\n` +
+      `Data keuanganmu dienkripsi secara end-to-end. Sesi kunci dekripsi di RAM sedang tidak aktif.\n\n` +
+      `Silakan buka kunci dengan mengetik:\n` +
+      `👉 \`/buka <6_digit_pin>\`\n` +
+      `_Contoh:_ \`/buka 123456\`\n\n` +
+      `_(Pesan chat berisi PIN otomatis dihapus bot seketika demi keamanan layar)_`,
+    { parse_mode: "Markdown" }
+  );
+  return false;
+}
+
 // 1. /start
 export async function handleStart(ctx: Context) {
   const from = ctx.from;
@@ -379,6 +415,14 @@ export async function handleStart(ctx: Context) {
     })
     .join("\n\n");
 
+  const pinPrompt = !result.user.pinHash
+    ? `\n\n🔒 *AKTIFKAN ENKRIPSI & PIN KEAMANAN*\n` +
+      `Akunmu belum memasang PIN keamanan 6-digit.\n` +
+      `Pasang PIN sekarang untuk mengamankan data dan login instan ke Web Dashboard:\n` +
+      `👉 Ketik: \`/set_pin <6_digit_angka>\`\n` +
+      `_Contoh:_ \`/set_pin 123456\``
+    : "";
+
   if (result.isNewUser) {
     await ctx.reply(
       `🎉 *Selamat Datang di Fana!*\n` +
@@ -387,7 +431,7 @@ export async function handleStart(ctx: Context) {
         `💼 *Dompet Keuangan Siap Pakai:*\n\n` +
         `${walletList}\n` +
         `───────────────────\n` +
-        `💡 Ketik /help untuk melihat panduan lengkap.`,
+        `💡 Ketik /help untuk melihat panduan lengkap.${pinPrompt}`,
       { parse_mode: "Markdown" }
     );
   } else {
@@ -397,16 +441,129 @@ export async function handleStart(ctx: Context) {
         `💼 *Status Dompet:*\n\n` +
         `${walletList}\n` +
         `───────────────────\n` +
-        `💡 Ketik /saldo untuk cek saldo atau langsung catat transaksi.`,
+        `💡 Ketik /saldo untuk cek saldo atau langsung catat transaksi.${pinPrompt}`,
       { parse_mode: "Markdown" }
     );
   }
+}
+
+// 1b. /set_pin <6_digit_pin>
+export async function handleSetPin(ctx: Context, match: string) {
+  // Hapus pesan user yang berisi PIN dari chat demi privasi layar
+  try {
+    await ctx.deleteMessage();
+  } catch {
+    // Ignore delete error
+  }
+
+  const user = await getTelegramUser(ctx);
+  if (!user) return;
+
+  const pin = match ? match.trim() : "";
+  if (!/^\d{6}$/.test(pin)) {
+    await ctx.reply(
+      `⚠️ *Format PIN Tidak Sesuai!*\n\n` +
+        `PIN harus berupa tepat **6 digit angka**.\n` +
+        `*Gunakan:* \`/set_pin <6_digit_angka>\`\n` +
+        `*Contoh:* \`/set_pin 123456\``,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  try {
+    await setupUserPinAction(user.id, pin);
+
+    await ctx.reply(
+      `✅ *PIN KEAMANAN BERHASIL DISIAPKAN!*\n` +
+        `───────────────────\n` +
+        `🔐 Pasangan kunci enkripsi end-to-end telah aktif untuk akunmu.\n` +
+        `🔓 Sesi dekripsi di RAM otomatis dibuka untuk 12 jam ke depan.\n\n` +
+        `💡 *Kegunaan PIN Kamu:*\n` +
+        `• Login cepat ke Web Dashboard (tanpa nunggu OTP)\n` +
+        `• Membuka kunci data saat sesi RAM berakhir (\`/buka <pin>\`)\n\n` +
+        `_(Pesan input PIN kamu telah dihapus otomatis oleh bot demi privasi layar)_`,
+      { parse_mode: "Markdown" }
+    );
+  } catch (err) {
+    await ctx.reply(`❌ Gagal menyimpan PIN: ${getErrorMessage(err)}`);
+  }
+}
+
+// 1c. /buka <6_digit_pin> (Unlock Sesi RAM)
+export async function handleBuka(ctx: Context, match: string) {
+  // Hapus pesan user yang berisi PIN dari chat demi privasi layar
+  try {
+    await ctx.deleteMessage();
+  } catch {
+    // Ignore delete error
+  }
+
+  const user = await getTelegramUser(ctx);
+  if (!user) return;
+
+  const pin = match ? match.trim() : "";
+  if (!user.pinHash || !user.pinSalt || !user.encryptedPrivateKey) {
+    await ctx.reply(
+      `⚠️ *Akunmu belum memasang PIN keamanan.*\n\n` +
+        `Silakan pasang PIN terlebih dahulu dengan:\n\`/set_pin <6_digit_angka>\``,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  if (!/^\d{6}$/.test(pin)) {
+    await ctx.reply(
+      `⚠️ *Format PIN Salah!*\n` +
+        `Gunakan: \`/buka <6_digit_pin>\` (Contoh: \`/buka 123456\`)`,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  const isValid = verifyPin(pin, user.pinSalt, user.pinHash);
+  if (!isValid) {
+    await ctx.reply(`❌ *PIN Salah!* Silakan coba lagi dengan PIN yang benar.`);
+    return;
+  }
+
+  try {
+    const privKey = decryptPrivateKeyWithPin(user.encryptedPrivateKey, pin, user.pinSalt);
+    unlockUserSession(user.id, privKey);
+
+    await ctx.reply(
+      `🔓 *SESI BERHASIL DIBUKA!*\n` +
+        `───────────────────\n` +
+        `Kunci dekripsi aktif di memori RAM untuk **12 jam ke depan**.\n` +
+        `Kamu sekarang dapat memeriksa /saldo, /riwayat, /alokasi, dan /utang tanpa ditanya PIN lagi.`,
+      { parse_mode: "Markdown" }
+    );
+  } catch (err) {
+    await ctx.reply(`❌ Gagal membuka kunci: ${getErrorMessage(err)}`);
+  }
+}
+
+// 1d. /kunci (Kunci Sesi RAM Secara Manual)
+export async function handleKunci(ctx: Context) {
+  const user = await getTelegramUser(ctx);
+  if (!user) return;
+
+  lockUserSession(user.id);
+  await ctx.reply(
+    `🔒 *SESI KEAMANAN DIKUNCI!*\n` +
+      `───────────────────\n` +
+      `Kunci dekripsi telah dihapus bersih dari memori RAM.\n` +
+      `Ketik \`/buka <pin>\` kapan saja jika ingin melihat kembali data saldo / keuanganmu.`,
+    { parse_mode: "Markdown" }
+  );
 }
 
 // 2. /saldo atau /dompet
 export async function handleSaldo(ctx: Context) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
+
+  if (!(await ensureSessionUnlocked(ctx, user))) return;
 
   const { isFamily, familyId, scopeBadge } = getScope(user);
 
@@ -883,6 +1040,8 @@ export async function handleAlokasi(ctx: Context) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
 
+  if (!(await ensureSessionUnlocked(ctx, user))) return;
+
   const { familyId, scopeBadge } = getScope(user);
 
   const budgetList = await getUserBudgets(user.id, familyId);
@@ -1003,6 +1162,8 @@ export async function handleRiwayat(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
 
+  if (!(await ensureSessionUnlocked(ctx, user))) return;
+
   const { isFamily, familyId, scopeBadge } = getScope(user);
 
   const limit = match ? parseInt(match.trim(), 10) || 5 : 5;
@@ -1039,6 +1200,8 @@ export async function handleRiwayat(ctx: Context, match: string) {
 export async function handleKategori(ctx: Context) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
+
+  if (!(await ensureSessionUnlocked(ctx, user))) return;
 
   const { isFamily, familyId, scopeBadge } = getScope(user);
   const catList = await getCategories(user.id, familyId);
@@ -1301,6 +1464,8 @@ export async function handleHapusKategori(ctx: Context, match: string) {
 export async function handleUtang(ctx: Context) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
+
+  if (!(await ensureSessionUnlocked(ctx, user))) return;
 
   const { familyId, scopeBadge } = getScope(user);
 

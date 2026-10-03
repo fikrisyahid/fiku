@@ -187,7 +187,28 @@ export const BOT_COMMANDS: BotCommandDef[] = [
     category: "keluarga",
   },
 
-  // PENGATURAN & WIPEOUT
+  // PENGATURAN & KEAMANAN
+  {
+    command: "set_pin",
+    description: "Mengatur atau memperbarui 6-digit PIN keamanan & kunci enkripsi",
+    usage: "/set_pin <6_digit_pin>",
+    example: "/set_pin 123456",
+    category: "pengaturan",
+  },
+  {
+    command: "buka",
+    description: "Membuka sesi akses data sensitif di Telegram",
+    usage: "/buka <6_digit_pin>",
+    example: "/buka 123456",
+    category: "pengaturan",
+  },
+  {
+    command: "kunci",
+    description: "Mengunci sesi data sensitif di Telegram seketika",
+    usage: "/kunci",
+    example: "/kunci",
+    category: "pengaturan",
+  },
   {
     command: "reset",
     description: "Hapus seluruh data akun & keuangan (wipeout) ke posisi awal",
@@ -380,13 +401,17 @@ export function getHelpMenuContent(section?: string): {
     case "settings":
       return {
         text:
-          `⚙️ *PANDUAN: PENGATURAN & WEB*\n` +
+          `⚙️ *PANDUAN: KEAMANAN, PENGATURAN & WEB*\n` +
           `───────────────────\n\n` +
+          `🔐 *Keamanan & PIN 6-Digit:*\n` +
+          `• \`/set_pin <6_digit>\` : Atur PIN keamanan & enkripsi data\n` +
+          `• \`/buka <6_digit>\` : Buka sesi akses saldo/riwayat (aktif 12 jam)\n` +
+          `• \`/kunci\` : Kunci kembali akses data sensitif seketika\n\n` +
           `🌐 *Fana Web Dashboard:*\n` +
-          `Buka web di browser dan masukkan username Telegram kamu (@username) untuk login menggunakan kode OTP instan.\n\n` +
+          `Buka web di browser dan masukkan username Telegram beserta 6-digit PIN kamu untuk login langsung secara aman.\n\n` +
           `⚠️ *Reset Data Akun (Wipeout):*\n` +
           `\`/reset\`\n` +
-          `└ Menghapus seluruh data transaksi, dompet, dan profil akun untuk mulai dari awal lagi (memerlukan 2 tahap konfirmasi).`,
+          `└ Menghapus seluruh data transaksi, dompet, kunci enkripsi, dan PIN untuk mulai dari awal lagi (memerlukan 2 tahap konfirmasi).`,
         keyboard: backKeyboard,
       };
 

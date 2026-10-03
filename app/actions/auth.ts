@@ -6,6 +6,15 @@ import { eq, and, gt, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { bot } from "@/lib/bot";
 import crypto from "crypto";
+import {
+  generateUserKeyPair,
+  encryptPrivateKeyWithPin,
+  decryptPrivateKeyWithPin,
+  hashPin,
+  verifyPin,
+  unlockUserSession,
+  lockUserSession,
+} from "@/lib/crypto";
 
 const SESSION_COOKIE_NAME = "fana_session";
 const SESSION_DURATION_DAYS = 30;
@@ -196,8 +205,128 @@ export async function logoutUser() {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (token) {
+    const session = await db.query.sessions.findFirst({
+      where: eq(sessions.id, token),
+    });
+    if (session) {
+      lockUserSession(session.userId);
+    }
     await db.delete(sessions).where(eq(sessions.id, token));
     cookieStore.delete(SESSION_COOKIE_NAME);
   }
   return { success: true };
+}
+
+export async function setupUserPinAction(userId: string, pin: string) {
+  const cleanPin = pin.trim();
+  if (!/^\d{6}$/.test(cleanPin)) {
+    throw new Error("PIN harus berupa 6 digit angka.");
+  }
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+  });
+
+  if (!user) {
+    throw new Error("Pengguna tidak ditemukan.");
+  }
+
+  const { publicKeyPem, privateKeyPem, salt } = generateUserKeyPair();
+  const encryptedPrivKey = encryptPrivateKeyWithPin(privateKeyPem, cleanPin, salt);
+  const pinHash = hashPin(cleanPin, salt);
+
+  await db
+    .update(users)
+    .set({
+      pinHash,
+      pinSalt: salt,
+      publicKey: publicKeyPem,
+      encryptedPrivateKey: encryptedPrivKey,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+
+  unlockUserSession(userId, privateKeyPem);
+
+  return { success: true, publicKey: publicKeyPem };
+}
+
+export async function loginWithPin(rawUsername: string, pin: string): Promise<{
+  success: boolean;
+  message: string;
+  user?: {
+    id: string;
+    fullName: string;
+    email: string;
+  };
+}> {
+  const username = normalizeUsername(rawUsername);
+  const cleanPin = pin.trim();
+
+  if (!username) {
+    return { success: false, message: "Masukkan username Telegram kamu." };
+  }
+
+  if (!/^\d{6}$/.test(cleanPin)) {
+    return { success: false, message: "PIN harus berupa 6 digit angka." };
+  }
+
+  const user = await db.query.users.findFirst({
+    where: sql`lower(${users.telegramUsername}) = ${username}`,
+  });
+
+  if (!user) {
+    return {
+      success: false,
+      message: `Username @${username} belum terdaftar di Fana. Buka bot Telegram dan ketik /start untuk mengaktifkan akunmu.`,
+    };
+  }
+
+  if (!user.pinHash || !user.pinSalt || !user.encryptedPrivateKey) {
+    return {
+      success: false,
+      message: `Akun @${username} belum mengatur PIN keamanan. Buka bot Telegram dan ketik /set_pin <6_digit> terlebih dahulu.`,
+    };
+  }
+
+  const isValid = verifyPin(cleanPin, user.pinSalt, user.pinHash);
+  if (!isValid) {
+    return { success: false, message: "PIN keamanan salah. Silakan periksa kembali." };
+  }
+
+  try {
+    const privKey = decryptPrivateKeyWithPin(user.encryptedPrivateKey, cleanPin, user.pinSalt);
+    unlockUserSession(user.id, privKey);
+  } catch (err) {
+    console.error("Gagal membuka kunci sesi dengan PIN:", err);
+  }
+
+  // Buat sesi login web
+  const sessionToken = crypto.randomBytes(32).toString("hex");
+  const sessionExpiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000);
+
+  await db.insert(sessions).values({
+    id: sessionToken,
+    userId: user.id,
+    expiresAt: sessionExpiresAt,
+  });
+
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE_NAME, sessionToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    expires: sessionExpiresAt,
+  });
+
+  return {
+    success: true,
+    message: "Login berhasil!",
+    user: {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+    },
+  };
 }
