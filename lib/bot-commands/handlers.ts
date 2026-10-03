@@ -33,6 +33,44 @@ function formatRupiah(amount: number | string): string {
   }).format(Number(amount));
 }
 
+/**
+ * Helper untuk mem-parsing nominal angka dari input teks/command.
+ * Mendukung:
+ * - 25 -> 25
+ * - 25k, 25 k, 25rb, 25 rb, 25ribu -> 25.000
+ * - 25m, 25 m, 25jt, 25 jt, 25juta -> 25.000.000
+ * - 25.000 atau 1.500.000 (titik sebagai pemisah ribuan) -> 25.000 / 1.500.000
+ * - 1.5jt, 1,5jt, 2.5k -> 1.500.000 / 2.500
+ */
+export function parseNominal(raw: string): number {
+  const clean = raw.trim().toLowerCase();
+
+  // Unit di akhir kata: rb, k, jt, m, ribu, juta
+  const unitMatch = clean.match(/^([0-9.,]+)\s*(rb|k|jt|m|ribu|juta)$/i);
+  if (unitMatch) {
+    let numStr = unitMatch[1].replace(",", ".");
+    let amt = parseFloat(numStr);
+    const unit = unitMatch[2].toLowerCase();
+    if (unit === "rb" || unit === "k" || unit === "ribu") {
+      amt *= 1000;
+    } else if (unit === "jt" || unit === "m" || unit === "juta") {
+      amt *= 1000000;
+    }
+    return isNaN(amt) ? 0 : amt;
+  }
+
+  let numStr = clean;
+  // Cek format ribuan Indonesia dengan titik: 25.000 atau 1.500.000
+  if (/^\d{1,3}(\.\d{3})+$/.test(numStr)) {
+    numStr = numStr.replace(/\./g, "");
+  } else {
+    numStr = numStr.replace(",", ".");
+  }
+
+  const amt = parseFloat(numStr);
+  return isNaN(amt) ? 0 : amt;
+}
+
 function makeProgressBar(percentage: number): string {
   const total = 10;
   const clamped = Math.max(0, Math.min(100, percentage));
@@ -360,8 +398,8 @@ export async function handleTambahDompet(ctx: Context, match: string) {
 
   const name = parts[0];
   const type = parts[1].toLowerCase();
-  const balanceRaw = parts[2] ? parts[2].replace(/[^0-9]/g, "") : "0";
-  const balance = parseFloat(balanceRaw) || 0;
+  const balanceRaw = parts[2] ? parts[2].trim() : "0";
+  const balance = parseNominal(balanceRaw);
 
   if (!["cash", "bank", "ewallet"].includes(type)) {
     await ctx.reply("Tipe dompet harus salah satu dari: `cash`, `bank`, atau `ewallet`", {
@@ -408,16 +446,9 @@ export async function handleCatat(ctx: Context, match: string) {
   const type: "income" | "expense" =
     typeRaw === "in" || typeRaw === "income" || typeRaw === "masuk" ? "income" : "expense";
 
-  // Parse nominal (support e.g. 25000, 25k, 25rb, 1.5jt)
+  // Parse nominal (support e.g. 25, 25000, 25k, 25rb, 25.000, 1.5jt)
   const nominalStr = parts[1].toLowerCase();
-  let amount = 0;
-  if (nominalStr.endsWith("jt") || nominalStr.endsWith("m") || nominalStr.endsWith("juta")) {
-    amount = parseFloat(nominalStr.replace(/(jt|m|juta)/, "")) * 1000000;
-  } else if (nominalStr.endsWith("rb") || nominalStr.endsWith("k") || nominalStr.endsWith("ribu")) {
-    amount = parseFloat(nominalStr.replace(/(rb|k|ribu)/, "")) * 1000;
-  } else {
-    amount = parseFloat(nominalStr.replace(/[^0-9.]/g, ""));
-  }
+  const amount = parseNominal(nominalStr);
 
   if (!amount || isNaN(amount) || amount <= 0) {
     await ctx.reply("Nominal tidak valid. Masukkan angka nominal yang benar.");
@@ -519,7 +550,7 @@ export async function handleTambahAlokasi(ctx: Context, match: string) {
   }
 
   const name = parts[0];
-  const amountLimit = parseFloat(parts[1].replace(/[^0-9]/g, "")) || 0;
+  const amountLimit = parseNominal(parts[1]);
   const categoryKeyword = parts[2].toLowerCase();
   const durationDays = parts[3] ? parseInt(parts[3], 10) : 30;
 
@@ -661,7 +692,7 @@ export async function handleTambahUtang(ctx: Context, match: string) {
   }
 
   const contactName = parts[0];
-  const amount = parseFloat(parts[1].replace(/[^0-9]/g, "")) || 0;
+  const amount = parseNominal(parts[1]);
   const typeRaw = parts[2].toLowerCase();
   const type: "owed_by_me" | "owed_to_me" =
     typeRaw === "utang" || typeRaw === "owed_by_me" ? "owed_by_me" : "owed_to_me";
@@ -735,13 +766,21 @@ export async function handleHelp(ctx: Context) {
   await ctx.reply(getHelpMessage(), { parse_mode: "Markdown" });
 }
 
-// 13. Smart Natural Text Parser (misal: "-25k bensin vario cash" atau "kopi 25rb")
+// 13. Smart Natural Text Parser (misal: "-25k bensin vario cash" atau "-25 makan")
 export async function handleSmartText(ctx: Context) {
   const text = ctx.message?.text?.trim();
   if (!text || text.startsWith("/")) return;
 
   // Cek apakah mengandung angka / nominal
-  const pattern = /(-|\+)?\s*(\d+[.,]?\d*)\s*(rb|k|jt|m|ribu|juta)?/i;
+  // Regex mencari:
+  // 1. Tanda opsional (+ atau -)
+  // 2. Angka: (\d+(?:[.,]\d+)*)
+  // 3. Unit opsional: (rb|k|jt|m|ribu|juta) yang TIDAK diikuti oleh huruf [a-zA-Z]
+  // Contoh:
+  // "-25 makan" => unit tidak cocok karena 'm' diikuti 'akan' (huruf), sehingga nominal murni 25
+  // "-25 keluar" => unit tidak cocok karena 'k' diikuti 'eluar' (huruf), sehingga nominal murni 25
+  // "-25k bensin" => unit cocok 'k' karena diikuti spasi/bukan huruf, sehingga nominal 25.000
+  const pattern = /(-|\+)?\s*(\d+(?:[.,]\d+)*)\s*(?:(rb|k|jt|m|ribu|juta)(?![a-zA-Z]))?/i;
   const match = text.match(pattern);
 
   if (!match) {
@@ -753,14 +792,27 @@ export async function handleSmartText(ctx: Context) {
   }
 
   const sign = match[1];
-  const numRaw = match[2].replace(",", ".");
+  const numRaw = match[2];
   const unit = match[3]?.toLowerCase();
 
-  let amount = parseFloat(numRaw);
-  if (unit === "rb" || unit === "k" || unit === "ribu") {
-    amount *= 1000;
-  } else if (unit === "jt" || unit === "m" || unit === "juta") {
-    amount *= 1000000;
+  let amount = 0;
+  if (unit) {
+    let cleanNum = numRaw.replace(",", ".");
+    amount = parseFloat(cleanNum);
+    if (unit === "rb" || unit === "k" || unit === "ribu") {
+      amount *= 1000;
+    } else if (unit === "jt" || unit === "m" || unit === "juta") {
+      amount *= 1000000;
+    }
+  } else {
+    // Tanpa unit: e.g. "25", "25000", "25.000", "1.500.000"
+    let cleanNum = numRaw;
+    if (/^\d{1,3}(\.\d{3})+$/.test(cleanNum)) {
+      cleanNum = cleanNum.replace(/\./g, "");
+    } else {
+      cleanNum = cleanNum.replace(",", ".");
+    }
+    amount = parseFloat(cleanNum);
   }
 
   if (amount <= 0 || isNaN(amount)) return;
@@ -773,7 +825,9 @@ export async function handleSmartText(ctx: Context) {
   const type: "income" | "expense" = isIncome ? "income" : "expense";
 
   // Ambil sisa teks selain nominal (keterangan + opsional dompet)
-  const rawText = text.replace(match[0], "").trim() || (type === "income" ? "Pemasukan" : "Pengeluaran");
+  const rawText =
+    text.replace(match[0], " ").trim().replace(/\s+/g, " ") ||
+    (type === "income" ? "Pemasukan" : "Pengeluaran");
 
   // Call handleCatat logic
   await handleCatat(ctx, `${type === "income" ? "in" : "out"} ${amount} ${rawText}`);
