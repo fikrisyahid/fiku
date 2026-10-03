@@ -185,28 +185,23 @@ export function findMatchingCategory(
 }
 
 /**
- * Helper untuk mengambil user dari Telegram ID
+ * Helper untuk mengambil user dari Telegram ID.
+ * Tidak melakukan auto-onboarding diam-diam, melainkan meminta user menjalankan /start jika belum terdaftar.
  */
-async function getTelegramUser(ctx: Context) {
+async function getTelegramUser(ctx: Context, notifyIfNotRegistered = true) {
   const telegramId = ctx.from?.id ? String(ctx.from.id) : null;
   if (!telegramId) return null;
 
-  let user = await db.query.users.findFirst({
+  const user = await db.query.users.findFirst({
     where: eq(users.telegramId, telegramId),
   });
 
-  if (!user) {
-    const fullName =
-      [ctx.from?.first_name, ctx.from?.last_name].filter(Boolean).join(" ") ||
-      ctx.from?.username ||
-      "Sobat Fana";
-
-    const res = await onboardUser({
-      fullName,
-      telegramId,
-      telegramUsername: ctx.from?.username || null,
-    });
-    user = res.user;
+  if (!user && notifyIfNotRegistered) {
+    await ctx.reply(
+      `⚠️ *Akun belum terdaftar atau baru saja di-reset.*\n\n` +
+        `Silakan ketik /start untuk mendaftarkan akun dan memulai onboarding!`,
+      { parse_mode: "Markdown" }
+    );
   }
 
   return user;
@@ -256,10 +251,7 @@ export async function handleStart(ctx: Context) {
 // 2. /saldo atau /dompet
 export async function handleSaldo(ctx: Context) {
   const user = await getTelegramUser(ctx);
-  if (!user) {
-    await ctx.reply("Silakan ketik /start untuk mendaftar.");
-    return;
-  }
+  if (!user) return;
 
   const accountsList = await getUserAccounts(user.id);
   if (accountsList.length === 0) {
@@ -790,10 +782,7 @@ export async function handleSmartText(ctx: Context) {
 // 14. /reset (Wipeout Data - Langkah 1/2)
 export async function handleReset(ctx: Context) {
   const user = await getTelegramUser(ctx);
-  if (!user) {
-    await ctx.reply("Akunmu belum terdaftar di sistem.");
-    return;
-  }
+  if (!user) return;
 
   await ctx.reply(
     `⚠️ *PERINGATAN KERAS: RESET & HAPUS TOTAL DATA (Langkah 1/2)*\n\n` +
