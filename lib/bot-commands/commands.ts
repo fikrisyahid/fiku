@@ -134,37 +134,41 @@ export const BOT_COMMANDS: BotCommandDef[] = [
 
 export function getHelpMessage(): string {
   return (
-    `📖 *Daftar Perintah Bot Keuangan Fana*\n\n` +
-    `💰 *Saldo & Dompet:*\n` +
-    `• \`/saldo\` — Cek saldo seluruh dompet\n` +
+    `📖 *PANDUAN PERINTAH FANA*\n` +
+    `───────────────────\n\n` +
+    `💰 *DOMPET & SALDO*\n` +
+    `• \`/saldo\` — Cek saldo semua dompet\n` +
     `• \`/dompet_utama <nomor/nama>\` — Atur dompet utama\n` +
     `• \`/tambah_dompet <nama> <tipe> [saldo]\`\n` +
-    `  Contoh: \`/tambah_dompet Mandiri bank 500000\`\n\n` +
-    `🔁 *Transfer & Tarik Tunai:*\n` +
-    `• \`/tf <nominal> <asal> [ke] <tujuan>\` — Mutasi saldo antar dompet\n` +
-    `  Contoh: \`/tf 500k mandiri ke cash\`\n` +
-    `  Contoh: \`/tf 100k bca gopay topup\`\n` +
-    `• \`/tarik <nominal> [bank]\` — Tarik uang tunai ke Cash\n` +
-    `  Contoh: \`/tarik 500k mandiri\`\n\n` +
-    `📝 *Transaksi:*\n` +
+    `  _Contoh:_ \`/tambah_dompet Mandiri bank 500k\`\n\n` +
+    `🔁 *TRANSFER & TARIK TUNAI*\n` +
+    `• \`/tf <nominal> <asal> [ke] <tujuan>\` — Pindah saldo\n` +
+    `  _Contoh:_ \`/tf 500k mandiri ke cash\`\n` +
+    `  _Contoh:_ \`/tf 100k bca gopay topup\`\n` +
+    `• \`/tarik <nominal> [bank]\` — Tarik tunai ke Cash\n` +
+    `  _Contoh:_ \`/tarik 500k mandiri\`\n\n` +
+    `📝 *CATAT TRANSAKSI*\n` +
     `• \`/catat <in|out> <nominal> <keterangan> [dompet]\`\n` +
-    `  Contoh: \`/catat out 25k bensin vario cash\`\n` +
-    `  Contoh: \`/catat in 500k freelance bca\`\n` +
-    `• \`/riwayat [limit]\` — Riwayat transaksi\n` +
-    `• \`/kategori\` — Daftar kategori sistem\n\n` +
-    `💡 *Tip Catat Cepat (Tanpa Command):*\n` +
+    `  _Contoh:_ \`/catat out 25k bensin vario cash\`\n` +
+    `  _Contoh:_ \`/catat in 500k freelance bca\`\n` +
+    `• \`/riwayat [jumlah]\` — Riwayat transaksi terakhir\n` +
+    `• \`/kategori\` — Daftar kategori transaksi\n\n` +
+    `⚡ *TIP CATAT CEPAT (TEKS ALAMI)*\n` +
     `• \`-25k bensin vario cash\`\n` +
     `• \`-35k makan siang gopay\`\n` +
-    `• \`+5jt gaji bulanan bca\`\n\n` +
-    `🎯 *Alokasi Dana (Budget Range):*\n` +
-    `• \`/alokasi\` — Cek status & persentase anggaran\n` +
+    `• \`+5jt gaji bulanan bca\`\n` +
+    `• \`tarik tunai 500k mandiri\`\n` +
+    `• \`topup 100k gopay dari bca\`\n\n` +
+    `🎯 *ALOKASI DANA (BUDGET)*\n` +
+    `• \`/alokasi\` — Cek status & progress anggaran\n` +
     `• \`/tambah_alokasi <nama> <target> <kategori> [hari]\`\n` +
-    `  Contoh: \`/tambah_alokasi Jajan 500000 Makan 30\`\n\n` +
-    `🤝 *Utang & Piutang:*\n` +
-    `• \`/utang\` — Daftar utang & piutang\n` +
+    `  _Contoh:_ \`/tambah_alokasi Jajan 500k Makan 30\`\n\n` +
+    `🤝 *UTANG & PIUTANG*\n` +
+    `• \`/utang\` — Cek daftar catatan aktif\n` +
     `• \`/tambah_utang <orang> <nominal> <utang|piutang> [catatan]\`\n` +
-    `• \`/lunas <nomor>\` — Tandai lunas\n\n` +
-    `⚙️ *Pengaturan & Akun:*\n` +
+    `  _Contoh:_ \`/tambah_utang Budi 150k piutang\`\n` +
+    `• \`/lunas <nomor>\` — Tandai catatan lunas\n\n` +
+    `⚙️ *PENGATURAN*\n` +
     `• \`/reset\` — Hapus semua data & mulai dari awal`
   );
 }
