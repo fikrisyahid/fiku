@@ -25,6 +25,10 @@ import { getCategories } from "@/app/actions/categories";
 import { wipeoutUserData } from "@/app/actions/reset";
 import { getHelpMessage } from "./commands";
 
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 function formatRupiah(amount: number | string): string {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -48,7 +52,7 @@ export function parseNominal(raw: string): number {
   // Unit di akhir kata: rb, k, jt, m, ribu, juta
   const unitMatch = clean.match(/^([0-9.,]+)\s*(rb|k|jt|m|ribu|juta)$/i);
   if (unitMatch) {
-    let numStr = unitMatch[1].replace(",", ".");
+    const numStr = unitMatch[1].replace(",", ".");
     let amt = parseFloat(numStr);
     const unit = unitMatch[2].toLowerCase();
     if (unit === "rb" || unit === "k" || unit === "ribu") {
@@ -377,8 +381,8 @@ export async function handleSetDefaultDompet(ctx: Context, match: string) {
         `Transaksi pengeluaran/pemasukan tanpa nama dompet di akhir akan otomatis menggunakan dompet ini.`,
       { parse_mode: "Markdown" }
     );
-  } catch (err: any) {
-    await ctx.reply(`❌ Gagal mengubah dompet utama: ${err.message}`);
+  } catch (err) {
+    await ctx.reply(`❌ Gagal mengubah dompet utama: ${getErrorMessage(err)}`);
   }
 }
 
@@ -423,8 +427,8 @@ export async function handleTambahDompet(ctx: Context, match: string) {
         `• Saldo Awal: *${formatRupiah(acc.balance)}*`,
       { parse_mode: "Markdown" }
     );
-  } catch (err: any) {
-    await ctx.reply(`❌ Gagal membuat dompet: ${err.message}`);
+  } catch (err) {
+    await ctx.reply(`❌ Gagal membuat dompet: ${getErrorMessage(err)}`);
   }
 }
 
@@ -493,8 +497,8 @@ export async function handleCatat(ctx: Context, match: string) {
         `• Sisa Saldo: *${formatRupiah(res.updatedAccount.balance)}*`,
       { parse_mode: "Markdown" }
     );
-  } catch (err: any) {
-    await ctx.reply(`❌ Gagal mencatat transaksi: ${err.message}`);
+  } catch (err) {
+    await ctx.reply(`❌ Gagal mencatat transaksi: ${getErrorMessage(err)}`);
   }
 }
 
@@ -597,8 +601,8 @@ export async function handleTambahAlokasi(ctx: Context, match: string) {
         `Ketik /alokasi untuk memantau pemakaiannya.`,
       { parse_mode: "Markdown" }
     );
-  } catch (err: any) {
-    await ctx.reply(`❌ Gagal membuat alokasi: ${err.message}`);
+  } catch (err) {
+    await ctx.reply(`❌ Gagal membuat alokasi: ${getErrorMessage(err)}`);
   }
 }
 
@@ -722,8 +726,8 @@ export async function handleTambahUtang(ctx: Context, match: string) {
         `Ketik /utang untuk melihat status catatan ini.`,
       { parse_mode: "Markdown" }
     );
-  } catch (err: any) {
-    await ctx.reply(`❌ Gagal mencatat: ${err.message}`);
+  } catch (err) {
+    await ctx.reply(`❌ Gagal mencatat: ${getErrorMessage(err)}`);
   }
 }
 
@@ -756,8 +760,8 @@ export async function handleLunasUtang(ctx: Context, match: string) {
         `• Nominal: *${formatRupiah(target.amount)}* telah ditandai lunas.`,
       { parse_mode: "Markdown" }
     );
-  } catch (err: any) {
-    await ctx.reply(`❌ Gagal menandai lunas: ${err.message}`);
+  } catch (err) {
+    await ctx.reply(`❌ Gagal menandai lunas: ${getErrorMessage(err)}`);
   }
 }
 
@@ -797,7 +801,7 @@ export async function handleSmartText(ctx: Context) {
 
   let amount = 0;
   if (unit) {
-    let cleanNum = numRaw.replace(",", ".");
+    const cleanNum = numRaw.replace(",", ".");
     amount = parseFloat(cleanNum);
     if (unit === "rb" || unit === "k" || unit === "ribu") {
       amount *= 1000;
@@ -904,8 +908,8 @@ export async function handleResetFinal(ctx: Context, match: string) {
         `Ketik /start kapan saja untuk memulai onboarding akun baru!`,
       { parse_mode: "Markdown" }
     );
-  } catch (err: any) {
+  } catch (err) {
     console.error("Gagal wipeout:", err);
-    await ctx.reply(`❌ Terjadi kesalahan saat menghapus data: ${err.message}`);
+    await ctx.reply(`❌ Terjadi kesalahan saat menghapus data: ${getErrorMessage(err)}`);
   }
 }

@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { users, accounts } from "@/db/schema";
-import { eq, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 export interface OnboardUserInput {
   fullName: string;
@@ -31,9 +31,6 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
     phone,
     telegramId,
     telegramUsername,
-    initialCashBalance = 0,
-    initialBankBalance = 0,
-    initialEwalletBalance = 0,
   } = input;
 
   const email = rawEmail?.trim().toLowerCase() || null;
@@ -164,7 +161,7 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
       user: currentUser,
       accounts: userAccounts,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Gagal melakukan onboarding user:", error);
     throw error;
   }

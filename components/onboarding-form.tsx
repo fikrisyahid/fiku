@@ -30,12 +30,6 @@ export function OnboardingForm() {
   }
 
   if (result?.success && result.user && result.account) {
-    const formattedBalance = new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(Number(result.account.balance));
-
     return (
       <Card className="w-full max-w-lg shadow-lg border-zinc-200 dark:border-zinc-800">
         <CardHeader className="text-center pb-2">

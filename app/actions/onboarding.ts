@@ -36,11 +36,11 @@ export async function submitWebOnboarding(formData: FormData): Promise<Onboardin
       accounts: res.accounts,
       account: defaultAccount,
     };
-  } catch (err: any) {
+  } catch (err) {
     console.error("Error onboarding web:", err);
     return {
       success: false,
-      message: err?.message || "Gagal menyimpan data onboarding.",
+      message: err instanceof Error ? err.message : "Gagal menyimpan data onboarding.",
     };
   }
 }
