@@ -7,6 +7,7 @@ import {
   getUserAccounts,
   createAccount,
   setDefaultAccount,
+  transferBetweenAccounts,
 } from "@/app/actions/accounts";
 import {
   createTransaction,
@@ -226,6 +227,60 @@ export function findMatchingCategory(
   return fallback;
 }
 
+export function parseTransferParams<T extends { id: string; name: string; type: string }>(
+  match: string,
+  accounts: T[]
+): { amount: number; fromAccount: T; toAccount: T; note: string } | { error: string } | null {
+  const text = match.replace(/^dari\s+/i, "").trim();
+  const parts = text.split(/\s+/);
+  if (parts.length < 3) return null;
+
+  const nominalStr = parts[0];
+  const amount = parseNominal(nominalStr);
+  if (amount <= 0 || isNaN(amount)) return null;
+
+  const rest = parts.slice(1).join(" ");
+
+  // Cek apakah ada pemisah 'ke' atau '->'
+  const keMatch = rest.match(/^(.*?)\s+(?:ke|->)\s+(.*)$/i);
+  let fromCandidate = "";
+  let toAndNote = "";
+
+  if (keMatch) {
+    fromCandidate = keMatch[1].replace(/^dari\s+/i, "").trim();
+    toAndNote = keMatch[2].trim();
+  } else {
+    const words = rest.split(/\s+/);
+    fromCandidate = words[0];
+    toAndNote = words.slice(1).join(" ");
+  }
+
+  const fromAccount = accounts.find((a) => matchesAccount(fromCandidate, a));
+  if (!fromAccount) {
+    return { error: `Dompet asal "${fromCandidate}" tidak ditemukan.` };
+  }
+
+  const toWords = toAndNote.split(/\s+/);
+  let toAccount: T | null = null;
+  let note = "";
+
+  for (let len = Math.min(3, toWords.length); len >= 1; len--) {
+    const cand = toWords.slice(0, len).join(" ");
+    const matched = accounts.find((a) => a.id !== fromAccount.id && matchesAccount(cand, a));
+    if (matched) {
+      toAccount = matched;
+      note = toWords.slice(len).join(" ");
+      break;
+    }
+  }
+
+  if (!toAccount) {
+    return { error: `Dompet tujuan "${toAndNote}" tidak ditemukan.` };
+  }
+
+  return { amount, fromAccount, toAccount, note };
+}
+
 /**
  * Helper untuk mengambil user dari Telegram ID.
  * Tidak melakukan auto-onboarding diam-diam, melainkan meminta user menjalankan /start jika belum terdaftar.
@@ -429,6 +484,133 @@ export async function handleTambahDompet(ctx: Context, match: string) {
     );
   } catch (err) {
     await ctx.reply(`❌ Gagal membuat dompet: ${getErrorMessage(err)}`);
+  }
+}
+
+// 3b. /transfer atau /tf <nominal> <dari_dompet> [ke] <ke_dompet> [catatan]
+export async function handleTransfer(ctx: Context, match: string) {
+  const user = await getTelegramUser(ctx);
+  if (!user) return;
+
+  const accountsList = await getUserAccounts(user.id);
+  if (accountsList.length < 2) {
+    await ctx.reply(
+      "Kamu membutuhkan minimal 2 dompet untuk melakukan transfer. Ketik /tambah_dompet untuk membuat dompet baru."
+    );
+    return;
+  }
+
+  const parsed = parseTransferParams(match, accountsList);
+  if (!parsed) {
+    await ctx.reply(
+      `Format salah!\n*Penggunaan:* \`/tf <nominal> <dompet_asal> [ke] <dompet_tujuan> [catatan]\`\n*Contoh:*\n👉 \`/tf 500k mandiri cash\`\n👉 \`/tf 100k bca ke gopay topup ewallet\``,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  if ("error" in parsed) {
+    await ctx.reply(`❌ ${parsed.error}`);
+    return;
+  }
+
+  const { amount, fromAccount, toAccount, note } = parsed;
+
+  try {
+    const res = await transferBetweenAccounts({
+      userId: user.id,
+      fromAccountId: fromAccount.id,
+      toAccountId: toAccount.id,
+      amount,
+      note,
+      source: "telegram",
+    });
+
+    await ctx.reply(
+      `🔁 *Transfer Antar Dompet Berhasil!*\n\n` +
+        `• Nominal: *${formatRupiah(res.amount)}*\n` +
+        `• Dari: 📤 *${res.fromAccount.name}* (Sisa: *${formatRupiah(res.fromAccount.balance)}*)\n` +
+        `• Ke: 📥 *${res.toAccount.name}* (Saldo: *${formatRupiah(res.toAccount.balance)}*)\n` +
+        (note ? `• Catatan: _${note}_\n` : "") +
+        `\n_Total aset tidak berubah (mutasi internal antar dompet)._`,
+      { parse_mode: "Markdown" }
+    );
+  } catch (err) {
+    await ctx.reply(`❌ Gagal melakukan transfer: ${getErrorMessage(err)}`);
+  }
+}
+
+// 3c. /tarik <nominal> [dari_dompet] [catatan]
+export async function handleTarikTunai(ctx: Context, match: string) {
+  const user = await getTelegramUser(ctx);
+  if (!user) return;
+
+  const accountsList = await getUserAccounts(user.id);
+  const cashAccount = accountsList.find((a) => a.type === "cash");
+  if (!cashAccount) {
+    await ctx.reply(
+      "Dompet tunai (Cash) tidak ditemukan. Ketik /tambah_dompet untuk membuat dompet bertipe cash."
+    );
+    return;
+  }
+
+  const parts = match.trim().split(/\s+/);
+  if (!parts[0]) {
+    await ctx.reply(
+      `Format salah!\n*Penggunaan:* \`/tarik <nominal> [dompet_bank] [catatan]\`\n*Contoh:* \`/tarik 500k mandiri\``,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  const amount = parseNominal(parts[0]);
+  if (amount <= 0 || isNaN(amount)) {
+    await ctx.reply("Nominal penarikan tidak valid. Masukkan angka nominal yang benar.");
+    return;
+  }
+
+  const nonCashAccounts = accountsList.filter((a) => a.id !== cashAccount.id);
+  if (nonCashAccounts.length === 0) {
+    await ctx.reply("Kamu belum memiliki rekening bank / e-wallet untuk ditarik saldonya.");
+    return;
+  }
+
+  let fromAccount = nonCashAccounts[0];
+  let note = "Tarik tunai ATM";
+
+  if (parts.length > 1) {
+    const candidateName = parts[1];
+    const found = nonCashAccounts.find((a) => matchesAccount(candidateName, a));
+    if (found) {
+      fromAccount = found;
+      if (parts.length > 2) {
+        note = parts.slice(2).join(" ");
+      }
+    } else {
+      note = parts.slice(1).join(" ");
+    }
+  }
+
+  try {
+    const res = await transferBetweenAccounts({
+      userId: user.id,
+      fromAccountId: fromAccount.id,
+      toAccountId: cashAccount.id,
+      amount,
+      note,
+      source: "telegram",
+    });
+
+    await ctx.reply(
+      `💵 *Penarikan Uang Tunai Berhasil!*\n\n` +
+        `• Nominal Tarik: *${formatRupiah(res.amount)}*\n` +
+        `• Dari Rekening: 🏦 *${res.fromAccount.name}* (Sisa: *${formatRupiah(res.fromAccount.balance)}*)\n` +
+        `• Masuk ke: 💵 *${res.toAccount.name}* (Saldo: *${formatRupiah(res.toAccount.balance)}*)\n` +
+        `• Catatan: _${note}_`,
+      { parse_mode: "Markdown" }
+    );
+  } catch (err) {
+    await ctx.reply(`❌ Gagal tarik tunai: ${getErrorMessage(err)}`);
   }
 }
 
@@ -770,10 +952,63 @@ export async function handleHelp(ctx: Context) {
   await ctx.reply(getHelpMessage(), { parse_mode: "Markdown" });
 }
 
-// 13. Smart Natural Text Parser (misal: "-25k bensin vario cash" atau "-25 makan")
+// 13. Smart Natural Text Parser (misal: "-25k bensin vario cash" atau "tarik 500k mandiri")
 export async function handleSmartText(ctx: Context) {
   const text = ctx.message?.text?.trim();
   if (!text || text.startsWith("/")) return;
+
+  const lower = text.toLowerCase().trim();
+
+  // 1. Deteksi intent Tarik Tunai (misal: "tarik tunai 500k mandiri", "tarik 500k mandiri")
+  if (lower.startsWith("tarik") || lower.startsWith("tarik tunai")) {
+    const stripped = text.replace(/^(tarik\s+tunai|tarik)\s+/i, "").trim();
+    await handleTarikTunai(ctx, stripped);
+    return;
+  }
+
+  // 2. Deteksi intent Transfer Antar Dompet (misal: "tf 500k mandiri ke cash", "transfer 100k bca ke gopay")
+  if (lower.startsWith("tf ") || lower.startsWith("transfer ") || lower.startsWith("pindah ")) {
+    const stripped = text.replace(/^(tf|transfer|pindah)\s+/i, "").trim();
+    await handleTransfer(ctx, stripped);
+    return;
+  }
+
+  // 3. Deteksi intent Top Up (misal: "topup 100k gopay dari bca", "topup 100k bca ke gopay")
+  if (
+    lower.startsWith("topup ") ||
+    lower.startsWith("top up ") ||
+    lower.startsWith("isi saldo ") ||
+    lower.startsWith("isi ")
+  ) {
+    let clean = text.replace(/^(topup|top\s+up|isi\s+saldo|isi)\s+/i, "").trim();
+    const pattern = /(\d+(?:[.,]\d+)*)\s*(?:(rb|k|jt|m|ribu|juta)(?![a-zA-Z]))?/i;
+    const matchNominal = clean.match(pattern);
+    if (matchNominal) {
+      const nominalStr = matchNominal[0];
+      clean = clean.replace(matchNominal[0], " ").trim().replace(/\s+/g, " ");
+      if (/\bdari\b/i.test(clean)) {
+        const parts = clean.split(/\bdari\b/i);
+        const toCand = parts[0].trim();
+        const fromCand = parts[1].trim();
+        await handleTransfer(ctx, `${nominalStr} ${fromCand} ke ${toCand} topup`);
+        return;
+      } else if (/\bke\b/i.test(clean)) {
+        const parts = clean.split(/\bke\b/i);
+        const fromCand = parts[0].trim();
+        const toCand = parts[1].trim();
+        await handleTransfer(ctx, `${nominalStr} ${fromCand} ke ${toCand} topup`);
+        return;
+      } else {
+        const words = clean.split(/\s+/);
+        if (words.length >= 2) {
+          const toCand = words[0];
+          const fromCand = words[1];
+          await handleTransfer(ctx, `${nominalStr} ${fromCand} ke ${toCand} topup`);
+          return;
+        }
+      }
+    }
+  }
 
   // Cek apakah mengandung angka / nominal
   // Regex mencari:

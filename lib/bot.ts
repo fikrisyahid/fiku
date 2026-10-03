@@ -4,6 +4,8 @@ import {
   handleSaldo,
   handleSetDefaultDompet,
   handleTambahDompet,
+  handleTransfer,
+  handleTarikTunai,
   handleCatat,
   handleAlokasi,
   handleTambahAlokasi,
@@ -35,6 +37,8 @@ bot.command("help", handleHelp);
 bot.command(["saldo", "dompet"], handleSaldo);
 bot.command(["dompet_utama", "set_dompet"], (ctx) => handleSetDefaultDompet(ctx, ctx.match));
 bot.command("tambah_dompet", (ctx) => handleTambahDompet(ctx, ctx.match));
+bot.command(["transfer", "tf"], (ctx) => handleTransfer(ctx, ctx.match));
+bot.command("tarik", (ctx) => handleTarikTunai(ctx, ctx.match));
 
 // 3. Command Transaksi
 bot.command("catat", (ctx) => handleCatat(ctx, ctx.match));

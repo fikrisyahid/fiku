@@ -45,6 +45,20 @@ export const BOT_COMMANDS: BotCommandDef[] = [
     example: "/tambah_dompet BCA bank 1500000",
     category: "dompet",
   },
+  {
+    command: "transfer",
+    description: "Transfer / mutasi saldo antar dompet internal",
+    usage: "/transfer <nominal> <dompet_asal> [ke] <dompet_tujuan> [catatan]",
+    example: "/transfer 500k mandiri cash",
+    category: "dompet",
+  },
+  {
+    command: "tarik",
+    description: "Tarik uang tunai dari rekening bank ke dompet cash",
+    usage: "/tarik <nominal> [dompet_bank] [catatan]",
+    example: "/tarik 500k mandiri",
+    category: "dompet",
+  },
 
   // TRANSAKSI
   {
@@ -126,6 +140,12 @@ export function getHelpMessage(): string {
     `• \`/dompet_utama <nomor/nama>\` — Atur dompet utama\n` +
     `• \`/tambah_dompet <nama> <tipe> [saldo]\`\n` +
     `  Contoh: \`/tambah_dompet Mandiri bank 500000\`\n\n` +
+    `🔁 *Transfer & Tarik Tunai:*\n` +
+    `• \`/tf <nominal> <asal> [ke] <tujuan>\` — Mutasi saldo antar dompet\n` +
+    `  Contoh: \`/tf 500k mandiri ke cash\`\n` +
+    `  Contoh: \`/tf 100k bca gopay topup\`\n` +
+    `• \`/tarik <nominal> [bank]\` — Tarik uang tunai ke Cash\n` +
+    `  Contoh: \`/tarik 500k mandiri\`\n\n` +
     `📝 *Transaksi:*\n` +
     `• \`/catat <in|out> <nominal> <keterangan> [dompet]\`\n` +
     `  Contoh: \`/catat out 25k bensin vario cash\`\n` +
