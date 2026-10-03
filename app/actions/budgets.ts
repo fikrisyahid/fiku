@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { budgets, transactions } from "@/db/schema";
-import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { eq, and, isNull, gte, lte, sql } from "drizzle-orm";
 
 export interface BudgetWithProgress {
   id: string;
@@ -23,9 +23,16 @@ export interface BudgetWithProgress {
   isActive: boolean;
 }
 
-export async function getUserBudgets(userId: string): Promise<BudgetWithProgress[]> {
+export async function getUserBudgets(
+  userId: string,
+  familyId?: string | null
+): Promise<BudgetWithProgress[]> {
+  const budgetWhere = familyId
+    ? eq(budgets.familyId, familyId)
+    : and(eq(budgets.userId, userId), isNull(budgets.familyId));
+
   const userBudgets = await db.query.budgets.findMany({
-    where: eq(budgets.userId, userId),
+    where: budgetWhere,
     with: {
       category: true,
     },
@@ -38,20 +45,26 @@ export async function getUserBudgets(userId: string): Promise<BudgetWithProgress
 
   for (const b of userBudgets) {
     // Hitung total pengeluaran untuk kategori ini dalam rentang waktu periode budget
+    const txConditions = [
+      eq(transactions.type, "expense"),
+      eq(transactions.categoryId, b.categoryId),
+      gte(transactions.transactionDate, b.periodStart),
+      lte(transactions.transactionDate, b.periodEnd),
+    ];
+
+    if (familyId) {
+      txConditions.push(eq(transactions.familyId, familyId));
+    } else {
+      txConditions.push(eq(transactions.userId, userId));
+      txConditions.push(isNull(transactions.familyId));
+    }
+
     const [spentResult] = await db
       .select({
         total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
       })
       .from(transactions)
-      .where(
-        and(
-          eq(transactions.userId, userId),
-          eq(transactions.type, "expense"),
-          eq(transactions.categoryId, b.categoryId),
-          gte(transactions.transactionDate, b.periodStart),
-          lte(transactions.transactionDate, b.periodEnd)
-        )
-      );
+      .where(and(...txConditions));
 
     const spent = parseFloat(spentResult?.total || "0");
     const limit = parseFloat(b.amountLimit);
@@ -85,8 +98,18 @@ export async function createBudget(data: {
   periodStart: string; // YYYY-MM-DD
   periodEnd: string;   // YYYY-MM-DD
   notes?: string;
+  familyId?: string | null;
 }) {
-  const { userId, categoryId, name, amountLimit, periodStart, periodEnd, notes } = data;
+  const {
+    userId,
+    categoryId,
+    name,
+    amountLimit,
+    periodStart,
+    periodEnd,
+    notes,
+    familyId = null,
+  } = data;
 
   if (amountLimit <= 0) {
     throw new Error("Target alokasi dana harus lebih dari 0.");
@@ -100,6 +123,7 @@ export async function createBudget(data: {
     .insert(budgets)
     .values({
       userId,
+      familyId,
       categoryId,
       name: name?.trim() || null,
       amountLimit: amountLimit.toString(),
@@ -112,10 +136,18 @@ export async function createBudget(data: {
   return newBudget;
 }
 
-export async function deleteBudget(budgetId: string, userId: string) {
+export async function deleteBudget(
+  budgetId: string,
+  userId: string,
+  familyId?: string | null
+) {
+  const deleteWhere = familyId
+    ? and(eq(budgets.id, budgetId), eq(budgets.familyId, familyId))
+    : and(eq(budgets.id, budgetId), eq(budgets.userId, userId), isNull(budgets.familyId));
+
   const [deleted] = await db
     .delete(budgets)
-    .where(and(eq(budgets.id, budgetId), eq(budgets.userId, userId)))
+    .where(deleteWhere)
     .returning();
 
   if (!deleted) {

@@ -26,6 +26,16 @@ import {
   handleHelpCallback,
   handleSmartText,
 } from "./bot-commands/handlers";
+import {
+  handleBuatKeluarga,
+  handleFamilyCreateCallback,
+  handleUndangKeluarga,
+  handleFamilyInviteCallback,
+  handleKeluarga,
+  handleMode,
+  handleFamilySwitchCallback,
+  handlePromptInviteCallback,
+} from "./bot-commands/family-handlers";
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -66,12 +76,24 @@ bot.command("utang", handleUtang);
 bot.command("tambah_utang", (ctx) => handleTambahUtang(ctx, ctx.match));
 bot.command("lunas", (ctx) => handleLunasUtang(ctx, ctx.match));
 
-// 6. Command Reset / Wipeout Data
+// 6. Command Akun Keluarga & Mode
+bot.command(["keluarga", "family"], handleKeluarga);
+bot.command("buat_keluarga", (ctx) => handleBuatKeluarga(ctx, ctx.match));
+bot.command(["undang_keluarga", "tambah_keluarga"], (ctx) => handleUndangKeluarga(ctx, ctx.match));
+bot.command(["mode", "ganti_mode"], handleMode);
+
+// Callback Queries Keluarga
+bot.callbackQuery(/^fam_crt:/, handleFamilyCreateCallback);
+bot.callbackQuery(/^fam_inv:/, handleFamilyInviteCallback);
+bot.callbackQuery(/^fam_sw:/, handleFamilySwitchCallback);
+bot.callbackQuery("fam_prompt_invite", handlePromptInviteCallback);
+
+// 7. Command Reset / Wipeout Data
 bot.command("reset", handleReset);
 bot.command("reset_konfirmasi", (ctx) => handleResetKonfirmasi(ctx, ctx.match));
 bot.command("reset_final", (ctx) => handleResetFinal(ctx, ctx.match));
 
-// 7. Natural Text Parser untuk input cepat
+// 8. Natural Text Parser untuk input cepat
 bot.on("message:text", handleSmartText);
 
 // Global Error Handler agar bot tidak pernah crash

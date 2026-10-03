@@ -33,9 +33,12 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  const isFamily = user.activeMode === "family" && Boolean(user.activeFamilyId);
+  const familyId = isFamily ? user.activeFamilyId : null;
+
   const [accountsList, recentTransactions] = await Promise.all([
-    getUserAccounts(user.id),
-    getUserTransactions(user.id, { limit: 8 }),
+    getUserAccounts(user.id, familyId),
+    getUserTransactions(user.id, { limit: 8, familyId }),
   ]);
 
   const totalBalance = accountsList.reduce(
@@ -84,8 +87,13 @@ export default async function DashboardPage() {
         {/* Welcome Banner */}
         <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-lg shadow-emerald-600/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-medium mb-2">
-              <Sparkles className="w-3 h-3" /> Akun Terhubung
+            <div className="flex items-center gap-2 mb-2">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-medium">
+                <Sparkles className="w-3 h-3" /> Akun Terhubung
+              </div>
+              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/20 text-emerald-100 text-[11px] font-semibold">
+                {isFamily ? "👨‍👩‍👧‍👦 Mode Keluarga" : "👤 Mode Personal"}
+              </div>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
               Halo, {user.fullName}! 👋

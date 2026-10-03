@@ -2,12 +2,24 @@
 
 import { db } from "@/db";
 import { debts } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, isNull } from "drizzle-orm";
 
-export async function getUserDebts(userId: string, isSettled?: boolean) {
+export async function getUserDebts(
+  userId: string,
+  isSettled?: boolean,
+  familyId?: string | null
+) {
   return await db.query.debts.findMany({
     where: (d, { eq: eqField, and: andFields }) => {
-      const conditions = [eqField(d.userId, userId)];
+      const conditions = [];
+
+      if (familyId) {
+        conditions.push(eqField(d.familyId, familyId));
+      } else {
+        conditions.push(eqField(d.userId, userId));
+        conditions.push(isNull(d.familyId));
+      }
+
       if (isSettled !== undefined) {
         conditions.push(eqField(d.isSettled, isSettled));
       }
@@ -24,8 +36,9 @@ export async function createDebt(data: {
   type: "owed_by_me" | "owed_to_me"; // owed_by_me = utang kita, owed_to_me = piutang
   dueDate?: string; // YYYY-MM-DD
   note?: string;
+  familyId?: string | null;
 }) {
-  const { userId, contactName, amount, type, dueDate, note } = data;
+  const { userId, contactName, amount, type, dueDate, note, familyId = null } = data;
 
   if (amount <= 0) {
     throw new Error("Nominal utang/piutang harus lebih dari 0.");
@@ -35,6 +48,7 @@ export async function createDebt(data: {
     .insert(debts)
     .values({
       userId,
+      familyId,
       contactName: contactName.trim(),
       amount: amount.toString(),
       type,
@@ -47,14 +61,22 @@ export async function createDebt(data: {
   return newDebt;
 }
 
-export async function settleDebt(debtId: string, userId: string) {
+export async function settleDebt(
+  debtId: string,
+  userId: string,
+  familyId?: string | null
+) {
+  const whereCondition = familyId
+    ? and(eq(debts.id, debtId), eq(debts.familyId, familyId))
+    : and(eq(debts.id, debtId), eq(debts.userId, userId), isNull(debts.familyId));
+
   const [updated] = await db
     .update(debts)
     .set({
       isSettled: true,
       updatedAt: new Date(),
     })
-    .where(and(eq(debts.id, debtId), eq(debts.userId, userId)))
+    .where(whereCondition)
     .returning();
 
   if (!updated) {
@@ -64,10 +86,18 @@ export async function settleDebt(debtId: string, userId: string) {
   return updated;
 }
 
-export async function deleteDebt(debtId: string, userId: string) {
+export async function deleteDebt(
+  debtId: string,
+  userId: string,
+  familyId?: string | null
+) {
+  const whereCondition = familyId
+    ? and(eq(debts.id, debtId), eq(debts.familyId, familyId))
+    : and(eq(debts.id, debtId), eq(debts.userId, userId), isNull(debts.familyId));
+
   const [deleted] = await db
     .delete(debts)
-    .where(and(eq(debts.id, debtId), eq(debts.userId, userId)))
+    .where(whereCondition)
     .returning();
 
   if (!deleted) {

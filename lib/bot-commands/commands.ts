@@ -3,7 +3,7 @@ export interface BotCommandDef {
   description: string;
   usage: string;
   example: string;
-  category: "umum" | "dompet" | "transaksi" | "alokasi" | "utang" | "pengaturan";
+  category: "umum" | "dompet" | "transaksi" | "alokasi" | "utang" | "keluarga" | "pengaturan";
 }
 
 export const BOT_COMMANDS: BotCommandDef[] = [
@@ -157,6 +157,36 @@ export const BOT_COMMANDS: BotCommandDef[] = [
     category: "utang",
   },
 
+  // AKUN KELUARGA / SHARING
+  {
+    command: "keluarga",
+    description: "Cek informasi & daftar anggota keluarga",
+    usage: "/keluarga",
+    example: "/keluarga",
+    category: "keluarga",
+  },
+  {
+    command: "buat_keluarga",
+    description: "Membuat akun keluarga baru & opsi starter data",
+    usage: "/buat_keluarga <nama>",
+    example: "/buat_keluarga Cemara",
+    category: "keluarga",
+  },
+  {
+    command: "undang_keluarga",
+    description: "Mengundang anggota keluarga baru dengan username Telegram",
+    usage: "/undang_keluarga <@username>",
+    example: "/undang_keluarga @pasangan",
+    category: "keluarga",
+  },
+  {
+    command: "mode",
+    description: "Beralih antara Mode Personal & Mode Keluarga",
+    usage: "/mode atau /ganti_mode",
+    example: "/mode",
+    category: "keluarga",
+  },
+
   // PENGATURAN & WIPEOUT
   {
     command: "reset",
@@ -183,8 +213,10 @@ export function getHelpMenuContent(section?: string): {
     .text("🎯 Alokasi Anggaran", "help_alokasi")
     .text("🤝 Utang & Piutang", "help_utang")
     .row()
-    .text("⚡ Teks Alami (Cepat)", "help_smart")
-    .text("⚙️ Pengaturan", "help_settings");
+    .text("👨‍👩‍👧‍👦 Akun Keluarga", "help_keluarga")
+    .text("⚡ Teks Cepat", "help_smart")
+    .row()
+    .text("⚙️ Pengaturan & Reset", "help_settings");
 
   const backKeyboard = new InlineKeyboard().text("◀️ Kembali ke Menu Panduan", "help_main");
 
@@ -320,6 +352,28 @@ export function getHelpMenuContent(section?: string): {
           `• \`tarik tunai 500k mandiri\`\n` +
           `• \`topup 100k gopay dari bca\`\n` +
           `• \`tf 200k bca ke cash\``,
+        keyboard: backKeyboard,
+      };
+
+    case "keluarga":
+      return {
+        text:
+          `👨‍👩‍👧‍👦 *PANDUAN: AKUN KELUARGA & SHARING*\n` +
+          `───────────────────\n\n` +
+          `1️⃣ *Buat Akun Keluarga:*\n` +
+          `\`/buat_keluarga <nama_keluarga>\`\n` +
+          `└ Opsi: Salin data personalmu atau mulai dari kosong.\n` +
+          `└ _Contoh:_ \`/buat_keluarga Cemara\`\n\n` +
+          `2️⃣ *Undang Anggota Keluarga:*\n` +
+          `\`/undang_keluarga <@username>\`\n` +
+          `└ Mengirim undangan interaktif via bot Telegram.\n` +
+          `└ _Contoh:_ \`/undang_keluarga @pasangan\`\n\n` +
+          `3️⃣ *Ganti Mode (Personal / Keluarga):*\n` +
+          `\`/mode\` atau \`/ganti_mode\`\n` +
+          `└ Beralih mode dengan data keuangan terpisah.\n\n` +
+          `4️⃣ *Lihat Status Keluarga:*\n` +
+          `\`/keluarga\`\n` +
+          `└ Menampilkan nama keluarga, admin, dan anggota.`,
         keyboard: backKeyboard,
       };
 

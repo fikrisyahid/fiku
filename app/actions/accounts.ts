@@ -4,16 +4,31 @@ import { db } from "@/db";
 import { accounts, transactions, categories } from "@/db/schema";
 import { eq, and, or, isNull } from "drizzle-orm";
 
-export async function getUserAccounts(userId: string) {
+export async function getUserAccounts(userId: string, familyId?: string | null) {
+  if (familyId) {
+    return await db.query.accounts.findMany({
+      where: eq(accounts.familyId, familyId),
+      orderBy: (acc, { desc, asc }) => [desc(acc.isDefault), asc(acc.createdAt)],
+    });
+  }
+
   return await db.query.accounts.findMany({
-    where: eq(accounts.userId, userId),
+    where: and(eq(accounts.userId, userId), isNull(accounts.familyId)),
     orderBy: (acc, { desc, asc }) => [desc(acc.isDefault), asc(acc.createdAt)],
   });
 }
 
-export async function getAccountById(accountId: string, userId: string) {
+export async function getAccountById(
+  accountId: string,
+  userId: string,
+  familyId?: string | null
+) {
+  const whereCondition = familyId
+    ? and(eq(accounts.id, accountId), eq(accounts.familyId, familyId))
+    : and(eq(accounts.id, accountId), eq(accounts.userId, userId), isNull(accounts.familyId));
+
   return await db.query.accounts.findFirst({
-    where: and(eq(accounts.id, accountId), eq(accounts.userId, userId)),
+    where: whereCondition,
   });
 }
 
@@ -24,21 +39,38 @@ export async function createAccount(data: {
   balance?: number;
   currency?: string;
   isDefault?: boolean;
+  familyId?: string | null;
 }) {
-  const { userId, name, type, balance = 0, currency = "IDR", isDefault = false } = data;
+  const {
+    userId,
+    name,
+    type,
+    balance = 0,
+    currency = "IDR",
+    isDefault = false,
+    familyId = null,
+  } = data;
 
   if (isDefault) {
-    // Jika dompet ini dijadikan default, lepas default dari dompet lainnya
-    await db
-      .update(accounts)
-      .set({ isDefault: false, updatedAt: new Date() })
-      .where(eq(accounts.userId, userId));
+    // Jika dompet ini dijadikan default, lepas default dari dompet lainnya di scope yang sama
+    if (familyId) {
+      await db
+        .update(accounts)
+        .set({ isDefault: false, updatedAt: new Date() })
+        .where(eq(accounts.familyId, familyId));
+    } else {
+      await db
+        .update(accounts)
+        .set({ isDefault: false, updatedAt: new Date() })
+        .where(and(eq(accounts.userId, userId), isNull(accounts.familyId)));
+    }
   }
 
   const [newAccount] = await db
     .insert(accounts)
     .values({
       userId,
+      familyId,
       name: name.trim(),
       type: type.toLowerCase(),
       balance: balance.toString(),
@@ -58,13 +90,21 @@ export async function updateAccount(
     type?: string;
     balance?: number;
     isDefault?: boolean;
-  }
+  },
+  familyId?: string | null
 ) {
   if (data.isDefault) {
-    await db
-      .update(accounts)
-      .set({ isDefault: false, updatedAt: new Date() })
-      .where(eq(accounts.userId, userId));
+    if (familyId) {
+      await db
+        .update(accounts)
+        .set({ isDefault: false, updatedAt: new Date() })
+        .where(eq(accounts.familyId, familyId));
+    } else {
+      await db
+        .update(accounts)
+        .set({ isDefault: false, updatedAt: new Date() })
+        .where(and(eq(accounts.userId, userId), isNull(accounts.familyId)));
+    }
   }
 
   const updateValues: Partial<typeof accounts.$inferInsert> = {
@@ -76,24 +116,32 @@ export async function updateAccount(
   if (data.balance !== undefined) updateValues.balance = data.balance.toString();
   if (data.isDefault !== undefined) updateValues.isDefault = data.isDefault;
 
+  const whereCondition = familyId
+    ? and(eq(accounts.id, accountId), eq(accounts.familyId, familyId))
+    : and(eq(accounts.id, accountId), eq(accounts.userId, userId), isNull(accounts.familyId));
+
   const [updated] = await db
     .update(accounts)
     .set(updateValues)
-    .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)))
+    .where(whereCondition)
     .returning();
 
   return updated;
 }
 
-export async function deleteAccount(accountId: string, userId: string) {
-  const account = await getAccountById(accountId, userId);
+export async function deleteAccount(
+  accountId: string,
+  userId: string,
+  familyId?: string | null
+) {
+  const account = await getAccountById(accountId, userId, familyId);
   if (!account) {
     throw new Error("Dompet tidak ditemukan.");
   }
 
   // Cek apakah akun memiliki transaksi
   const tx = await db.query.transactions.findFirst({
-    where: and(eq(transactions.accountId, accountId), eq(transactions.userId, userId)),
+    where: eq(transactions.accountId, accountId),
   });
 
   if (tx) {
@@ -102,47 +150,72 @@ export async function deleteAccount(accountId: string, userId: string) {
     );
   }
 
-  // Cek jika ini satu-satunya dompet
-  const allUserAccounts = await getUserAccounts(userId);
-  if (allUserAccounts.length <= 1) {
+  // Cek jika ini satu-satunya dompet di scope ini
+  const allAccounts = await getUserAccounts(userId, familyId);
+  if (allAccounts.length <= 1) {
     throw new Error("Kamu tidak bisa menghapus dompet terakhirmu!");
   }
 
   const [deleted] = await db
     .delete(accounts)
-    .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)))
+    .where(eq(accounts.id, accountId))
     .returning();
 
   // Jika yang dihapus adalah dompet utama, set dompet lain yang tersisa sebagai utama
   if (deleted.isDefault) {
-    const remaining = allUserAccounts.find((a) => a.id !== deleted.id);
+    const remaining = allAccounts.find((a) => a.id !== deleted.id);
     if (remaining) {
-      await setDefaultAccount(remaining.id, userId);
+      await setDefaultAccount(remaining.id, userId, familyId);
     }
   }
 
   return deleted;
 }
 
-export async function setDefaultAccount(accountId: string, userId: string) {
-  // 1. Lepas status isDefault dari semua dompet milik user
-  await db
-    .update(accounts)
-    .set({ isDefault: false, updatedAt: new Date() })
-    .where(eq(accounts.userId, userId));
+export async function setDefaultAccount(
+  accountId: string,
+  userId: string,
+  familyId?: string | null
+) {
+  if (familyId) {
+    // 1. Lepas status isDefault dari semua dompet di keluarga
+    await db
+      .update(accounts)
+      .set({ isDefault: false, updatedAt: new Date() })
+      .where(eq(accounts.familyId, familyId));
 
-  // 2. Set dompet terpilih menjadi default
-  const [updated] = await db
-    .update(accounts)
-    .set({ isDefault: true, updatedAt: new Date() })
-    .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)))
-    .returning();
+    // 2. Set dompet terpilih menjadi default
+    const [updated] = await db
+      .update(accounts)
+      .set({ isDefault: true, updatedAt: new Date() })
+      .where(and(eq(accounts.id, accountId), eq(accounts.familyId, familyId)))
+      .returning();
 
-  if (!updated) {
-    throw new Error("Dompet tidak ditemukan.");
+    if (!updated) {
+      throw new Error("Dompet tidak ditemukan.");
+    }
+
+    return updated;
+  } else {
+    // 1. Lepas status isDefault dari semua dompet personal user
+    await db
+      .update(accounts)
+      .set({ isDefault: false, updatedAt: new Date() })
+      .where(and(eq(accounts.userId, userId), isNull(accounts.familyId)));
+
+    // 2. Set dompet terpilih menjadi default
+    const [updated] = await db
+      .update(accounts)
+      .set({ isDefault: true, updatedAt: new Date() })
+      .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId), isNull(accounts.familyId)))
+      .returning();
+
+    if (!updated) {
+      throw new Error("Dompet tidak ditemukan.");
+    }
+
+    return updated;
   }
-
-  return updated;
 }
 
 export async function transferBetweenAccounts(data: {
@@ -153,6 +226,7 @@ export async function transferBetweenAccounts(data: {
   note?: string;
   source?: "telegram" | "web";
   transactionDate?: string;
+  familyId?: string | null;
 }) {
   const {
     userId,
@@ -162,6 +236,7 @@ export async function transferBetweenAccounts(data: {
     note,
     source = "telegram",
     transactionDate = new Date().toISOString().split("T")[0],
+    familyId = null,
   } = data;
 
   if (amount <= 0) {
@@ -172,16 +247,12 @@ export async function transferBetweenAccounts(data: {
     throw new Error("Dompet asal dan dompet tujuan tidak boleh sama!");
   }
 
-  const fromAccount = await db.query.accounts.findFirst({
-    where: and(eq(accounts.id, fromAccountId), eq(accounts.userId, userId)),
-  });
+  const fromAccount = await getAccountById(fromAccountId, userId, familyId);
   if (!fromAccount) {
     throw new Error("Dompet asal tidak ditemukan.");
   }
 
-  const toAccount = await db.query.accounts.findFirst({
-    where: and(eq(accounts.id, toAccountId), eq(accounts.userId, userId)),
-  });
+  const toAccount = await getAccountById(toAccountId, userId, familyId);
   if (!toAccount) {
     throw new Error("Dompet tujuan tidak ditemukan.");
   }
@@ -209,8 +280,12 @@ export async function transferBetweenAccounts(data: {
   const toNewBalance = toBalance + amount;
 
   // Cari kategori untuk mencatat mutasi transfer
+  const categoryFilter = familyId
+    ? or(isNull(categories.userId), eq(categories.familyId, familyId))
+    : or(isNull(categories.userId), eq(categories.userId, userId));
+
   const allCategories = await db.query.categories.findMany({
-    where: or(isNull(categories.userId), eq(categories.userId, userId)),
+    where: categoryFilter,
   });
 
   const expenseTransferCat =
@@ -250,6 +325,7 @@ export async function transferBetweenAccounts(data: {
     // 3. Catat transaksi keluar di dompet asal
     await tx.insert(transactions).values({
       userId,
+      familyId,
       accountId: fromAccountId,
       categoryId: expenseTransferCat.id,
       amount: amount.toString(),
@@ -262,6 +338,7 @@ export async function transferBetweenAccounts(data: {
     // 4. Catat transaksi masuk di dompet tujuan
     await tx.insert(transactions).values({
       userId,
+      familyId,
       accountId: toAccountId,
       categoryId: incomeTransferCat.id,
       amount: amount.toString(),

@@ -310,6 +310,19 @@ export function parseTransferParams<T extends { id: string; name: string; type: 
   return { amount, fromAccount, toAccount, note };
 }
 
+export function getScope(user: typeof users.$inferSelect): {
+  isFamily: boolean;
+  familyId: string | null;
+  scopeBadge: string;
+} {
+  const isFamily = user.activeMode === "family" && Boolean(user.activeFamilyId);
+  return {
+    isFamily,
+    familyId: isFamily ? user.activeFamilyId : null,
+    scopeBadge: isFamily ? "👨‍👩‍👧‍👦 *Mode: Keluarga*" : "👤 *Mode: Personal*",
+  };
+}
+
 /**
  * Helper untuk mengambil user dari Telegram ID.
  * Tidak melakukan auto-onboarding diam-diam, melainkan meminta user menjalankan /start jika belum terdaftar.
@@ -328,6 +341,15 @@ async function getTelegramUser(ctx: Context, notifyIfNotRegistered = true) {
         `Silakan ketik /start untuk mendaftarkan akun dan memulai onboarding!`,
       { parse_mode: "Markdown" }
     );
+  }
+
+  // Sinkronisasi telegramUsername jika ada username baru / berubah
+  if (user && ctx.from?.username && user.telegramUsername !== ctx.from.username) {
+    await db
+      .update(users)
+      .set({ telegramUsername: ctx.from.username })
+      .where(eq(users.id, user.id));
+    user.telegramUsername = ctx.from.username;
   }
 
   return user;
@@ -386,9 +408,15 @@ export async function handleSaldo(ctx: Context) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
 
-  const accountsList = await getUserAccounts(user.id);
+  const { isFamily, familyId, scopeBadge } = getScope(user);
+
+  const accountsList = await getUserAccounts(user.id, familyId);
   if (accountsList.length === 0) {
-    await ctx.reply("Belum ada dompet terdaftar. Ketik /start untuk inisialisasi dompet.");
+    await ctx.reply(
+      isFamily
+        ? `Belum ada dompet di keluarga ini.\nKetik /tambah_dompet untuk menambah dompet keluarga.`
+        : "Belum ada dompet terdaftar. Ketik /start untuk inisialisasi dompet."
+    );
     return;
   }
 
@@ -403,12 +431,14 @@ export async function handleSaldo(ctx: Context) {
 
   await ctx.reply(
     `💰 *DOMPET & SALDO*\n` +
+      `${scopeBadge}\n` +
       `👤 *${user.fullName}*\n` +
       `───────────────────\n\n` +
       `${rows}\n\n` +
       `───────────────────\n` +
       `📊 *Total Saldo:* \`${formatRupiah(total)}\`\n\n` +
-      `💡 _Ganti dompet utama:_ \`/dompet_utama <nomor/nama>\``,
+      `💡 _Ganti dompet utama:_ \`/dompet_utama <nomor/nama>\`\n` +
+      `🔄 _Ganti mode akun:_ \`/mode\``,
     { parse_mode: "Markdown" }
   );
 }
@@ -418,9 +448,11 @@ export async function handleSetDefaultDompet(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
 
-  const accountsList = await getUserAccounts(user.id);
+  const { familyId, scopeBadge } = getScope(user);
+
+  const accountsList = await getUserAccounts(user.id, familyId);
   if (accountsList.length === 0) {
-    await ctx.reply("Belum ada dompet terdaftar. Ketik /start untuk inisialisasi dompet.");
+    await ctx.reply("Belum ada dompet terdaftar. Ketik /saldo untuk cek dompet.");
     return;
   }
 
@@ -437,6 +469,7 @@ export async function handleSetDefaultDompet(ctx: Context, match: string) {
 
     await ctx.reply(
       `💼 *PILIH DOMPET UTAMA*\n` +
+        `${scopeBadge}\n` +
         `───────────────────\n` +
         `Dompet utama otomatis terpakai jika saat mencatat tidak menyebutkan dompet.\n\n` +
         `${rows}\n` +
@@ -459,10 +492,11 @@ export async function handleSetDefaultDompet(ctx: Context, match: string) {
   }
 
   try {
-    const updated = await setDefaultAccount(targetAccount.id, user.id);
+    const updated = await setDefaultAccount(targetAccount.id, user.id, familyId);
     const icon = TYPE_ICONS[updated.type] || "💳";
     await ctx.reply(
       `⭐ *Dompet Utama Berhasil Diubah!*\n` +
+        `${scopeBadge}\n` +
         `───────────────────\n` +
         `${icon} *${updated.name}*\n` +
         `└ Saldo: \`${formatRupiah(updated.balance)}\`\n` +
@@ -479,6 +513,8 @@ export async function handleSetDefaultDompet(ctx: Context, match: string) {
 export async function handleTambahDompet(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
+
+  const { familyId, scopeBadge } = getScope(user);
 
   const parts = match.trim().split(/\s+/);
   if (parts.length < 2) {
@@ -504,6 +540,7 @@ export async function handleTambahDompet(ctx: Context, match: string) {
   try {
     const acc = await createAccount({
       userId: user.id,
+      familyId,
       name,
       type,
       balance,
@@ -512,6 +549,7 @@ export async function handleTambahDompet(ctx: Context, match: string) {
     const icon = TYPE_ICONS[acc.type] || "💳";
     await ctx.reply(
       `✅ *Dompet Baru Berhasil Dibuat!*\n` +
+        `${scopeBadge}\n` +
         `───────────────────\n` +
         `${icon} *${acc.name}* (${acc.type})\n` +
         `└ Saldo Awal: \`${formatRupiah(acc.balance)}\``,
@@ -526,6 +564,8 @@ export async function handleTambahDompet(ctx: Context, match: string) {
 export async function handleEditDompet(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
+
+  const { familyId, scopeBadge } = getScope(user);
 
   const parts = match.trim().split(/\s+/);
   if (parts.length < 2 || !parts[0]) {
@@ -547,7 +587,7 @@ export async function handleEditDompet(ctx: Context, match: string) {
     return;
   }
 
-  const accountsList = await getUserAccounts(user.id);
+  const accountsList = await getUserAccounts(user.id, familyId);
   const targetAccount = findAccountFromList(query, accountsList);
   if (!targetAccount) {
     await ctx.reply(
@@ -557,14 +597,20 @@ export async function handleEditDompet(ctx: Context, match: string) {
   }
 
   try {
-    const updated = await updateAccount(targetAccount.id, user.id, {
-      name: newName,
-      type: newType,
-    });
+    const updated = await updateAccount(
+      targetAccount.id,
+      user.id,
+      {
+        name: newName,
+        type: newType,
+      },
+      familyId
+    );
 
     const icon = TYPE_ICONS[updated.type] || "💳";
     await ctx.reply(
       `✏️ *Dompet Berhasil Diperbarui!*\n` +
+        `${scopeBadge}\n` +
         `───────────────────\n` +
         `${icon} *${updated.name}* (${updated.type})\n` +
         `└ Saldo: \`${formatRupiah(updated.balance)}\``,
@@ -580,6 +626,8 @@ export async function handleHapusDompet(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
 
+  const { familyId, scopeBadge } = getScope(user);
+
   const query = match.trim();
   if (!query) {
     await ctx.reply(
@@ -589,7 +637,7 @@ export async function handleHapusDompet(ctx: Context, match: string) {
     return;
   }
 
-  const accountsList = await getUserAccounts(user.id);
+  const accountsList = await getUserAccounts(user.id, familyId);
   const targetAccount = findAccountFromList(query, accountsList);
   if (!targetAccount) {
     await ctx.reply(
@@ -599,9 +647,10 @@ export async function handleHapusDompet(ctx: Context, match: string) {
   }
 
   try {
-    const deleted = await deleteAccount(targetAccount.id, user.id);
+    const deleted = await deleteAccount(targetAccount.id, user.id, familyId);
     await ctx.reply(
       `🗑️ *Dompet Berhasil Dihapus!*\n` +
+        `${scopeBadge}\n` +
         `───────────────────\n` +
         `Dompet *${deleted.name}* telah dihapus dari daftar akun.`,
       { parse_mode: "Markdown" }
@@ -616,7 +665,9 @@ export async function handleTransfer(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
 
-  const accountsList = await getUserAccounts(user.id);
+  const { familyId, scopeBadge } = getScope(user);
+
+  const accountsList = await getUserAccounts(user.id, familyId);
   if (accountsList.length < 2) {
     await ctx.reply(
       "Kamu membutuhkan minimal 2 dompet untuk melakukan transfer. Ketik /tambah_dompet untuk membuat dompet baru."
@@ -648,10 +699,12 @@ export async function handleTransfer(ctx: Context, match: string) {
       amount,
       note,
       source: "telegram",
+      familyId,
     });
 
     await ctx.reply(
       `🔁 *Transfer Antar Dompet Berhasil!*\n` +
+        `${scopeBadge}\n` +
         `───────────────────\n` +
         `💰 \`${formatRupiah(res.amount)}\`\n` +
         `📤 Dari : *${res.fromAccount.name}*\n` +
@@ -673,7 +726,9 @@ export async function handleTarikTunai(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
 
-  const accountsList = await getUserAccounts(user.id);
+  const { familyId, scopeBadge } = getScope(user);
+
+  const accountsList = await getUserAccounts(user.id, familyId);
   const cashAccount = accountsList.find((a) => a.type === "cash");
   if (!cashAccount) {
     await ctx.reply(
@@ -727,10 +782,12 @@ export async function handleTarikTunai(ctx: Context, match: string) {
       amount,
       note,
       source: "telegram",
+      familyId,
     });
 
     await ctx.reply(
       `💵 *Penarikan Tunai Berhasil!*\n` +
+        `${scopeBadge}\n` +
         `───────────────────\n` +
         `💰 \`${formatRupiah(res.amount)}\`\n` +
         `🏦 Dari    : *${res.fromAccount.name}*\n` +
@@ -749,6 +806,8 @@ export async function handleTarikTunai(ctx: Context, match: string) {
 export async function handleCatat(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
+
+  const { familyId, scopeBadge } = getScope(user);
 
   const parts = match.trim().split(/\s+/);
   if (parts.length < 3) {
@@ -775,9 +834,9 @@ export async function handleCatat(ctx: Context, match: string) {
   const rawText = parts.slice(2).join(" ");
 
   // Ambil daftar dompet user
-  const accountsList = await getUserAccounts(user.id);
+  const accountsList = await getUserAccounts(user.id, familyId);
   if (accountsList.length === 0) {
-    await ctx.reply("Kamu belum memiliki dompet. Ketik /start terlebih dahulu.");
+    await ctx.reply("Kamu belum memiliki dompet. Ketik /saldo terlebih dahulu.");
     return;
   }
 
@@ -785,12 +844,13 @@ export async function handleCatat(ctx: Context, match: string) {
   const { wallet, description } = extractWalletAndDescription(rawText, accountsList);
 
   // Cari kategori yang sesuai secara pintar
-  const allCategories = await getCategories(user.id);
+  const allCategories = await getCategories(user.id, familyId);
   const matchedCategory = findMatchingCategory(description, type, allCategories);
 
   try {
     const res = await createTransaction({
       userId: user.id,
+      familyId,
       accountId: wallet.id,
       categoryId: matchedCategory.id,
       amount,
@@ -805,6 +865,7 @@ export async function handleCatat(ctx: Context, match: string) {
     const walletIcon = TYPE_ICONS[wallet.type] || "💳";
     await ctx.reply(
       `${statusIcon} *${typeLabel}*\n` +
+        `${scopeBadge}\n` +
         `───────────────────\n` +
         `*${description}*\n` +
         `├ 💰 \`${formatRupiah(amount)}\`\n` +
@@ -822,7 +883,9 @@ export async function handleAlokasi(ctx: Context) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
 
-  const budgetList = await getUserBudgets(user.id);
+  const { familyId, scopeBadge } = getScope(user);
+
+  const budgetList = await getUserBudgets(user.id, familyId);
 
   if (budgetList.length === 0) {
     await ctx.reply(
@@ -835,7 +898,7 @@ export async function handleAlokasi(ctx: Context) {
     return;
   }
 
-  let text = `🎯 *STATUS ALOKASI DANA*\n👤 *${user.fullName}*\n───────────────────\n\n`;
+  let text = `🎯 *STATUS ALOKASI DANA*\n${scopeBadge}\n👤 *${user.fullName}*\n───────────────────\n\n`;
 
   const fmtDate = (dStr: string) => {
     const p = dStr.split("-");
@@ -867,6 +930,8 @@ export async function handleTambahAlokasi(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
 
+  const { familyId, scopeBadge } = getScope(user);
+
   const parts = match.trim().split(/\s+/);
   if (parts.length < 3) {
     await ctx.reply(
@@ -886,7 +951,7 @@ export async function handleTambahAlokasi(ctx: Context, match: string) {
     return;
   }
 
-  const allCategories = await getCategories(user.id);
+  const allCategories = await getCategories(user.id, familyId);
   const cat = allCategories.find((c) =>
     c.name.toLowerCase().includes(categoryKeyword) && c.type === "expense"
   );
@@ -908,6 +973,7 @@ export async function handleTambahAlokasi(ctx: Context, match: string) {
   try {
     const newBudget = await createBudget({
       userId: user.id,
+      familyId,
       categoryId: cat.id,
       name,
       amountLimit,
@@ -917,6 +983,7 @@ export async function handleTambahAlokasi(ctx: Context, match: string) {
 
     await ctx.reply(
       `🎯 *Alokasi Dana Berhasil Dibuat!*\n` +
+        `${scopeBadge}\n` +
         `───────────────────\n` +
         `📌 *${newBudget.name}*\n` +
         `🏷️ Kategori : ${cat.icon || "🏷️"} ${cat.name}\n` +
@@ -936,15 +1003,20 @@ export async function handleRiwayat(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
 
+  const { isFamily, familyId, scopeBadge } = getScope(user);
+
   const limit = match ? parseInt(match.trim(), 10) || 5 : 5;
-  const txList = await getUserTransactions(user.id, { limit: Math.min(20, limit) });
+  const txList = await getUserTransactions(user.id, {
+    limit: Math.min(20, limit),
+    familyId,
+  });
 
   if (txList.length === 0) {
     await ctx.reply("Belum ada riwayat transaksi. Ketik /catat untuk mencatat transaksi pertama.");
     return;
   }
 
-  let text = `📜 *${txList.length} TRANSAKSI TERAKHIR*\n───────────────────\n\n`;
+  let text = `📜 *${txList.length} TRANSAKSI TERAKHIR*\n${scopeBadge}\n───────────────────\n\n`;
 
   for (const tx of txList) {
     const sign = tx.type === "income" ? "🟢" : "🔴";
@@ -952,11 +1024,12 @@ export async function handleRiwayat(ctx: Context, match: string) {
     const dateFormatted = partsDate.length === 3 ? `${partsDate[2]}/${partsDate[1]}` : tx.transactionDate;
     const catIcon = tx.category?.icon || "🏷️";
     const title = tx.note || tx.category?.name || "Transaksi";
+    const userTag = isFamily && tx.user ? ` • @${tx.user.telegramUsername || tx.user.fullName}` : "";
 
     text +=
       `${sign} *${title}*\n` +
       `├ \`${formatRupiah(tx.amount)}\`\n` +
-      `└ ${catIcon} ${tx.account?.name || "Dompet"} • ${dateFormatted}\n\n`;
+      `└ ${catIcon} ${tx.account?.name || "Dompet"}${userTag} • ${dateFormatted}\n\n`;
   }
 
   await ctx.reply(text, { parse_mode: "Markdown" });
@@ -965,13 +1038,16 @@ export async function handleRiwayat(ctx: Context, match: string) {
 // 8. /kategori
 export async function handleKategori(ctx: Context) {
   const user = await getTelegramUser(ctx);
-  const catList = await getCategories(user?.id);
+  if (!user) return;
 
-  const defaultExpense = catList.filter((c) => (c.isDefault || !c.userId) && c.type === "expense");
-  const defaultIncome = catList.filter((c) => (c.isDefault || !c.userId) && c.type === "income");
-  const customCats = catList.filter((c) => !c.isDefault && c.userId === user?.id);
+  const { isFamily, familyId, scopeBadge } = getScope(user);
+  const catList = await getCategories(user.id, familyId);
 
-  let text = `🏷️ *DAFTAR KATEGORI TRANSAKSI*\n───────────────────\n\n`;
+  const defaultExpense = catList.filter((c) => (c.isDefault || (!c.userId && !c.familyId)) && c.type === "expense");
+  const defaultIncome = catList.filter((c) => (c.isDefault || (!c.userId && !c.familyId)) && c.type === "income");
+  const customCats = catList.filter((c) => !c.isDefault && (familyId ? c.familyId === familyId : (c.userId === user.id && !c.familyId)));
+
+  let text = `🏷️ *DAFTAR KATEGORI TRANSAKSI*\n${scopeBadge}\n───────────────────\n\n`;
 
   text += `🌐 *KATEGORI SISTEM (BAWAAN)*\n`;
   text += `💸 *Pengeluaran:*\n`;
@@ -979,7 +1055,7 @@ export async function handleKategori(ctx: Context) {
   text += `\n\n💰 *Pemasukan:*\n`;
   text += defaultIncome.map((c) => `• ${c.icon || "•"} ${c.name}`).join("\n");
 
-  text += `\n\n✨ *KATEGORI KUSTOM KAMU*\n`;
+  text += `\n\n✨ *KATEGORI KUSTOM ${isFamily ? "KELUARGA" : "KAMU"}*\n`;
   if (customCats.length === 0) {
     text += `_Belum ada kategori kustom buatanmu._\n`;
   } else {
@@ -1006,6 +1082,8 @@ export async function handleKategori(ctx: Context) {
 export async function handleTambahKategori(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
+
+  const { familyId, scopeBadge } = getScope(user);
 
   const text = match.trim();
   if (!text) {
@@ -1053,6 +1131,7 @@ export async function handleTambahKategori(ctx: Context, match: string) {
   try {
     const newCat = await createCategory({
       userId: user.id,
+      familyId,
       name: name.trim(),
       type,
       icon,
@@ -1061,6 +1140,7 @@ export async function handleTambahKategori(ctx: Context, match: string) {
     const typeLabel = newCat.type === "income" ? "Pemasukan (in)" : "Pengeluaran (out)";
     await ctx.reply(
       `✨ *Kategori Kustom Berhasil Dibuat!*\n` +
+        `${scopeBadge}\n` +
         `───────────────────\n` +
         `${newCat.icon} *${newCat.name}* (${typeLabel})\n` +
         `└ Siap digunakan untuk mencatat transaksi!`,
@@ -1076,6 +1156,8 @@ export async function handleEditKategori(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
 
+  const { familyId, scopeBadge } = getScope(user);
+
   const parts = match.trim().split(/\s+/);
   if (parts.length < 2 || !parts[0]) {
     await ctx.reply(
@@ -1089,22 +1171,22 @@ export async function handleEditKategori(ctx: Context, match: string) {
   const newName = parts[1];
   const newIcon = parts.slice(2).join(" ") || undefined;
 
-  const catList = await getCategories(user.id);
+  const catList = await getCategories(user.id, familyId);
 
   // 1. Cek apakah user mencoba mengubah kategori sistem bawaan
   const defaultMatch = catList.find(
-    (c) => (c.isDefault || !c.userId) && c.name.toLowerCase() === query.toLowerCase()
+    (c) => (c.isDefault || (!c.userId && !c.familyId)) && c.name.toLowerCase() === query.toLowerCase()
   );
   if (defaultMatch) {
     await ctx.reply(
-      `❌ Kategori bawaan sistem (*${defaultMatch.name}*) dilindungi dan tidak dapat diubah!\nKamu hanya dapat mengubah kategori kustom yang kamu buat sendiri.`,
+      `❌ Kategori bawaan sistem (*${defaultMatch.name}*) dilindungi dan tidak dapat diubah!\nKamu hanya dapat mengubah kategori kustom.`,
       { parse_mode: "Markdown" }
     );
     return;
   }
 
-  // 2. Cari di kategori kustom user
-  const customCats = catList.filter((c) => !c.isDefault && c.userId === user.id);
+  // 2. Cari di kategori kustom
+  const customCats = catList.filter((c) => !c.isDefault && (familyId ? c.familyId === familyId : (c.userId === user.id && !c.familyId)));
   const numIndex = parseInt(query, 10);
   let targetCat =
     !isNaN(numIndex) && numIndex >= 1 && numIndex <= customCats.length
@@ -1126,14 +1208,20 @@ export async function handleEditKategori(ctx: Context, match: string) {
   }
 
   try {
-    const updated = await updateCategory(targetCat.id, user.id, {
-      name: newName,
-      icon: newIcon,
-    });
+    const updated = await updateCategory(
+      targetCat.id,
+      user.id,
+      {
+        name: newName,
+        icon: newIcon,
+      },
+      familyId
+    );
 
     const typeLabel = updated.type === "income" ? "in" : "out";
     await ctx.reply(
       `✏️ *Kategori Kustom Berhasil Diperbarui!*\n` +
+        `${scopeBadge}\n` +
         `───────────────────\n` +
         `${updated.icon} *${updated.name}* (\`${typeLabel}\`)`,
       { parse_mode: "Markdown" }
@@ -1148,6 +1236,8 @@ export async function handleHapusKategori(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
 
+  const { familyId, scopeBadge } = getScope(user);
+
   const query = match.trim();
   if (!query) {
     await ctx.reply(
@@ -1157,11 +1247,11 @@ export async function handleHapusKategori(ctx: Context, match: string) {
     return;
   }
 
-  const catList = await getCategories(user.id);
+  const catList = await getCategories(user.id, familyId);
 
   // 1. Cek apakah user mencoba menghapus kategori sistem bawaan
   const defaultMatch = catList.find(
-    (c) => (c.isDefault || !c.userId) && c.name.toLowerCase() === query.toLowerCase()
+    (c) => (c.isDefault || (!c.userId && !c.familyId)) && c.name.toLowerCase() === query.toLowerCase()
   );
   if (defaultMatch) {
     await ctx.reply(
@@ -1171,8 +1261,8 @@ export async function handleHapusKategori(ctx: Context, match: string) {
     return;
   }
 
-  // 2. Cari di kategori kustom user
-  const customCats = catList.filter((c) => !c.isDefault && c.userId === user.id);
+  // 2. Cari di kategori kustom
+  const customCats = catList.filter((c) => !c.isDefault && (familyId ? c.familyId === familyId : (c.userId === user.id && !c.familyId)));
   const numIndex = parseInt(query, 10);
   let targetCat =
     !isNaN(numIndex) && numIndex >= 1 && numIndex <= customCats.length
@@ -1194,9 +1284,10 @@ export async function handleHapusKategori(ctx: Context, match: string) {
   }
 
   try {
-    const deleted = await deleteCategory(targetCat.id, user.id);
+    const deleted = await deleteCategory(targetCat.id, user.id, familyId);
     await ctx.reply(
       `🗑️ *Kategori Kustom Berhasil Dihapus!*\n` +
+        `${scopeBadge}\n` +
         `───────────────────\n` +
         `Kategori *${deleted.name}* telah dihapus dari daftar.`,
       { parse_mode: "Markdown" }
@@ -1211,7 +1302,9 @@ export async function handleUtang(ctx: Context) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
 
-  const debtList = await getUserDebts(user.id, false); // hanya yang belum lunas
+  const { familyId, scopeBadge } = getScope(user);
+
+  const debtList = await getUserDebts(user.id, false, familyId); // hanya yang belum lunas
 
   if (debtList.length === 0) {
     await ctx.reply(
@@ -1223,7 +1316,7 @@ export async function handleUtang(ctx: Context) {
     return;
   }
 
-  let text = `🤝 *DAFTAR UTANG & PIUTANG AKTIF*\n───────────────────\n\n`;
+  let text = `🤝 *DAFTAR UTANG & PIUTANG AKTIF*\n${scopeBadge}\n───────────────────\n\n`;
 
   debtList.forEach((d, idx) => {
     const isUtang = d.type === "owed_by_me";
@@ -1243,6 +1336,8 @@ export async function handleUtang(ctx: Context) {
 export async function handleTambahUtang(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
+
+  const { familyId, scopeBadge } = getScope(user);
 
   const parts = match.trim().split(/\s+/);
   if (parts.length < 3) {
@@ -1268,6 +1363,7 @@ export async function handleTambahUtang(ctx: Context, match: string) {
   try {
     const newDebt = await createDebt({
       userId: user.id,
+      familyId,
       contactName,
       amount,
       type,
@@ -1278,6 +1374,7 @@ export async function handleTambahUtang(ctx: Context, match: string) {
     const tag = isUtang ? "🔴 Utang Kita ke:" : "🟢 Piutang dari:";
     await ctx.reply(
       `🤝 *Catatan Berhasil Disimpan!*\n` +
+        `${scopeBadge}\n` +
         `───────────────────\n` +
         `${tag} *${newDebt.contactName}*\n` +
         `├ 💰 \`${formatRupiah(newDebt.amount)}\`\n` +
@@ -1295,6 +1392,8 @@ export async function handleLunasUtang(ctx: Context, match: string) {
   const user = await getTelegramUser(ctx);
   if (!user) return;
 
+  const { familyId, scopeBadge } = getScope(user);
+
   const index = parseInt(match.trim(), 10);
   if (isNaN(index) || index <= 0) {
     await ctx.reply("Format salah. Ketik /utang untuk melihat nomor urut utang, lalu ketik `/lunas <nomor>`", {
@@ -1303,7 +1402,7 @@ export async function handleLunasUtang(ctx: Context, match: string) {
     return;
   }
 
-  const debtList = await getUserDebts(user.id, false);
+  const debtList = await getUserDebts(user.id, false, familyId);
   const target = debtList[index - 1];
 
   if (!target) {
@@ -1312,11 +1411,12 @@ export async function handleLunasUtang(ctx: Context, match: string) {
   }
 
   try {
-    await settleDebt(target.id, user.id);
+    await settleDebt(target.id, user.id, familyId);
     const isUtang = target.type === "owed_by_me";
     const label = isUtang ? "Utang ke" : "Piutang dari";
     await ctx.reply(
       `🎉 *Catatan Telah Lunas!*\n` +
+        `${scopeBadge}\n` +
         `───────────────────\n` +
         `*${label} ${target.contactName}*\n` +
         `├ \`${formatRupiah(target.amount)}\`\n` +
