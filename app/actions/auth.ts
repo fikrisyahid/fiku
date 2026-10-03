@@ -51,10 +51,15 @@ export async function requestTelegramOtp(identifier: string): Promise<{
       where: sql`lower(${users.telegramUsername}) = ${value.toLowerCase()}`,
     });
   } else {
+    const rawDigits = value.replace(/[^0-9]/g, "");
+    const localDigits = rawDigits.startsWith("62") ? "0" + rawDigits.slice(2) : rawDigits;
     user = await db.query.users.findFirst({
       where: or(
-        eq(users.phone, value),
-        sql`regexp_replace(${users.phone}, '[^0-9]', '', 'g') = ${value}`
+        eq(users.phone, rawDigits),
+        eq(users.phone, localDigits),
+        eq(users.phone, "+" + rawDigits),
+        eq(users.phone, "+" + localDigits),
+        sql`regexp_replace(${users.phone}, '[^0-9]', '', 'g') = ${rawDigits}`
       ),
     });
   }
@@ -148,10 +153,15 @@ export async function verifyTelegramOtp(
       where: sql`lower(${users.telegramUsername}) = ${value.toLowerCase()}`,
     });
   } else {
+    const rawDigits = value.replace(/[^0-9]/g, "");
+    const localDigits = rawDigits.startsWith("62") ? "0" + rawDigits.slice(2) : rawDigits;
     user = await db.query.users.findFirst({
       where: or(
-        eq(users.phone, value),
-        sql`regexp_replace(${users.phone}, '[^0-9]', '', 'g') = ${value}`
+        eq(users.phone, rawDigits),
+        eq(users.phone, localDigits),
+        eq(users.phone, "+" + rawDigits),
+        eq(users.phone, "+" + localDigits),
+        sql`regexp_replace(${users.phone}, '[^0-9]', '', 'g') = ${rawDigits}`
       ),
     });
   }
