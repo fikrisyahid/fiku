@@ -49,7 +49,7 @@ fana/
 
 ## 🛠️ Menjalankan Lokal (Development)
 
-Project ini memiliki runner terintegrasi berbasis **Python & uv** (`ops/workflow.py`), sehingga developer **cukup menjalankan command dari root** tanpa perlu berpindah ke folder `main/`.
+Project ini memiliki runner terintegrasi berbasis **Bun** dan **Python via `uv`** (`ops/workflow.py`). Developer **cukup menjalankan command dari root** menggunakan `bun run <command>` tanpa perlu berpindah ke folder `main/`.
 
 ### Persyaratan:
 - [Bun](https://bun.sh/) (`bun >= 1.4`)
@@ -60,32 +60,30 @@ Project ini memiliki runner terintegrasi berbasis **Python & uv** (`ops/workflow
 ```bash
 # 1. Setup file environment di root
 cp .env.example .env
-# Edit file .env di root (sinkronisasi ke main/.env otomatis)
+# Edit file .env di root (sinkronisasi ke main/.env berjalan otomatis)
 
 # 2. Install dependensi
-./fana install        # atau: uv run ops/workflow.py install
+bun run install:main
 
 # 3. Jalankan Web Dashboard
-./fana dev            # atau: uv run ops/workflow.py dev
+bun run dev
 
 # 4. Jalankan Telegram Bot (mode polling)
-./fana bot            # atau: uv run ops/workflow.py bot
+bun run bot:dev
 ```
 
-### Ringkasan Command Fana Runner:
+### Ringkasan Command Bun di Root:
 
-| Command (di Root) | Deskripsi |
-| :--- | :--- |
-| `./fana dev` | Menjalankan Next.js Web Dashboard di port 3000 |
-| `./fana bot` | Menjalankan Telegram Bot lokal (long-polling) |
-| `./fana check` | Menjalankan TypeScript Typecheck (`tsc --noEmit`) |
-| `./fana lint` | Menjalankan ESLint |
-| `./fana build` | Membuat production build Next.js |
-| `./fana sync-env` | Sinkronisasi manual file `.env` root ↔ `main/` |
-| `./fana db push` | Push skema database Drizzle ORM |
-| `./fana db studio` | Buka Drizzle Studio web GUI |
-| `./fana webhook info` | Cek status webhook Telegram |
-| `./fana --help` | Melihat seluruh opsi perintah |
-
-> **Catatan Windows:** Di PowerShell atau Command Prompt, kamu bisa langsung mengetik `.\fana.cmd <command>` atau `uv run ops/workflow.py <command>`.
+| Command (di Root) | Deskripsi | Target Eksekusi |
+| :--- | :--- | :--- |
+| `bun run dev` | Menjalankan Next.js Web Dashboard | `main/` (port 3000) |
+| `bun run bot:dev` (atau `bun run bot`) | Menjalankan Telegram Bot lokal (long-polling) | `main/` (`scripts/dev-bot.ts`) |
+| `bun run check` | Menjalankan TypeScript Typecheck | `tsc --noEmit` di `main/` |
+| `bun run lint` | Menjalankan ESLint | `eslint` di `main/` |
+| `bun run build` | Membuat production build Next.js | `next build` di `main/` |
+| `bun run sync:env` | Sinkronisasi manual file `.env` root ↔ `main/` | Python env synchronizer |
+| `bun run db:push` | Push skema database Drizzle ORM | `drizzle-kit push` |
+| `bun run db:studio` | Buka Drizzle Studio web GUI | `drizzle-kit studio` |
+| `bun run webhook:info` | Cek status webhook Telegram | `scripts/set-webhook.ts` |
+| `bun run fana --help` | Melihat seluruh opsi dan sub-command lengkap | CLI Runner |
 
