@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fana - Personal & Family Finance Management
 
-## Getting Started
+Fana adalah sistem manajemen keuangan pribadi dan keluarga multi-platform berbasis **Next.js 16**, **TypeScript**, dan **Telegram Bot** (GrammY). Seluruh data keuangan disinkronisasi secara real-time dan terenkripsi.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 📁 Struktur Repositori
+
+```text
+fana/
+├── main/              # Source code utama aplikasi (Next.js, Telegram Bot, DB, API)
+│   ├── app/           # App Router Next.js (Dashboard web, Server Actions, API Webhook)
+│   ├── components/    # Komponen antarmuka pengguna (Tailwind v4, Shadcn)
+│   ├── db/            # Definisi skema database Drizzle ORM (PostgreSQL)
+│   ├── drizzle/       # File migrasi database
+│   ├── lib/           # Logika bisnis, enkripsi kriptografi, GrammY Telegram bot & command handlers
+│   ├── public/        # Asset statis
+│   ├── scripts/       # Script otomasi dev (webhook setup, local long-polling bot, db-sync)
+│   └── package.json   # Konfigurasi dependensi Bun/Next.js
+├── docs/              # Dokumentasi lengkap arsitektur, bot commands, database, dan deployment
+│   ├── ARCHITECTURE.md
+│   ├── TELEGRAM_BOT.md
+│   ├── DATABASE.md
+│   └── DEPLOYMENT.md
+├── ops/               # File konfigurasi operasional, CI/CD, dan deployment Cloudflare
+│   ├── workflows/     # GitHub Actions workflow (CI/CD pipeline)
+│   └── wrangler.toml  # Contoh/template konfigurasi Cloudflare Worker
+└── .gitignore         # Root git ignore rules
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🚀 Fitur Utama
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Multi-Mode Finance**:
+   - **Mode Personal**: Pencatatan keuangan terisolasi per individu.
+   - **Mode Keluarga**: Kolaborasi finansial bersama anggota keluarga (Admin/Member role).
+2. **Dual-Platform Synchronous**:
+   - **Telegram Bot**: Input transaksi natural language (`-25k kopi susu`), cek saldo instan (`/saldo`), transfer antar dompet (`/tf`), kelola alokasi anggaran (`/alokasi`), dan manajemen utang (`/utang`).
+   - **Web Dashboard**: Visualisasi ringkasan total saldo, daftar rekening/dompet, dan riwayat transaksi interaktif.
+3. **Keamanan & Kriptografi**:
+   - Zero-Knowledge session vault (RAM memory cache).
+   - Derivasi kunci PBKDF2 (PIN + Salt + Pepper) & enkripsi AES-256-GCM.
+   - Keypair X25519 (Curve25519) per akun.
+4. **Cloud-Ready Architecture**:
+   - Siap dideploy ke serverless runtime / Cloudflare Workers.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🛠️ Menjalankan Lokal (Development)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Pastikan telah menginstal [Bun](https://bun.sh/) (`bun >= 1.4`).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+cd main
 
-## Deploy on Vercel
+# 1. Install dependensi
+bun install
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# 2. Setup file environment
+cp .env.example .env
+# Edit .env dan isi DATABASE_URL, TELEGRAM_BOT_TOKEN, dsb.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# 3. Sinkronisasi skema database
+bun run db:push
+
+# 4. Jalankan Web Dashboard
+bun run dev
+
+# 5. Jalankan Telegram Bot (mode polling untuk lokal)
+bun run bot:dev
+```
+
+Untuk panduan lebih lengkap, silakan kunjungi direktori [`docs/`](file:///D:/Dev/fana/docs).
