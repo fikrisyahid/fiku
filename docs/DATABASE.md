@@ -1,48 +1,48 @@
 # Database Schema & Data Models
 
-Fana menggunakan **PostgreSQL** yang dikelola melalui **Drizzle ORM** (`main/db/schema.ts`).
+Fana uses **PostgreSQL** managed through **Drizzle ORM** (`main/db/schema.ts`).
 
 ---
 
-## 🗄️ Tabel-Tabel Utama
+## 🗄️ Primary Tables
 
 ### 1. `users`
-Menyimpan data identitas pengguna, autentikasi, dan pengaturan mode.
+Stores user profile information, authentication credentials, and active workspace modes.
 - `id`: UUID (Primary Key).
 - `email`: Text (Unique, Not Null).
 - `fullName`: Text (Not Null).
-- `telegramId`: Text (Unique, nullable).
+- `telegramId`: Text (Unique, Nullable).
 - `telegramUsername`: Text (Nullable).
 - `activeMode`: Text (`personal` | `family`).
 - `activeFamilyId`: UUID (Foreign Key -> `families.id`).
-- `pinHash`, `pinSalt`: Text (Keamanan autentikasi PIN).
-- `publicKey`, `encryptedPrivateKey`: Text (Kunci kriptografi akun).
+- `pinHash`, `pinSalt`: Text (PIN authentication security).
+- `publicKey`, `encryptedPrivateKey`: Text (Cryptographic account keypair).
 
 ### 2. `families` & `family_members`
-Mendukung kolaborasi pencatatan keuangan keluarga.
+Supports collaborative financial management across family members.
 - `families`: `id`, `name`, `adminUserId`.
 - `family_members`: `id`, `familyId`, `userId`, `role` (`admin` | `member`), `status` (`pending` | `accepted` | `declined`), `invitedBy`.
 
 ### 3. `accounts`
-Rekening bank, dompet digital, atau uang tunai (cash).
+Financial accounts, bank accounts, digital e-wallets, or cash wallets.
 - `id`: UUID.
 - `userId`: UUID (Owner).
-- `familyId`: UUID (Nullable, jika akun bersama).
-- `name`: Text (contoh: "BCA", "GoPay", "Dompet Tunai").
+- `familyId`: UUID (Nullable, when shared within a family).
+- `name`: Text (e.g. "BCA", "GoPay", "Cash Wallet").
 - `type`: Text (`bank` | `ewallet` | `cash`).
 - `balance`: Numeric(15, 2).
 - `isDefault`: Boolean.
 
 ### 4. `categories`
-Kategori pengelompokan transaksi.
+Categories for transaction grouping.
 - `id`: UUID.
 - `name`: Text.
 - `type`: Text (`income` | `expense`).
-- `icon`: Text (Emoji atau identifier icon).
+- `icon`: Text (Emoji or icon identifier).
 - `isDefault`: Boolean.
 
 ### 5. `budgets`
-Plafon anggaran dengan rentang waktu.
+Spending limits with date range intervals.
 - `id`: UUID.
 - `categoryId`: UUID (Foreign Key).
 - `amountLimit`: Numeric(15, 2).
@@ -50,7 +50,7 @@ Plafon anggaran dengan rentang waktu.
 - `periodEnd`: Date.
 
 ### 6. `transactions`
-Log transaksi pemasukan dan pengeluaran.
+Log of income and expense transactions.
 - `id`: UUID.
 - `accountId`: UUID (Foreign Key -> `accounts`).
 - `categoryId`: UUID (Foreign Key -> `categories`).
@@ -61,9 +61,9 @@ Log transaksi pemasukan dan pengeluaran.
 - `transactionDate`: Date.
 
 ### 7. `debts`
-Pencatatan utang dan piutang.
+Payable and receivable debt tracking.
 - `id`: UUID.
-- `type`: Text (`payable` / utang | `receivable` / piutang).
+- `type`: Text (`payable` / debt I owe | `receivable` / money owed to me).
 - `personName`: Text.
 - `amount`: Numeric(15, 2).
 - `dueDate`: Date (Nullable).
@@ -71,13 +71,13 @@ Pencatatan utang dan piutang.
 
 ---
 
-## ⚙️ Perintah Drizzle Kit
+## ⚙️ Drizzle Kit Commands
 
-Jalankan perintah berikut di direktori `main/`:
+Run these commands from the repository root via `bun run` or directly in `main/`:
 
 ```bash
-bun run db:generate   # Generate file migrasi SQL baru dari schema
-bun run db:push       # Terapkan perubahan skema langsung ke database
-bun run db:migrate    # Jalankan file migrasi terdaftar
-bun run db:studio     # Buka visual browser Drizzle Studio
+bun run db:generate   # Generate new SQL migration files from schema
+bun run db:push       # Push schema changes directly to PostgreSQL
+bun run db:migrate    # Apply pending database migrations
+bun run db:studio     # Open the Drizzle Studio visual web interface
 ```

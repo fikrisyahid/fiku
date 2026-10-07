@@ -28,7 +28,7 @@ export async function createFamily(data: {
     throw new Error("Pengguna tidak ditemukan.");
   }
 
-  // 1. Buat record keluarga baru
+  // 1. Create new family record
   const [newFamily] = await db
     .insert(families)
     .values({
@@ -37,7 +37,7 @@ export async function createFamily(data: {
     })
     .returning();
 
-  // 2. Masukkan pembuat keluarga sebagai anggota dengan role 'admin' & status 'accepted'
+  // 2. Insert creator as admin member with 'accepted' status
   const [adminMember] = await db
     .insert(familyMembers)
     .values({
@@ -48,7 +48,7 @@ export async function createFamily(data: {
     })
     .returning();
 
-  // 3. Update activeMode dan activeFamilyId di user
+  // 3. Update activeMode and activeFamilyId on creator user record
   await db
     .update(users)
     .set({
@@ -58,9 +58,9 @@ export async function createFamily(data: {
     })
     .where(eq(users.id, adminUserId));
 
-  // 4. Starter Data: Salin data personal ATAU mulai kosong
+  // 4. Starter Data: Clone personal data OR start with empty template
   if (starterMode === "copy") {
-    // Ambil akun dompet personal user
+    // Fetch personal accounts of the creator
     const personalAccounts = await db.query.accounts.findMany({
       where: and(eq(accounts.userId, adminUserId), isNull(accounts.familyId)),
     });
@@ -83,7 +83,7 @@ export async function createFamily(data: {
       accountMap.set(acc.id, copiedAcc.id);
     }
 
-    // Ambil kategori personal user (kategori kustom yang dibuat user)
+    // Fetch user's personal categories
     const personalCategories = await db.query.categories.findMany({
       where: and(eq(categories.userId, adminUserId), isNull(categories.familyId)),
     });
@@ -105,14 +105,14 @@ export async function createFamily(data: {
       categoryMap.set(cat.id, copiedCat.id);
     }
 
-    // Salin transaksi personal user
+    // Clone user's personal transactions
     const personalTransactions = await db.query.transactions.findMany({
       where: and(eq(transactions.userId, adminUserId), isNull(transactions.familyId)),
     });
 
     for (const tx of personalTransactions) {
       const targetAccountId = accountMap.get(tx.accountId);
-      // Jika dompet tidak ditemukan di map, lewati atau gunakan dompet pertama yang dibuat
+      // Skip if account is not found in mapping
       if (!targetAccountId) continue;
 
       const targetCategoryId = categoryMap.get(tx.categoryId) || tx.categoryId;
@@ -130,7 +130,7 @@ export async function createFamily(data: {
       });
     }
 
-    // Salin alokasi anggaran personal
+    // Clone user's personal budget allocations
     const personalBudgets = await db.query.budgets.findMany({
       where: and(eq(budgets.userId, adminUserId), isNull(budgets.familyId)),
     });
@@ -149,7 +149,7 @@ export async function createFamily(data: {
       });
     }
 
-    // Salin catatan utang personal
+    // Clone user's personal debt records
     const personalDebts = await db.query.debts.findMany({
       where: and(eq(debts.userId, adminUserId), isNull(debts.familyId)),
     });
@@ -167,7 +167,7 @@ export async function createFamily(data: {
       });
     }
   } else {
-    // Mode 'empty': Buat dompet default keluarga dari 0
+    // Mode 'empty': Create default family wallets from scratch
     await db.insert(accounts).values([
       {
         userId: adminUserId,
@@ -209,7 +209,7 @@ export async function inviteFamilyMember(data: {
     throw new Error("Username telegram tidak valid.");
   }
 
-  // 1. Verifikasi inviter adalah anggota keluarga ini dengan status accepted
+  // 1. Verify inviter is an active family member with 'accepted' status
   const inviterMember = await db.query.familyMembers.findFirst({
     where: and(
       eq(familyMembers.familyId, familyId),
@@ -222,7 +222,7 @@ export async function inviteFamilyMember(data: {
     throw new Error("Kamu bukan anggota aktif dari keluarga ini.");
   }
 
-  // 2. Ambil info keluarga
+  // 2. Fetch family details
   const family = await db.query.families.findFirst({
     where: eq(families.id, familyId),
   });
@@ -231,7 +231,7 @@ export async function inviteFamilyMember(data: {
     throw new Error("Keluarga tidak ditemukan.");
   }
 
-  // 3. Cari target user di database berdasarkan telegram_username (case-insensitive)
+  // 3. Look up recipient in database by telegram_username (case-insensitive)
   const targetUser = await db.query.users.findFirst({
     where: sql`lower(${users.telegramUsername}) = ${cleanUsername}`,
   });
@@ -246,7 +246,7 @@ export async function inviteFamilyMember(data: {
     throw new Error("Kamu tidak dapat mengundang diri sendiri.");
   }
 
-  // 4. Cek apakah target sudah terdaftar di keluarga ini
+  // 4. Verify whether the target user is already invited or a member
   const existingMember = await db.query.familyMembers.findFirst({
     where: and(
       eq(familyMembers.familyId, familyId),
@@ -263,7 +263,7 @@ export async function inviteFamilyMember(data: {
     if (existingMember.status === "pending") {
       throw new Error(`Undangan untuk @${cleanUsername} sudah pernah dikirim dan sedang menunggu tanggapan.`);
     }
-    // Jika sebelumnya declined, update kembali menjadi pending
+    // If previously declined, reset status back to pending
     const [updated] = await db
       .update(familyMembers)
       .set({
@@ -335,7 +335,7 @@ export async function respondFamilyInvite(data: {
       .where(eq(familyMembers.id, inviteId))
       .returning();
 
-    // Otomatis beralih ke mode keluarga untuk user yang menerima
+    // Automatically switch accepting user to family mode
     await db
       .update(users)
       .set({
@@ -400,7 +400,7 @@ export async function switchUserMode(
     };
   }
 
-  // Mode family: cek apakah user punya keanggotaan aktif di keluarga
+  // Family mode: ensure user has an accepted membership in a family
   const memberships = await db.query.familyMembers.findMany({
     where: and(
       eq(familyMembers.userId, userId),

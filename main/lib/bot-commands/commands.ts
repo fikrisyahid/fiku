@@ -7,7 +7,7 @@ export interface BotCommandDef {
 }
 
 export const BOT_COMMANDS: BotCommandDef[] = [
-  // UMUM
+  // GENERAL
   {
     command: "start",
     description: "Memulai & mendaftarkan akun (onboarding)",
@@ -23,7 +23,7 @@ export const BOT_COMMANDS: BotCommandDef[] = [
     category: "umum",
   },
 
-  // DOMPET
+  // WALLETS
   {
     command: "saldo",
     description: "Cek saldo semua dompet & total aset keuangan",
@@ -74,7 +74,7 @@ export const BOT_COMMANDS: BotCommandDef[] = [
     category: "dompet",
   },
 
-  // TRANSAKSI
+  // TRANSACTIONS
   {
     command: "catat",
     description: "Catat pengeluaran (out) atau pemasukan (in) dengan pilihan dompet di akhir",
@@ -118,7 +118,7 @@ export const BOT_COMMANDS: BotCommandDef[] = [
     category: "transaksi",
   },
 
-  // ALOKASI DANA / BUDGET
+  // BUDGET ALLOCATIONS
   {
     command: "alokasi",
     description: "Cek alokasi dana aktif & persentase pemakaiannya",
@@ -134,7 +134,7 @@ export const BOT_COMMANDS: BotCommandDef[] = [
     category: "alokasi",
   },
 
-  // UTANG & PIUTANG
+  // DEBTS & RECEIVABLES
   {
     command: "utang",
     description: "Cek daftar utang (kita pinjam) & piutang (orang pinjam)",
@@ -157,7 +157,7 @@ export const BOT_COMMANDS: BotCommandDef[] = [
     category: "utang",
   },
 
-  // AKUN KELUARGA / SHARING
+  // FAMILY ACCOUNT & SHARING
   {
     command: "keluarga",
     description: "Cek informasi & daftar anggota keluarga",
@@ -187,7 +187,7 @@ export const BOT_COMMANDS: BotCommandDef[] = [
     category: "keluarga",
   },
 
-  // PENGATURAN & KEAMANAN
+  // SETTINGS & SECURITY
   {
     command: "set_pin",
     description: "Mengatur atau memperbarui 6-digit PIN keamanan & kunci enkripsi",

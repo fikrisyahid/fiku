@@ -1,11 +1,12 @@
-# Operational Files & CI/CD
+# Operations & CI/CD
 
-Folder ini berisi konfigurasi operasional, otomatisasi CI/CD, dan berkas deployment Cloudflare Workers.
+This folder contains operational configurations, CI/CD automation, and deployment assets for Cloudflare Workers.
 
 ---
 
-## 📂 Berkas yang Tersedia
+## 📂 Available Files
 
-1. **`wrangler.toml`**: Konfigurasi Cloudflare Workers / OpenNext untuk mendeploy aplikasi Next.js dan webhook Telegram ke infrastruktur Cloudflare edge runtime.
-2. **`ci-cd.yml`**: Template workflow GitHub Actions untuk proses linting, typechecking, build, dan otomatisasi deployment ke Cloudflare Workers saat branch `main` diperbarui.
-3. **`.github/workflows/ci-cd.yml`**: Symlink/copy workflow aktif GitHub Actions.
+1. **`workflow.py`**: Python-based unified task runner using `uv`, managing local development, TypeScript checks, and automatic `.env` synchronization.
+2. **`pyproject.toml`**: Python package definition and dependencies for `workflow.py`.
+3. **`wrangler.toml`**: Cloudflare Workers configuration for deploying Next.js and Telegram webhook endpoints to Cloudflare edge infrastructure.
+4. **`ci-cd.yml`**: GitHub Actions workflow template for automated linting, type-checking, building, and deploying to Cloudflare Workers on `main` branch updates.

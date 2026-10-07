@@ -65,7 +65,7 @@ function formatRupiah(amount: number | string): string {
 export function parseNominal(raw: string): number {
   const clean = raw.trim().toLowerCase();
 
-  // Unit di akhir kata: rb, k, jt, m, ribu, juta
+  // Unit suffixes: rb, k, jt, m, ribu, juta
   const unitMatch = clean.match(/^([0-9.,]+)\s*(rb|k|jt|m|ribu|juta)$/i);
   if (unitMatch) {
     const numStr = unitMatch[1].replace(",", ".");
@@ -80,7 +80,7 @@ export function parseNominal(raw: string): number {
   }
 
   let numStr = clean;
-  // Cek format ribuan Indonesia dengan titik: 25.000 atau 1.500.000
+  // Check Indonesian thousand separator formatting with dots: 25.000 or 1.500.000
   if (/^\d{1,3}(\.\d{3})+$/.test(numStr)) {
     numStr = numStr.replace(/\./g, "");
   } else {
@@ -351,7 +351,7 @@ async function getTelegramUser(ctx: Context, notifyIfNotRegistered = true) {
     );
   }
 
-  // Sinkronisasi telegramUsername jika ada username baru / berubah
+  // Synchronize telegramUsername if new or modified
   if (user && ctx.from?.username && user.telegramUsername !== ctx.from.username) {
     await db
       .update(users)
@@ -364,16 +364,16 @@ async function getTelegramUser(ctx: Context, notifyIfNotRegistered = true) {
 }
 
 /**
- * Memastikan sesi enkripsi di RAM aktif sebelum menampilkan data sensitif (Read).
- * Jika terkunci, minta user memasukkan PIN dengan /buka <pin>.
+ * Ensure in-memory RAM encryption session is active before returning sensitive data.
+ * If locked, prompts user to supply PIN via /buka <pin>.
  */
 export async function ensureSessionUnlocked(ctx: Context, user: typeof users.$inferSelect): Promise<boolean> {
-  // Jika user belum pernah set PIN, tidak diblokir (diizinkan membaca)
+  // If user has not configured a PIN yet, allow reading by default
   if (!user.pinHash) {
     return true;
   }
 
-  // Jika kunci user sudah aktif di RAM, lolos
+  // If user's session key is actively cached in RAM, proceed
   if (isUserSessionActive(user.id)) {
     return true;
   }

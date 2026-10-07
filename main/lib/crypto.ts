@@ -1,9 +1,9 @@
 import crypto from "crypto";
 
 const SERVER_PEPPER = process.env.ENCRYPTION_PEPPER || "fana_secure_server_pepper_default_2026";
-const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 Jam
+const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 Hours
 
-// In-Memory RAM Session Vault untuk Private Key user (Zero-Knowledge Session)
+// In-Memory RAM Session Vault for user private keys (Zero-Knowledge Session)
 interface ActiveSession {
   privateKey: Buffer;
   expiresAt: number;
@@ -12,7 +12,7 @@ interface ActiveSession {
 const ramSessionVault = new Map<string, ActiveSession>();
 
 /**
- * Derivasi Kunci Enkripsi 256-bit dari PIN user + Salt + Pepper
+ * Derive 256-bit encryption key from user PIN + Salt + Pepper
  */
 export function deriveKeyFromPin(pin: string, salt: string): Buffer {
   const combinedSecret = `${pin}:${SERVER_PEPPER}`;
@@ -20,7 +20,7 @@ export function deriveKeyFromPin(pin: string, salt: string): Buffer {
 }
 
 /**
- * Buat hash PIN aman untuk verifikasi instan di Web login
+ * Generate secure PIN hash for fast verification during Web login
  */
 export function hashPin(pin: string, salt: string): string {
   const combined = `${pin}:${salt}:${SERVER_PEPPER}`;
@@ -28,7 +28,7 @@ export function hashPin(pin: string, salt: string): string {
 }
 
 /**
- * Verifikasi PIN
+ * Verify provided PIN against stored hash
  */
 export function verifyPin(pin: string, salt: string, storedHash: string): boolean {
   const computed = hashPin(pin, salt);
@@ -36,7 +36,7 @@ export function verifyPin(pin: string, salt: string, storedHash: string): boolea
 }
 
 /**
- * Generate pasangan kunci Asimetris X25519 (Curve25519) untuk user
+ * Generate asymmetric X25519 (Curve25519) keypair for a user
  */
 export function generateUserKeyPair() {
   const { publicKey, privateKey } = crypto.generateKeyPairSync("x25519", {
@@ -54,7 +54,7 @@ export function generateUserKeyPair() {
 }
 
 /**
- * Enkripsi Private Key user menggunakan kunci turunan PIN (AES-256-GCM)
+ * Encrypt user Private Key using PIN-derived key (AES-256-GCM)
  */
 export function encryptPrivateKeyWithPin(privateKeyPem: string, pin: string, salt: string): string {
   const key = deriveKeyFromPin(pin, salt);
@@ -70,12 +70,12 @@ export function encryptPrivateKeyWithPin(privateKeyPem: string, pin: string, sal
 }
 
 /**
- * Dekripsi Private Key user menggunakan PIN
+ * Decrypt user Private Key using PIN
  */
 export function decryptPrivateKeyWithPin(encryptedPayload: string, pin: string, salt: string): string {
   const [ivB64, authTagB64, ciphertextB64] = encryptedPayload.split(":");
   if (!ivB64 || !authTagB64 || !ciphertextB64) {
-    throw new Error("Format kunci terenkripsi tidak valid.");
+    throw new Error("Invalid encrypted key format.");
   }
 
   const key = deriveKeyFromPin(pin, salt);
@@ -91,11 +91,11 @@ export function decryptPrivateKeyWithPin(encryptedPayload: string, pin: string, 
 }
 
 /**
- * Enkripsi data teks menggunakan Public Key user (Asymmetric / ECIES-style via ECDH Ephemeral Key)
- * Digunakan saat MENULIS transaksi tanpa perlu PIN user.
+ * Encrypt plaintext using recipient Public Key (Asymmetric / ECIES-style via ECDH Ephemeral Key).
+ * Used when WRITING transactions without requiring the user's PIN.
  */
 export function encryptWithPublicKey(plaintext: string, recipientPublicKeyPem: string): string {
-  // 1. Buat ephemeral key pair
+  // 1. Create ephemeral keypair
   const ephemeral = crypto.generateKeyPairSync("x25519");
 
   // 2. Derive shared secret via ECDH
@@ -108,7 +108,7 @@ export function encryptWithPublicKey(plaintext: string, recipientPublicKeyPem: s
   // 3. Derive symmetric key via SHA-256
   const aesKey = crypto.createHash("sha256").update(sharedSecret).digest();
 
-  // 4. Enkripsi teks dengan AES-256-GCM
+  // 4. Encrypt plaintext with AES-256-GCM
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", aesKey, iv);
   let encrypted = cipher.update(plaintext, "utf8", "base64");
@@ -117,17 +117,17 @@ export function encryptWithPublicKey(plaintext: string, recipientPublicKeyPem: s
 
   const ephemPubPem = ephemeral.publicKey.export({ type: "spki", format: "der" }).toString("base64");
 
-  // Format: ephemPubKeyDer:iv:authTag:ciphertext
+  // Format: enc:v1:ephemPubKeyDer:iv:authTag:ciphertext
   return `enc:v1:${ephemPubPem}:${iv.toString("base64")}:${authTag}:${encrypted}`;
 }
 
 /**
- * Dekripsi data teks menggunakan Private Key user
- * Digunakan saat MEMBACA saldo/riwayat setelah user unlock PIN.
+ * Decrypt ciphertext payload using recipient Private Key.
+ * Used when READING balances/history once the user unlocks their session.
  */
 export function decryptWithPrivateKey(ciphertextPayload: string, privateKeyPem: string): string {
   if (!ciphertextPayload.startsWith("enc:v1:")) {
-    // Jika data lama belum terenkripsi (plaintext legacy), kembalikan langsung
+    // If legacy plaintext data, return as-is
     return ciphertextPayload;
   }
 
@@ -165,7 +165,7 @@ export function decryptWithPrivateKey(ciphertextPayload: string, privateKeyPem: 
 // -------------------------------------------------------------
 
 /**
- * Buka sesi kunci user di RAM setelah verifikasi PIN
+ * Unlock user key session in RAM after PIN verification
  */
 export function unlockUserSession(userId: string, privateKeyPem: string) {
   ramSessionVault.set(userId, {
@@ -175,7 +175,7 @@ export function unlockUserSession(userId: string, privateKeyPem: string) {
 }
 
 /**
- * Ambil Private Key user dari RAM jika sesi masih aktif
+ * Retrieve user Private Key from RAM if session is active
  */
 export function getActiveUserPrivateKey(userId: string): string | null {
   const session = ramSessionVault.get(userId);
@@ -186,25 +186,25 @@ export function getActiveUserPrivateKey(userId: string): string | null {
     return null;
   }
 
-  // Refresh TTL saat user aktif berinteraksi
+  // Refresh TTL on active interaction
   session.expiresAt = Date.now() + SESSION_TTL_MS;
   return session.privateKey.toString("utf8");
 }
 
 /**
- * Cek apakah user sedang aktif kuncinya di RAM
+ * Check whether user session is currently active in RAM
  */
 export function isUserSessionActive(userId: string): boolean {
   return getActiveUserPrivateKey(userId) !== null;
 }
 
 /**
- * Kunci sesi user secara manual atau hapus saat reset akun
+ * Lock user session manually or purge upon account reset
  */
 export function lockUserSession(userId: string) {
   const session = ramSessionVault.get(userId);
   if (session) {
-    // Timpa buffer memori dengan zero bytes sebelum dihapus demi keamanan
+    // Zero-fill private key memory buffer before eviction for defense in depth
     session.privateKey.fill(0);
     ramSessionVault.delete(userId);
   }

@@ -71,7 +71,7 @@ export async function createTransaction(data: {
     throw new Error("Nominal transaksi harus lebih dari 0.");
   }
 
-  // 1. Ambil dompet tujuan
+  // 1. Fetch destination wallet
   const accountWhere = familyId
     ? and(eq(accounts.id, accountId), eq(accounts.familyId, familyId))
     : and(eq(accounts.id, accountId), eq(accounts.userId, userId), isNull(accounts.familyId));
@@ -86,7 +86,7 @@ export async function createTransaction(data: {
 
   const currentBalance = parseFloat(account.balance);
 
-  // Validasi saldo: pengeluaran tidak boleh melebihi saldo yang ada
+  // Balance validation: expense amount cannot exceed existing balance
   if (type === "expense" && amount > currentBalance) {
     const fmtCurrent = new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -107,7 +107,7 @@ export async function createTransaction(data: {
   const newBalance =
     type === "income" ? currentBalance + amount : currentBalance - amount;
 
-  // 2. Simpan transaksi
+  // 2. Persist transaction
   const [newTx] = await db
     .insert(transactions)
     .values({
@@ -124,7 +124,7 @@ export async function createTransaction(data: {
     })
     .returning();
 
-  // 3. Update saldo dompet
+  // 3. Update account balance
   await db
     .update(accounts)
     .set({
@@ -160,7 +160,7 @@ export async function deleteTransaction(
     throw new Error("Transaksi tidak ditemukan.");
   }
 
-  // Revert saldo akun
+  // Revert account balance
   const txAmount = parseFloat(tx.amount);
   const currentBalance = parseFloat(tx.account.balance);
   const revertedBalance =

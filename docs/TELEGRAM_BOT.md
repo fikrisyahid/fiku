@@ -1,60 +1,60 @@
 # Telegram Bot Commands & Interactions
 
-Telegram bot Fana dibangun dengan framework [GrammY](https://grammy.dev/) dan mendukung dua mode interaksi: **Command Berbasis Teks** dan **Smart Natural Text Parsing**.
+The Fana Telegram bot is built using the [GrammY](https://grammy.dev/) framework and supports two interaction modes: **Explicit Commands** and **Smart Natural Text Parsing**.
 
 ---
 
 ## 💡 Smart Natural Text Parsing
 
-Pengguna dapat mencatat pengeluaran atau pemasukan tanpa harus mengetik perintah `/catat`.
+Users can record expenses and income naturally without typing the `/catat` command.
 
-- Pengeluaran:
-  - `-25k kopi susu` -> Catat pengeluaran Rp 25.000 kategori Makan & Minum.
-  - `-15000 bensin pertalite` -> Catat pengeluaran Rp 15.000.
-- Pemasukan:
-  - `+5jt gaji bulanan` -> Catat pemasukan Rp 5.000.000.
-  - `+50k bonus freelance` -> Catat pemasukan Rp 50.000.
+- Expenses:
+  - `-25k kopi susu` -> Records an expense of Rp 25,000 under "Food & Drinks".
+  - `-15000 bensin pertalite` -> Records an expense of Rp 15,000.
+- Income:
+  - `+5jt gaji bulanan` -> Records income of Rp 5,000,000.
+  - `+50k bonus freelance` -> Records income of Rp 50,000.
 
 ---
 
-## 📜 Daftar Command Bot
+## 📜 Bot Command Reference
 
-### 1. Keamanan & Akun
-- `/start` - Inisialisasi bot dan onboarding user baru.
-- `/help` - Menu bantuan interaktif dengan tombol inline.
-- `/set_pin <pin>` - Menyetel PIN keamanan (6 digit angka).
-- `/buka <pin>` - Membuka sesi enkripsi dompet.
-- `/kunci` - Mengunci sesi enkripsi.
-- `/reset` - Menghapus seluruh data pengguna (wipeout dengan konfirmasi 2 langkah).
+### 1. Security & Account
+- `/start` - Initialize the bot and trigger new user onboarding.
+- `/help` - Interactive help menu with inline keyboards.
+- `/set_pin <pin>` - Set a 6-digit numeric security PIN.
+- `/buka <pin>` - Unlock the encrypted wallet session.
+- `/kunci` - Lock the encryption session immediately.
+- `/reset` - Wipe out all user data (requires two-step confirmation).
 
-### 2. Dompet & Saldo
-- `/saldo` atau `/dompet` - Melihat daftar dompet dan rincian saldo.
-- `/dompet_utama <nama_dompet>` - Mengubah dompet default untuk transaksi.
-- `/tambah_dompet <nama> [tipe] [saldo_awal]` - Menambah rekening/dompet baru (`bank`, `ewallet`, `cash`).
-- `/edit_dompet <nama_lama> <nama_baru>` - Mengubah nama dompet.
-- `/hapus_dompet <nama>` - Menghapus rekening/dompet.
-- `/transfer <dari> ke <tujuan> <nominal>` (alias: `/tf`) - Memindahkan dana antar dompet.
-- `/tarik <dari_bank> <nominal>` - Tarik tunai dari bank ke dompet cash.
+### 2. Wallets & Balances
+- `/saldo` or `/dompet` - View all wallets and their current balances.
+- `/dompet_utama <wallet_name>` - Set default wallet for transactions.
+- `/tambah_dompet <name> [type] [initial_balance]` - Create a new wallet (`bank`, `ewallet`, `cash`).
+- `/edit_dompet <old_name> <new_name>` - Rename an existing wallet.
+- `/hapus_dompet <name>` - Delete a wallet.
+- `/transfer <from> ke <to> <amount>` (alias: `/tf`) - Transfer funds between wallets.
+- `/tarik <from_bank> <amount>` - Withdraw cash from a bank wallet into physical cash.
 
-### 3. Transaksi & Kategori
-- `/catat <tipe> <nominal> <kategori> [catatan]` - Mencatat transaksi eksplisit (`masuk` / `keluar`).
-- `/riwayat` - Menampilkan daftar transaksi terakhir.
-- `/kategori` - Menampilkan daftar kategori aktif.
-- `/tambah_kategori <tipe> <nama> [icon]` - Menambah kategori baru.
-- `/edit_kategori <nama_lama> <nama_baru>` - Mengubah nama kategori.
-- `/hapus_kategori <nama>` - Menghapus kategori.
+### 3. Transactions & Categories
+- `/catat <type> <amount> <category> [note]` - Explicitly log a transaction (`masuk` / `keluar`).
+- `/riwayat` - Display recent transaction history.
+- `/kategori` - View all active categories.
+- `/tambah_kategori <type> <name> [icon]` - Create a new category.
+- `/edit_kategori <old_name> <new_name>` - Rename a category.
+- `/hapus_kategori <name>` - Delete a category.
 
-### 4. Alokasi Anggaran (Budgets)
-- `/alokasi` - Melihat status alokasi anggaran dan sisa limit per kategori.
-- `/tambah_alokasi <kategori> <limit> [start_date] [end_date]` - Menetapkan plafon anggaran.
+### 4. Budget Allocations
+- `/alokasi` - View active budget allocations and remaining spending limits.
+- `/tambah_alokasi <category> <limit> [start_date] [end_date]` - Set a budget limit.
 
-### 5. Utang & Piutang (Debts)
-- `/utang` - Melihat daftar utang (yang harus dibayar) dan piutang (yang harus ditagih).
-- `/tambah_utang <tipe> <pihak> <nominal> [jatuh_tempo] [catatan]` - Mencatat utang/piutang baru (`utang` / `piutang`).
-- `/lunas <id_utang>` - Menandai utang/piutang telah lunas.
+### 5. Debts & Receivables
+- `/utang` - View payables (debts you owe) and receivables (debts owed to you).
+- `/tambah_utang <type> <person> <amount> [due_date] [note]` - Create a debt/receivable entry.
+- `/lunas <debt_id>` - Mark a debt or receivable as fully settled.
 
-### 6. Mode Keluarga (Family Mode)
-- `/keluarga` - Melihat status keluarga, anggota, dan saldo bersama.
-- `/buat_keluarga <nama>` - Membuat grup keluarga baru (pembuat otomatis jadi admin).
-- `/undang_keluarga <username/telegram_id>` - Mengundang anggota keluarga.
-- `/mode` - Mengganti mode aktif (`personal` <-> `family`).
+### 6. Family Mode
+- `/keluarga` - View family group status, members, and shared balance.
+- `/buat_keluarga <name>` - Create a new family group (creator becomes admin).
+- `/undang_keluarga <username/telegram_id>` - Invite a member to the family group.
+- `/mode` - Switch active mode (`personal` <-> `family`).

@@ -36,12 +36,12 @@ export async function requestTelegramOtp(rawUsername: string): Promise<{
     };
   }
 
-  // 1. Cari user di database berdasarkan username Telegram
+  // 1. Look up user in database by Telegram username
   const user = await db.query.users.findFirst({
     where: sql`lower(${users.telegramUsername}) = ${username}`,
   });
 
-  // Jika belum terdaftar sama sekali
+  // If user is not found in database
   if (!user) {
     return {
       success: false,
@@ -49,7 +49,7 @@ export async function requestTelegramOtp(rawUsername: string): Promise<{
     };
   }
 
-  // Jika belum ada telegramId (belum pernah chat bot)
+  // If user has not linked telegramId (never interacted with the bot)
   if (!user.telegramId) {
     return {
       success: false,
@@ -58,24 +58,24 @@ export async function requestTelegramOtp(rawUsername: string): Promise<{
     };
   }
 
-  // 2. Generate 6 digit OTP acak
+  // 2. Generate random 6-digit OTP code
   const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-  // Nonaktifkan OTP lama yang belum terpakai
+  // Invalidate previous unused OTP codes
   await db
     .update(authOtpCodes)
     .set({ used: true })
     .where(and(eq(authOtpCodes.userId, user.id), eq(authOtpCodes.used, false)));
 
-  // Simpan OTP baru ke database
+  // Persist new OTP code to database
   await db.insert(authOtpCodes).values({
     userId: user.id,
     code: otpCode,
     expiresAt,
   });
 
-  // 3. Kirim OTP via Telegram Bot langsung ke chat pengguna
+  // 3. Dispatch OTP via Telegram Bot directly to user's chat
   try {
     await bot.api.sendMessage(
       user.telegramId,
@@ -126,7 +126,7 @@ export async function verifyTelegramOtp(
     return { success: false, message: "Pengguna tidak ditemukan." };
   }
 
-  // Cari OTP aktif yang cocok
+  // Find active matching OTP code
   const validOtp = await db.query.authOtpCodes.findFirst({
     where: and(
       eq(authOtpCodes.userId, user.id),
@@ -143,13 +143,13 @@ export async function verifyTelegramOtp(
     };
   }
 
-  // Tandai OTP telah digunakan
+  // Mark OTP as used
   await db
     .update(authOtpCodes)
     .set({ used: true })
     .where(eq(authOtpCodes.id, validOtp.id));
 
-  // Buat sesi login baru di database
+  // Create new login session in database
   const sessionToken = crypto.randomBytes(32).toString("hex");
   const sessionExpiresAt = new Date(
     Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000
@@ -161,7 +161,7 @@ export async function verifyTelegramOtp(
     expiresAt: sessionExpiresAt,
   });
 
-  // Simpan session token ke cookie HTTP-Only
+  // Save session token to HTTP-Only cookie
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE_NAME, sessionToken, {
     httpOnly: true,

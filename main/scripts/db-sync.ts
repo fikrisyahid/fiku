@@ -8,9 +8,9 @@ if (!connectionString) {
 const sql = postgres(connectionString);
 
 async function main() {
-  console.log("🔄 Sinkronisasi dan update skema tabel di Supabase...");
+  console.log("🔄 Synchronizing and updating database schema in Postgres/Supabase...");
 
-  // 1. Tambah telegram_id & telegram_username ke users serta pastikan default id gen_random_uuid() & expired_at nullable
+  // 1. Add telegram_id & telegram_username to users and ensure default id gen_random_uuid() & expired_at nullable
   await sql`
     ALTER TABLE users 
     ALTER COLUMN id SET DEFAULT gen_random_uuid(),
@@ -18,17 +18,17 @@ async function main() {
     ADD COLUMN IF NOT EXISTS telegram_id text UNIQUE,
     ADD COLUMN IF NOT EXISTS telegram_username text;
   `;
-  console.log("✅ Kolom telegram_id & telegram_username siap di users");
+  console.log("✅ Column telegram_id & telegram_username ready in users");
 
-  // 2. Tambah name & notes ke budgets (alokasi dana dengan range waktu)
+  // 2. Add name & notes to budgets (allocation with date range)
   await sql`
     ALTER TABLE budgets 
     ADD COLUMN IF NOT EXISTS name text,
     ADD COLUMN IF NOT EXISTS notes text;
   `;
-  console.log("✅ Kolom name & notes siap di budgets");
+  console.log("✅ Column name & notes ready in budgets");
 
-  // 3. Update check constraint source di transactions agar mendukung 'telegram'
+  // 3. Update transactions source check constraint to include 'telegram'
   await sql`
     ALTER TABLE transactions 
     DROP CONSTRAINT IF EXISTS transactions_source_check;
@@ -38,20 +38,21 @@ async function main() {
     ADD CONSTRAINT transactions_source_check 
     CHECK (source IN ('web', 'whatsapp', 'telegram'));
   `;
-  console.log("✅ Constraint source di transactions diperbarui (web, whatsapp, telegram)");
+  console.log("✅ Constraint source in transactions updated (web, whatsapp, telegram)");
 
-  // 4. Tambah budget_id ke transactions
+  // 4. Add budget_id to transactions
   await sql`
     ALTER TABLE transactions 
     ADD COLUMN IF NOT EXISTS budget_id uuid REFERENCES budgets(id) ON DELETE SET NULL;
   `;
-  // 5. Trigger proteksi agar kategori default (is_default = true) tidak bisa dihapus
+
+  // 5. Trigger protection preventing default categories (is_default = true) from being deleted
   await sql`
     CREATE OR REPLACE FUNCTION prevent_delete_default_category()
     RETURNS TRIGGER AS $$
     BEGIN
       IF OLD.is_default = true THEN
-        RAISE EXCEPTION 'Kategori default tidak dapat dihapus!';
+        RAISE EXCEPTION 'Default categories cannot be deleted!';
       END IF;
       RETURN OLD;
     END;
@@ -68,9 +69,9 @@ async function main() {
     FOR EACH ROW
     EXECUTE FUNCTION prevent_delete_default_category();
   `;
-  console.log("✅ Trigger perlindungan kategori default berhasil diaktifkan");
+  console.log("✅ Default category protection trigger activated");
 
-  // 6. Buat tabel auth_otp_codes & sessions jika belum ada
+  // 6. Create auth_otp_codes & sessions tables if not exists
   await sql`
     CREATE TABLE IF NOT EXISTS auth_otp_codes (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -81,7 +82,7 @@ async function main() {
       created_at timestamp with time zone DEFAULT now() NOT NULL
     );
   `;
-  console.log("✅ Tabel auth_otp_codes siap");
+  console.log("✅ Table auth_otp_codes ready");
 
   await sql`
     CREATE TABLE IF NOT EXISTS sessions (
@@ -91,9 +92,9 @@ async function main() {
       created_at timestamp with time zone DEFAULT now() NOT NULL
     );
   `;
-  console.log("✅ Tabel sessions siap");
+  console.log("✅ Table sessions ready");
 
-  // 7. Buat tabel families & family_members
+  // 7. Create families & family_members tables
   await sql`
     CREATE TABLE IF NOT EXISTS families (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -103,7 +104,7 @@ async function main() {
       updated_at timestamp with time zone DEFAULT now() NOT NULL
     );
   `;
-  console.log("✅ Tabel families siap");
+  console.log("✅ Table families ready");
 
   await sql`
     CREATE TABLE IF NOT EXISTS family_members (
@@ -118,25 +119,25 @@ async function main() {
       UNIQUE(family_id, user_id)
     );
   `;
-  console.log("✅ Tabel family_members siap");
+  console.log("✅ Table family_members ready");
 
-  // 8. Tambah active_mode dan active_family_id ke users
+  // 8. Add active_mode and active_family_id to users
   await sql`
     ALTER TABLE users 
     ADD COLUMN IF NOT EXISTS active_mode text DEFAULT 'personal' NOT NULL,
     ADD COLUMN IF NOT EXISTS active_family_id uuid REFERENCES families(id) ON DELETE SET NULL;
   `;
-  console.log("✅ Kolom active_mode & active_family_id siap di users");
+  console.log("✅ Columns active_mode & active_family_id ready in users");
 
-  // 9. Tambah family_id ke accounts, categories, budgets, transactions, debts
+  // 9. Add family_id to accounts, categories, budgets, transactions, debts
   await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS family_id uuid REFERENCES families(id) ON DELETE CASCADE;`;
   await sql`ALTER TABLE categories ADD COLUMN IF NOT EXISTS family_id uuid REFERENCES families(id) ON DELETE CASCADE;`;
   await sql`ALTER TABLE budgets ADD COLUMN IF NOT EXISTS family_id uuid REFERENCES families(id) ON DELETE CASCADE;`;
   await sql`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS family_id uuid REFERENCES families(id) ON DELETE CASCADE;`;
   await sql`ALTER TABLE debts ADD COLUMN IF NOT EXISTS family_id uuid REFERENCES families(id) ON DELETE CASCADE;`;
-  console.log("✅ Kolom family_id siap di accounts, categories, budgets, transactions, debts");
+  console.log("✅ Column family_id ready in accounts, categories, budgets, transactions, debts");
 
-  // 10. Tambah kolom enkripsi & PIN ke users
+  // 10. Add encryption & PIN columns to users
   await sql`
     ALTER TABLE users
     ADD COLUMN IF NOT EXISTS pin_hash text,
@@ -144,13 +145,13 @@ async function main() {
     ADD COLUMN IF NOT EXISTS public_key text,
     ADD COLUMN IF NOT EXISTS encrypted_private_key text;
   `;
-  console.log("✅ Kolom pin_hash, pin_salt, public_key, encrypted_private_key siap di users");
+  console.log("✅ Columns pin_hash, pin_salt, public_key, encrypted_private_key ready in users");
 
-  console.log("🎉 Sinkronisasi skema database selesai!");
+  console.log("🎉 Database schema synchronization completed!");
   process.exit(0);
 }
 
 main().catch((err) => {
-  console.error("❌ Gagal sync skema:", err);
+  console.error("❌ Schema synchronization failed:", err);
   process.exit(1);
 });

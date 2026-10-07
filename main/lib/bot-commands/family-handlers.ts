@@ -14,11 +14,11 @@ function getErrorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-// In-memory cache untuk pending pembuatan keluarga (menyimpan pilihan nama keluarga selama konfirmasi starter data)
+// In-memory cache for pending family creation flows (holds family name during starter data confirmation)
 const pendingFamilyCreations = new Map<string, { userId: string; name: string }>();
 
 /**
- * Helper untuk mengambil user Telegram dan sinkronisasi username jika ada perubahan
+ * Helper to retrieve Telegram user and synchronize username upon changes
  */
 async function getTelegramUser(ctx: Context) {
   const telegramId = ctx.from?.id ? String(ctx.from.id) : null;
@@ -36,7 +36,7 @@ async function getTelegramUser(ctx: Context) {
     return null;
   }
 
-  // Sinkronisasi telegramUsername secara otomatis jika belum ada atau berubah
+  // Synchronize telegramUsername automatically if absent or updated
   if (ctx.from?.username && user.telegramUsername !== ctx.from.username) {
     await db
       .update(users)
@@ -67,11 +67,11 @@ export async function handleBuatKeluarga(ctx: Context, match: string) {
     return;
   }
 
-  // Generate temporary key untuk inline keyboard callback
+  // Generate temporary key for inline keyboard callback
   const tempKey = Math.random().toString(36).substring(2, 8);
   pendingFamilyCreations.set(tempKey, { userId: user.id, name: familyName });
 
-  // Hapus key lama setelah 10 menit agar tidak memory leak
+  // Expire old key after 10 minutes to avoid memory leaks
   setTimeout(() => {
     pendingFamilyCreations.delete(tempKey);
   }, 10 * 60 * 1000);
@@ -197,7 +197,7 @@ export async function handleUndangKeluarga(ctx: Context, match: string) {
     return;
   }
 
-  // Cari status keluarga user
+  // Look up user's active family status
   const status = await getUserFamilyStatus(user.id);
   const activeFamily =
     status?.activeFamily || (status?.memberships && status.memberships[0]?.family);
@@ -230,7 +230,7 @@ export async function handleUndangKeluarga(ctx: Context, match: string) {
       { parse_mode: "Markdown" }
     );
 
-    // Kirim pesan notifikasi interaktif ke target user di chat Telegram pribadinya
+    // Send interactive notification to recipient's direct Telegram chat
     if (targetUser.telegramId) {
       try {
         const inviteKeyboard = new InlineKeyboard()

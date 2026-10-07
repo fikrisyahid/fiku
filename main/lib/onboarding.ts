@@ -22,7 +22,7 @@ export interface OnboardUserResult {
 }
 
 /**
- * Logika onboarding bersama untuk Web dan Telegram.
+ * Shared onboarding logic for Web and Telegram integrations.
  */
 export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserResult> {
   const {
@@ -36,7 +36,7 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
   const email = rawEmail?.trim().toLowerCase() || null;
 
   try {
-    // 1. Cari user yang sudah ada (berdasarkan telegramId atau email)
+    // 1. Check for existing user (by telegramId, telegramUsername, or email)
     let existingUser: typeof users.$inferSelect | undefined;
 
     if (telegramId) {
@@ -67,7 +67,7 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
     let isNew = false;
 
     if (existingUser) {
-      // User sudah ada -> Perbarui info jika ada penambahan (misal telegramId atau nama)
+      // User exists -> update profile information if additional data provided
       const updateData: Partial<typeof users.$inferInsert> = {
         updatedAt: new Date(),
       };
@@ -96,9 +96,9 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
         currentUser = existingUser;
       }
     } else {
-      // User baru
+      // Create new user record
       isNew = true;
-      // Database email NOT NULL: jika daftar via telegram tanpa email, generate email placeholder
+      // Database email column is NOT NULL: generate placeholder if registered via Telegram without email
       const userEmail = email || `tg_${telegramId || Date.now()}@fana.app`;
 
       const [newUser] = await db
@@ -116,7 +116,7 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
       currentUser = newUser;
     }
 
-    // 2. Cek dan pastikan template dompet default tersedia (Cash, Bank, e-Wallet)
+    // 2. Ensure starter default wallets exist (Cash, Bank, e-Wallet)
     let userAccounts = await db.query.accounts.findMany({
       where: eq(accounts.userId, currentUser.id),
     });
@@ -155,14 +155,14 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
     return {
       success: true,
       message: isNew
-        ? "Akun baru berhasil dibuat beserta dompet default."
-        : "Selamat datang kembali di Fana!",
+        ? "Account successfully created with default wallets."
+        : "Welcome back to Fana!",
       isNewUser: isNew,
       user: currentUser,
       accounts: userAccounts,
     };
   } catch (error) {
-    console.error("Gagal melakukan onboarding user:", error);
+    console.error("Failed to onboard user:", error);
     throw error;
   }
 }

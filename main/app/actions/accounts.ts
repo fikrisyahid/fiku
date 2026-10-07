@@ -52,7 +52,7 @@ export async function createAccount(data: {
   } = data;
 
   if (isDefault) {
-    // Jika dompet ini dijadikan default, lepas default dari dompet lainnya di scope yang sama
+    // If this wallet is marked as default, unset default flag on other wallets in the same scope
     if (familyId) {
       await db
         .update(accounts)
@@ -139,7 +139,7 @@ export async function deleteAccount(
     throw new Error("Dompet tidak ditemukan.");
   }
 
-  // Cek apakah akun memiliki transaksi
+  // Check whether the account has existing transactions
   const tx = await db.query.transactions.findFirst({
     where: eq(transactions.accountId, accountId),
   });
@@ -150,7 +150,7 @@ export async function deleteAccount(
     );
   }
 
-  // Cek jika ini satu-satunya dompet di scope ini
+  // Check if this is the only remaining account in this scope
   const allAccounts = await getUserAccounts(userId, familyId);
   if (allAccounts.length <= 1) {
     throw new Error("Kamu tidak bisa menghapus dompet terakhirmu!");
@@ -161,7 +161,7 @@ export async function deleteAccount(
     .where(eq(accounts.id, accountId))
     .returning();
 
-  // Jika yang dihapus adalah dompet utama, set dompet lain yang tersisa sebagai utama
+  // If the deleted account was the default, appoint one of the remaining accounts as new default
   if (deleted.isDefault) {
     const remaining = allAccounts.find((a) => a.id !== deleted.id);
     if (remaining) {
@@ -178,13 +178,13 @@ export async function setDefaultAccount(
   familyId?: string | null
 ) {
   if (familyId) {
-    // 1. Lepas status isDefault dari semua dompet di keluarga
+    // 1. Clear isDefault flag from all wallets in the family
     await db
       .update(accounts)
       .set({ isDefault: false, updatedAt: new Date() })
       .where(eq(accounts.familyId, familyId));
 
-    // 2. Set dompet terpilih menjadi default
+    // 2. Set chosen wallet as default
     const [updated] = await db
       .update(accounts)
       .set({ isDefault: true, updatedAt: new Date() })
@@ -197,13 +197,13 @@ export async function setDefaultAccount(
 
     return updated;
   } else {
-    // 1. Lepas status isDefault dari semua dompet personal user
+    // 1. Clear isDefault flag from all personal wallets of the user
     await db
       .update(accounts)
       .set({ isDefault: false, updatedAt: new Date() })
       .where(and(eq(accounts.userId, userId), isNull(accounts.familyId)));
 
-    // 2. Set dompet terpilih menjadi default
+    // 2. Set chosen wallet as default
     const [updated] = await db
       .update(accounts)
       .set({ isDefault: true, updatedAt: new Date() })
@@ -279,7 +279,7 @@ export async function transferBetweenAccounts(data: {
   const fromNewBalance = fromBalance - amount;
   const toNewBalance = toBalance + amount;
 
-  // Cari kategori untuk mencatat mutasi transfer
+  // Look up categories for logging transfer mutations
   const categoryFilter = familyId
     ? or(isNull(categories.userId), eq(categories.familyId, familyId))
     : or(isNull(categories.userId), eq(categories.userId, userId));
@@ -310,19 +310,19 @@ export async function transferBetweenAccounts(data: {
     : `Transfer dari ${fromAccount.name}`;
 
   await db.transaction(async (tx) => {
-    // 1. Kurangi saldo dompet asal
+    // 1. Deduct balance from origin wallet
     await tx
       .update(accounts)
       .set({ balance: fromNewBalance.toString(), updatedAt: new Date() })
       .where(eq(accounts.id, fromAccountId));
 
-    // 2. Tambah saldo dompet tujuan
+    // 2. Add balance to destination wallet
     await tx
       .update(accounts)
       .set({ balance: toNewBalance.toString(), updatedAt: new Date() })
       .where(eq(accounts.id, toAccountId));
 
-    // 3. Catat transaksi keluar di dompet asal
+    // 3. Record outgoing transaction on origin wallet
     await tx.insert(transactions).values({
       userId,
       familyId,
@@ -335,7 +335,7 @@ export async function transferBetweenAccounts(data: {
       transactionDate,
     });
 
-    // 4. Catat transaksi masuk di dompet tujuan
+    // 4. Record incoming transaction on destination wallet
     await tx.insert(transactions).values({
       userId,
       familyId,

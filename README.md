@@ -1,89 +1,93 @@
 # Fana - Personal & Family Finance Management
 
-Fana adalah sistem manajemen keuangan pribadi dan keluarga multi-platform berbasis **Next.js 16**, **TypeScript**, dan **Telegram Bot** (GrammY). Seluruh data keuangan disinkronisasi secara real-time dan terenkripsi.
+Fana is a multi-platform personal and family finance management system powered by **Next.js 16**, **TypeScript**, and **Telegram Bot** (GrammY). All financial data is synchronized in real time and cryptographically secured.
 
 ---
 
-## 📁 Struktur Repositori
+## 📁 Repository Structure
 
 ```text
 fana/
-├── main/              # Source code utama aplikasi (Next.js, Telegram Bot, DB, API)
-│   ├── app/           # App Router Next.js (Dashboard web, Server Actions, API Webhook)
-│   ├── components/    # Komponen antarmuka pengguna (Tailwind v4, Shadcn)
-│   ├── db/            # Definisi skema database Drizzle ORM (PostgreSQL)
-│   ├── drizzle/       # File migrasi database
-│   ├── lib/           # Logika bisnis, enkripsi kriptografi, GrammY Telegram bot & command handlers
-│   ├── public/        # Asset statis
-│   ├── scripts/       # Script otomasi dev (webhook setup, local long-polling bot, db-sync)
-│   └── package.json   # Konfigurasi dependensi Bun/Next.js
-├── docs/              # Dokumentasi lengkap arsitektur, bot commands, database, dan deployment
+├── main/              # Core application source code (Next.js, Telegram Bot, DB, API)
+│   ├── app/           # Next.js App Router (Dashboard web, Server Actions, Webhook API)
+│   ├── components/    # UI components (Tailwind v4, Shadcn)
+│   ├── db/            # Drizzle ORM schema definitions (PostgreSQL)
+│   ├── drizzle/       # Database migration snapshots
+│   ├── lib/           # Business logic, cryptography, GrammY Telegram bot & command handlers
+│   ├── public/        # Static assets
+│   ├── scripts/       # Automation scripts (webhook setup, dev polling bot, db-sync)
+│   └── package.json   # Next.js & Bun dependencies
+├── docs/              # Comprehensive technical documentation
 │   ├── ARCHITECTURE.md
 │   ├── TELEGRAM_BOT.md
 │   ├── DATABASE.md
 │   └── DEPLOYMENT.md
-├── ops/               # File konfigurasi operasional, CI/CD, dan deployment Cloudflare
-│   ├── workflows/     # GitHub Actions workflow (CI/CD pipeline)
-│   └── wrangler.toml  # Contoh/template konfigurasi Cloudflare Worker
-└── .gitignore         # Root git ignore rules
+├── ops/               # Operations, CI/CD, and Cloudflare configuration
+│   ├── workflow.py    # Python/uv task runner and .env synchronization helper
+│   ├── pyproject.toml # Python dependencies definition for workflow runner
+│   ├── wrangler.toml  # Cloudflare Workers configuration
+│   └── ci-cd.yml      # CI/CD pipeline template
+├── COMMANDS.md        # Reference guide for package.json root commands
+├── package.json       # Root task runner forwarding commands to ops/workflow.py
+├── .gitignore         # Root git ignore rules
+└── .env.example       # Root environment variable template
 ```
 
 ---
 
-## 🚀 Fitur Utama
+## 🚀 Key Features
 
 1. **Multi-Mode Finance**:
-   - **Mode Personal**: Pencatatan keuangan terisolasi per individu.
-   - **Mode Keluarga**: Kolaborasi finansial bersama anggota keluarga (Admin/Member role).
-2. **Dual-Platform Synchronous**:
-   - **Telegram Bot**: Input transaksi natural language (`-25k kopi susu`), cek saldo instan (`/saldo`), transfer antar dompet (`/tf`), kelola alokasi anggaran (`/alokasi`), dan manajemen utang (`/utang`).
-   - **Web Dashboard**: Visualisasi ringkasan total saldo, daftar rekening/dompet, dan riwayat transaksi interaktif.
-3. **Keamanan & Kriptografi**:
-   - Zero-Knowledge session vault (RAM memory cache).
-   - Derivasi kunci PBKDF2 (PIN + Salt + Pepper) & enkripsi AES-256-GCM.
-   - Keypair X25519 (Curve25519) per akun.
+   - **Personal Mode**: Isolated finance tracking for individuals.
+   - **Family Mode**: Collaborative financial management with Admin and Member roles.
+2. **Dual-Platform Synchronization**:
+   - **Telegram Bot**: Natural language transaction input (`-25k iced latte`), instant balance checks (`/saldo`), inter-wallet transfers (`/tf`), budget allocations (`/alokasi`), and debt tracking (`/utang`).
+   - **Web Dashboard**: Visual financial overview displaying total balances, wallet distributions, and real-time transaction feeds.
+3. **Security & Cryptography**:
+   - Zero-Knowledge in-memory RAM session vault.
+   - PBKDF2 key derivation (PIN + Salt + Pepper) and AES-256-GCM encryption.
+   - Per-user X25519 (Curve25519) keypairs.
 4. **Cloud-Ready Architecture**:
-   - Siap dideploy ke serverless runtime / Cloudflare Workers.
+   - Ready for serverless deployment on Cloudflare Workers and standard container environments.
 
 ---
 
-## 🛠️ Menjalankan Lokal (Development)
+## 🛠️ Local Development
 
-Project ini memiliki runner terintegrasi berbasis **Bun** dan **Python via `uv`** (`ops/workflow.py`). Developer **cukup menjalankan command dari root** menggunakan `bun run <command>` tanpa perlu berpindah ke folder `main/`.
+All commands can be executed directly from the **repository root** using `bun run`. Environment variables are automatically kept in sync between root `.env` and `main/.env`.
 
-### Persyaratan:
+### Prerequisites:
 - [Bun](https://bun.sh/) (`bun >= 1.4`)
 - [uv](https://docs.astral.sh/uv/) (Python package & project manager)
 
 ### Quick Start:
 
 ```bash
-# 1. Setup file environment di root
+# 1. Setup environment variables at the root
 cp .env.example .env
-# Edit file .env di root (sinkronisasi ke main/.env berjalan otomatis)
+# Edit .env at the root (automatically synced to main/.env upon running commands)
 
-# 2. Install dependensi
+# 2. Install application dependencies
 bun run install:main
 
-# 3. Jalankan Web Dashboard
+# 3. Start Web Dashboard
 bun run dev
 
-# 4. Jalankan Telegram Bot (mode polling)
+# 4. Start Telegram Bot (polling mode for local development)
 bun run bot:dev
 ```
 
-### Ringkasan Command Bun di Root:
+### Essential Root Commands:
 
-| Command (di Root) | Deskripsi | Target Eksekusi |
-| :--- | :--- | :--- |
-| `bun run dev` | Menjalankan Next.js Web Dashboard | `main/` (port 3000) |
-| `bun run bot:dev` (atau `bun run bot`) | Menjalankan Telegram Bot lokal (long-polling) | `main/` (`scripts/dev-bot.ts`) |
-| `bun run check` | Menjalankan TypeScript Typecheck | `tsc --noEmit` di `main/` |
-| `bun run lint` | Menjalankan ESLint | `eslint` di `main/` |
-| `bun run build` | Membuat production build Next.js | `next build` di `main/` |
-| `bun run sync:env` | Sinkronisasi manual file `.env` root ↔ `main/` | Python env synchronizer |
-| `bun run db:push` | Push skema database Drizzle ORM | `drizzle-kit push` |
-| `bun run db:studio` | Buka Drizzle Studio web GUI | `drizzle-kit studio` |
-| `bun run webhook:info` | Cek status webhook Telegram | `scripts/set-webhook.ts` |
-| `bun run fana --help` | Melihat seluruh opsi dan sub-command lengkap | CLI Runner |
+| Command | Action |
+| :--- | :--- |
+| `bun run dev` | Launch Next.js Web Dashboard on port 3000 |
+| `bun run bot:dev` | Launch Telegram Bot in local long-polling mode |
+| `bun run check` | Run TypeScript type checks (`tsc --noEmit`) |
+| `bun run lint` | Run ESLint checks |
+| `bun run build` | Build Next.js application for production |
+| `bun run sync:env` | Manually synchronize root `.env` with `main/.env` |
+| `bun run db:push` | Push Drizzle schema to PostgreSQL |
+| `bun run db:studio` | Launch Drizzle Studio database viewer |
 
+For complete documentation on all commands, see [COMMANDS.md](file:///D:/Dev/fana/COMMANDS.md). For architecture and deployment details, explore the [`docs/`](file:///D:/Dev/fana/docs) directory.

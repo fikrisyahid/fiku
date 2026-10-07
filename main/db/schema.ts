@@ -11,7 +11,7 @@ import {
 
 /**
  * 1. USERS
- * Data pengguna aplikasi, mendukung autentikasi web dan integrasi Telegram.
+ * Application user profile, supports web authentication and Telegram integration.
  */
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -32,7 +32,7 @@ export const users = pgTable("users", {
 });
 
 /**
- * 2. FAMILIES (Grup / Akun Keluarga)
+ * 2. FAMILIES (Family Group Accounts)
  */
 export const families = pgTable("families", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -45,7 +45,7 @@ export const families = pgTable("families", {
 });
 
 /**
- * 2b. FAMILY MEMBERS (Anggota Keluarga & Status Undangan)
+ * 2b. FAMILY MEMBERS (Family Members & Invitation Status)
  */
 export const familyMembers = pgTable("family_members", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -63,8 +63,8 @@ export const familyMembers = pgTable("family_members", {
 });
 
 /**
- * 3. ACCOUNTS (Rekening / Dompet Keuangan)
- * Tempat penyimpanan saldo: Bank (BCA, Mandiri), e-Wallet (GoPay, OVO), atau Cash.
+ * 3. ACCOUNTS (Financial Wallets & Bank Accounts)
+ * Balances storage: Bank (BCA, Mandiri), e-Wallet (GoPay, OVO), or Cash.
  */
 export const accounts = pgTable("accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -82,8 +82,8 @@ export const accounts = pgTable("accounts", {
 });
 
 /**
- * 4. CATEGORIES (Kategori Transaksi)
- * Kategori pemasukan dan pengeluaran (misal: Makan & Minum, Transport, Gaji).
+ * 4. CATEGORIES (Transaction Categories)
+ * Categories for income and expense transactions (e.g. Food & Beverage, Transport, Salary).
  */
 export const categories = pgTable("categories", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -91,15 +91,14 @@ export const categories = pgTable("categories", {
   familyId: uuid("family_id").references(() => families.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   type: text("type").notNull(), // 'income' | 'expense'
-  icon: text("icon"), // emoji atau identifier icon (contoh: 🍽️, 🚗, 💼)
+  icon: text("icon"), // emoji or icon identifier (e.g. 🍽️, 🚗, 💼)
   isDefault: boolean("is_default").default(false).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 /**
- * 5. BUDGETS (Alokasi Dana dengan Range Waktu)
- * Membatasi anggaran pengeluaran dalam rentang tanggal tertentu (mingguan, bulanan, custom).
- * Contoh: Alokasi Makan & Minum periode 1 Okt - 31 Okt senilai Rp 2.000.000.
+ * 5. BUDGETS (Budget Allocations with Date Range)
+ * Limits spending allocations within a specific date range (weekly, monthly, custom).
  */
 export const budgets = pgTable("budgets", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -110,19 +109,19 @@ export const budgets = pgTable("budgets", {
   categoryId: uuid("category_id")
     .references(() => categories.id, { onDelete: "cascade" })
     .notNull(),
-  name: text("name"), // Nama opsional alokasi (misal: "Alokasi Belanja Bulanan")
+  name: text("name"), // Optional budget label (e.g. "Monthly Groceries")
   amountLimit: numeric("amount_limit", { precision: 15, scale: 2 }).notNull(),
-  periodStart: date("period_start").notNull(), // Mulai rentang waktu
-  periodEnd: date("period_end").notNull(),     // Akhir rentang waktu
+  periodStart: date("period_start").notNull(), // Start date
+  periodEnd: date("period_end").notNull(),     // End date
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 /**
- * 6. TRANSACTIONS (Pemasukan & Pengeluaran)
- * Rekaman setiap transaksi keuangan.
- * Terhubung ke akun dompet, kategori, dan opsional langsung ke alokasi dana (budget).
+ * 6. TRANSACTIONS (Income & Expense Records)
+ * Recorded financial transactions.
+ * Linked to account/wallet, category, and optionally a budget allocation.
  */
 export const transactions = pgTable("transactions", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -147,8 +146,8 @@ export const transactions = pgTable("transactions", {
 });
 
 /**
- * 7. DEBTS (Catatan Utang & Piutang)
- * Mencatat uang yang kita pinjamkan ke orang lain atau kita pinjam dari orang lain.
+ * 7. DEBTS (Payable & Receivable Records)
+ * Tracks borrowed or lent money with contacts.
  */
 export const debts = pgTable("debts", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -158,7 +157,7 @@ export const debts = pgTable("debts", {
   familyId: uuid("family_id").references(() => families.id, { onDelete: "cascade" }),
   contactName: text("contact_name").notNull(),
   amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
-  type: text("type").notNull(), // 'owed_by_me' (utang) | 'owed_to_me' (piutang)
+  type: text("type").notNull(), // 'owed_by_me' (payable) | 'owed_to_me' (receivable)
   dueDate: date("due_date"),
   isSettled: boolean("is_settled").default(false).notNull(),
   note: text("note"),
@@ -167,8 +166,8 @@ export const debts = pgTable("debts", {
 });
 
 /**
- * 8. AUTH OTP CODES (Verifikasi Login Telegram)
- * Menyimpan kode OTP 6-digit sementara yang dikirimkan bot Telegram ke chat pengguna.
+ * 8. AUTH OTP CODES (Telegram Login Verification)
+ * Stores temporary 6-digit OTP codes sent via Telegram bot to user chats.
  */
 export const authOtpCodes = pgTable("auth_otp_codes", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -182,8 +181,8 @@ export const authOtpCodes = pgTable("auth_otp_codes", {
 });
 
 /**
- * 9. SESSIONS (Sesi Login Web)
- * Menyimpan token sesi aktif untuk autentikasi browser web.
+ * 9. SESSIONS (Web Login Sessions)
+ * Stores active session tokens for browser authentication.
  */
 export const sessions = pgTable("sessions", {
   id: text("id").primaryKey(), // random crypto token
@@ -195,7 +194,7 @@ export const sessions = pgTable("sessions", {
 });
 
 /**
- * RELASI DRIZZLE ORM
+ * DRIZZLE ORM RELATIONS
  */
 export const usersRelations = relations(users, ({ one, many }) => ({
   accounts: many(accounts),

@@ -18,7 +18,7 @@ import click
 from rich.console import Console
 from rich.panel import Panel
 
-# Pastikan UTF-8 encoding di Windows console
+# Ensure UTF-8 console output on Windows platforms
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
@@ -36,12 +36,12 @@ MAIN_ENV_EXAMPLE = MAIN_DIR / ".env.example"
 
 def sync_env_files() -> None:
     """
-    Sinkronisasi file .env antara root dan main/.
-    Aturan:
-    1. Utamakan versi terbaru di root (.env).
-    2. Jika root .env ada dan lebih baru (atau main/.env belum ada), salin root -> main/.
-    3. Jika main/.env lebih baru dari root, salin main -> root agar tidak kehilangan perubahan.
-    4. Selalu pastikan main/.env sinkron sebelum menjalankan proses apapun.
+    Synchronize .env files between root and main/.
+    Rules:
+    1. Prioritize root .env as the single source of truth.
+    2. If root .env exists and is newer (or main/.env is absent), copy root -> main/.
+    3. If main/.env is newer than root, mirror back to root to prevent losing edits.
+    4. Ensure main/.env is synchronized before running any command.
     """
     # 1. Sync .env.example
     if ROOT_ENV_EXAMPLE.exists() and not MAIN_ENV_EXAMPLE.exists():
@@ -51,28 +51,28 @@ def sync_env_files() -> None:
 
     # 2. Sync .env
     if ROOT_ENV.exists() and not MAIN_ENV.exists():
-        console.print("[yellow]Menyalin .env dari root ke main/...[/yellow]")
+        console.print("[yellow]Copying .env from root to main/...[/yellow]")
         shutil.copy2(ROOT_ENV, MAIN_ENV)
     elif MAIN_ENV.exists() and not ROOT_ENV.exists():
-        console.print("[yellow]Menyalin .env dari main/ ke root...[/yellow]")
+        console.print("[yellow]Copying .env from main/ to root...[/yellow]")
         shutil.copy2(MAIN_ENV, ROOT_ENV)
     elif ROOT_ENV.exists() and MAIN_ENV.exists():
         root_mtime = ROOT_ENV.stat().st_mtime
         main_mtime = MAIN_ENV.stat().st_mtime
 
-        # Jika root lebih baru atau sama (diutamakan root)
+        # If root is newer or equal (root is prioritized)
         if root_mtime >= main_mtime:
             if ROOT_ENV.read_bytes() != MAIN_ENV.read_bytes():
                 shutil.copy2(ROOT_ENV, MAIN_ENV)
         else:
-            # Jika main lebih baru
+            # If main is newer
             if MAIN_ENV.read_bytes() != ROOT_ENV.read_bytes():
-                console.print("[dim]Sinkronisasi .env: main/ lebih baru -> memperbarui root .env[/dim]")
+                console.print("[dim]Syncing .env: main/ is newer -> updating root .env[/dim]")
                 shutil.copy2(MAIN_ENV, ROOT_ENV)
 
 
 def run_command(cmd: list[str], cwd: Path | None = None, env_extra: dict[str, str] | None = None) -> int:
-    """Menjalankan perintah shell dengan env vars yang tersinkronisasi."""
+    """Execute a shell command with synchronized environment variables."""
     sync_env_files()
 
     working_dir = cwd or MAIN_DIR
@@ -80,38 +80,38 @@ def run_command(cmd: list[str], cwd: Path | None = None, env_extra: dict[str, st
     if env_extra:
         env.update(env_extra)
 
-    console.print(f"[bold cyan]▶ Menjalankan:[/] [dim]{' '.join(cmd)}[/] (di {working_dir.name}/)")
+    console.print(f"[bold cyan]▶ Running:[/] [dim]{' '.join(cmd)}[/] (in {working_dir.name}/)")
 
     try:
         process = subprocess.run(cmd, cwd=str(working_dir), env=env)
-        # Re-sync setelah run in case script menulis ulang .env
+        # Re-sync after execution in case the script updated .env
         sync_env_files()
         return process.returncode
     except KeyboardInterrupt:
-        console.print("\n[yellow]Proses dihentikan oleh pengguna (Ctrl+C).[/yellow]")
+        console.print("\n[yellow]Process interrupted by user (Ctrl+C).[/yellow]")
         return 0
     except Exception as e:
-        console.print(f"[bold red]Error saat menjalankan perintah:[/] {e}")
+        console.print(f"[bold red]Execution error:[/] {e}")
         return 1
 
 
 @click.group()
 def cli() -> None:
-    """Fana CLI - Unified Task Runner untuk Next.js & Telegram Bot."""
+    """Fana CLI - Unified Task Runner for Next.js & Telegram Bot."""
     pass
 
 
 @cli.command("sync-env")
 def sync_env_cmd() -> None:
-    """Sinkronisasi file .env antara root dan main/."""
+    """Synchronize .env files between root and main/."""
     sync_env_files()
-    console.print("[bold green]✔ File .env root & main/ berhasil disinkronisasi![/bold green]")
+    console.print("[bold green]✔ Successfully synchronized .env files between root and main/![/bold green]")
 
 
 @cli.command("dev")
-@click.option("--port", "-p", default=3000, help="Port untuk Next.js web dashboard.")
+@click.option("--port", "-p", default=3000, help="Port for Next.js web dashboard.")
 def dev(port: int) -> None:
-    """Menjalankan Next.js Web Dashboard di mode development."""
+    """Start Next.js Web Dashboard in development mode."""
     console.print(Panel.fit("[bold green]Fana Finance - Web Dashboard Dev Server[/bold green]", border_style="green"))
     code = run_command(["bun", "run", "dev", "--port", str(port)])
     sys.exit(code)
@@ -119,7 +119,7 @@ def dev(port: int) -> None:
 
 @cli.command("bot")
 def bot() -> None:
-    """Menjalankan Telegram Bot lokal dengan long-polling (dev-bot.ts)."""
+    """Start Telegram Bot locally with long-polling (dev-bot.ts)."""
     console.print(Panel.fit("[bold cyan]Fana Finance - Telegram Bot Dev (Polling)[/bold cyan]", border_style="cyan"))
     code = run_command(["bun", "run", "bot:dev"])
     sys.exit(code)
@@ -127,95 +127,95 @@ def bot() -> None:
 
 @cli.command("install")
 def install() -> None:
-    """Install dependensi project (Bun di folder main/)."""
-    console.print("[yellow]Menginstall dependensi Bun di main/...[/yellow]")
+    """Install project dependencies (Bun inside main/)."""
+    console.print("[yellow]Installing Bun dependencies in main/...[/yellow]")
     code = run_command(["bun", "install"])
     sys.exit(code)
 
 
 @cli.command("build")
 def build() -> None:
-    """Build aplikasi Next.js untuk produksi."""
-    console.print("[yellow]Membuat build produksi Next.js...[/yellow]")
+    """Build Next.js web application for production."""
+    console.print("[yellow]Building Next.js application for production...[/yellow]")
     code = run_command(["bun", "run", "build"])
     sys.exit(code)
 
 
 @cli.command("start")
 def start() -> None:
-    """Menjalankan server produksi Next.js."""
+    """Start Next.js production server."""
     code = run_command(["bun", "run", "start"])
     sys.exit(code)
 
 
 @cli.command("lint")
 def lint() -> None:
-    """Menjalankan ESLint pada codebase."""
+    """Run ESLint checks across codebase."""
     code = run_command(["bun", "run", "lint"])
     sys.exit(code)
 
 
 @cli.command("check")
 def check() -> None:
-    """Menjalankan TypeScript Typecheck (tsc --noEmit)."""
-    console.print("[yellow]Memeriksa validitas type TypeScript...[/yellow]")
+    """Run TypeScript compiler type check (tsc --noEmit)."""
+    console.print("[yellow]Checking TypeScript types...[/yellow]")
     code = run_command(["bun", "x", "tsc", "--noEmit"])
     if code == 0:
-        console.print("[bold green]✔ Tidak ada kesalahan tipe TypeScript![/bold green]")
+        console.print("[bold green]✔ TypeScript validation passed with zero errors![/bold green]")
     sys.exit(code)
 
 
 @cli.group("db")
 def db_group() -> None:
-    """Perintah manajemen database PostgreSQL & Drizzle ORM."""
+    """Database management commands for PostgreSQL & Drizzle ORM."""
     pass
 
 
 @db_group.command("push")
 def db_push() -> None:
-    """Push skema Drizzle langsung ke database PostgreSQL."""
+    """Push Drizzle schema directly to PostgreSQL database."""
     code = run_command(["bun", "run", "db:push"])
     sys.exit(code)
 
 
 @db_group.command("generate")
 def db_generate() -> None:
-    """Generate file migrasi SQL baru dari schema.ts."""
+    """Generate new SQL migrations from schema.ts."""
     code = run_command(["bun", "run", "db:generate"])
     sys.exit(code)
 
 
 @db_group.command("migrate")
 def db_migrate() -> None:
-    """Jalankan migrasi database terdaftar."""
+    """Apply pending database migrations."""
     code = run_command(["bun", "run", "db:migrate"])
     sys.exit(code)
 
 
 @db_group.command("studio")
 def db_studio() -> None:
-    """Buka GUI Drizzle Studio untuk eksplorasi database."""
+    """Open Drizzle Studio visual web interface."""
     code = run_command(["bun", "run", "db:studio"])
     sys.exit(code)
 
 
 @db_group.command("sync")
 def db_sync() -> None:
-    """Jalankan helper skrip db-sync.ts."""
+    """Run helper script db-sync.ts."""
     code = run_command(["bun", "run", "db:sync"])
     sys.exit(code)
 
 
 @cli.group("webhook")
 def webhook_group() -> None:
-    """Manajemen Webhook Telegram Bot (Cloudflare / Produksi)."""
+    """Telegram Webhook management commands (Cloudflare / Production)."""
     pass
 
 
 @webhook_group.command("set")
-@click.option("--url", default="", help="Custom Webhook URL. Jika kosong, membaca dari TELEGRAM_BOT_WEBHOOK_URL.")
+@click.option("--url", default="", help="Custom Webhook URL. If omitted, reads TELEGRAM_BOT_WEBHOOK_URL.")
 def webhook_set(url: str) -> None:
-    """Set Webhook Telegram ke URL publik."""
+    """Set Telegram Webhook to a public URL."""
     env = {"TELEGRAM_BOT_WEBHOOK_URL": url} if url else None
     code = run_command(["bun", "run", "webhook:set"], env_extra=env)
     sys.exit(code)
@@ -223,14 +223,14 @@ def webhook_set(url: str) -> None:
 
 @webhook_group.command("info")
 def webhook_info() -> None:
-    """Cek informasi webhook bot saat ini di Telegram server."""
+    """Inspect current Telegram webhook status."""
     code = run_command(["bun", "run", "webhook:info"])
     sys.exit(code)
 
 
 @webhook_group.command("delete")
 def webhook_delete() -> None:
-    """Hapus webhook Telegram (kembalikan ke mode polling jika perlu)."""
+    """Delete Telegram webhook (revert to polling mode if needed)."""
     code = run_command(["bun", "run", "webhook:delete"])
     sys.exit(code)
 

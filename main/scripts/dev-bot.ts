@@ -1,13 +1,13 @@
 import { bot } from "@/lib/bot";
 
-console.log("🤖 Menjalankan bot dengan Long Polling (Local Dev Mode)...");
+console.log("🤖 Running Telegram bot with Long Polling (Local Dev Mode)...");
 
-// Hapus webhook aktif (jika ada) sebelum polling
+// Remove active webhook (if any) before initiating polling
 await bot.api.deleteWebhook();
 
 bot.start({
   onStart: (botInfo) => {
-    console.log(`✅ Bot @${botInfo.username} berhasil berjalan!`);
-    console.log("Silakan buka Telegram dan kirim pesan atau /start ke bot.");
+    console.log(`✅ Bot @${botInfo.username} successfully started!`);
+    console.log("Open Telegram and send a message or /start to interact with the bot.");
   },
 });
