@@ -90,4 +90,4 @@ bun run bot:dev
 | `bun run db:push` | Push Drizzle schema to PostgreSQL |
 | `bun run db:studio` | Launch Drizzle Studio database viewer |
 
-For complete documentation on all commands, see [COMMANDS.md](file:///D:/Dev/fana/COMMANDS.md). For architecture and deployment details, explore the [`docs/`](file:///D:/Dev/fana/docs) directory.
+For complete documentation on all commands, see [COMMANDS.md](file:///D:/Dev/fana/docs/COMMANDS.md). For architecture and deployment details, explore the [`docs/`](file:///D:/Dev/fana/docs) directory.
