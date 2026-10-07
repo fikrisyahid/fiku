@@ -49,26 +49,43 @@ fana/
 
 ## 🛠️ Menjalankan Lokal (Development)
 
-Pastikan telah menginstal [Bun](https://bun.sh/) (`bun >= 1.4`).
+Project ini memiliki runner terintegrasi berbasis **Python & uv** (`ops/workflow.py`), sehingga developer **cukup menjalankan command dari root** tanpa perlu berpindah ke folder `main/`.
+
+### Persyaratan:
+- [Bun](https://bun.sh/) (`bun >= 1.4`)
+- [uv](https://docs.astral.sh/uv/) (Python package & project manager)
+
+### Quick Start:
 
 ```bash
-cd main
-
-# 1. Install dependensi
-bun install
-
-# 2. Setup file environment
+# 1. Setup file environment di root
 cp .env.example .env
-# Edit .env dan isi DATABASE_URL, TELEGRAM_BOT_TOKEN, dsb.
+# Edit file .env di root (sinkronisasi ke main/.env otomatis)
 
-# 3. Sinkronisasi skema database
-bun run db:push
+# 2. Install dependensi
+./fana install        # atau: uv run ops/workflow.py install
 
-# 4. Jalankan Web Dashboard
-bun run dev
+# 3. Jalankan Web Dashboard
+./fana dev            # atau: uv run ops/workflow.py dev
 
-# 5. Jalankan Telegram Bot (mode polling untuk lokal)
-bun run bot:dev
+# 4. Jalankan Telegram Bot (mode polling)
+./fana bot            # atau: uv run ops/workflow.py bot
 ```
 
-Untuk panduan lebih lengkap, silakan kunjungi direktori [`docs/`](file:///D:/Dev/fana/docs).
+### Ringkasan Command Fana Runner:
+
+| Command (di Root) | Deskripsi |
+| :--- | :--- |
+| `./fana dev` | Menjalankan Next.js Web Dashboard di port 3000 |
+| `./fana bot` | Menjalankan Telegram Bot lokal (long-polling) |
+| `./fana check` | Menjalankan TypeScript Typecheck (`tsc --noEmit`) |
+| `./fana lint` | Menjalankan ESLint |
+| `./fana build` | Membuat production build Next.js |
+| `./fana sync-env` | Sinkronisasi manual file `.env` root ↔ `main/` |
+| `./fana db push` | Push skema database Drizzle ORM |
+| `./fana db studio` | Buka Drizzle Studio web GUI |
+| `./fana webhook info` | Cek status webhook Telegram |
+| `./fana --help` | Melihat seluruh opsi perintah |
+
+> **Catatan Windows:** Di PowerShell atau Command Prompt, kamu bisa langsung mengetik `.\fana.cmd <command>` atau `uv run ops/workflow.py <command>`.
+
