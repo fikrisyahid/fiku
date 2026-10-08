@@ -22,6 +22,7 @@ import {
 import { transferBetweenAccounts } from "@/app/actions/accounts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ConfirmDeleteModal } from "@/components/confirm-delete-modal";
 
 export interface TransactionRow {
   id: string;
@@ -232,23 +233,48 @@ export function TransactionsSheet({
     setGlobalSaving(false);
   }
 
-  // Delete row
-  async function handleDeleteRow(row: TransactionRow) {
+  // Confirmation delete modal state
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    row: TransactionRow | null;
+  }>({
+    isOpen: false,
+    row: null,
+  });
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Trigger delete row
+  function handleDeleteRow(row: TransactionRow) {
     if (row.isNew) {
       setRows((prev) => prev.filter((r) => r.id !== row.id));
       return;
     }
 
-    if (!confirm(`Hapus baris transaksi "${row.note || "Transaksi"}"?`)) return;
+    setDeleteConfirmation({
+      isOpen: true,
+      row,
+    });
+  }
 
+  // Execute confirmed row delete
+  async function executeDeleteRow() {
+    const row = deleteConfirmation.row;
+    if (!row) return;
+
+    setDeleteLoading(true);
     setRowStatus((prev) => ({ ...prev, [row.id]: "saving" }));
+
     try {
       await deleteTransaction(row.id, userId, familyId);
       setRows((prev) => prev.filter((r) => r.id !== row.id));
+      setDeleteConfirmation({ isOpen: false, row: null });
       await onRefreshAll();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Gagal menghapus transaksi.");
       setRowStatus((prev) => ({ ...prev, [row.id]: "error" }));
+      setDeleteConfirmation({ isOpen: false, row: null });
+    } finally {
+      setDeleteLoading(false);
     }
   }
 
@@ -654,6 +680,17 @@ export function TransactionsSheet({
         <span>Menampilkan {filteredAndSortedRows.length} transaksi</span>
         <span>Perubahan baris otomatis tersimpan secara live (debounce 700ms).</span>
       </div>
+
+      {/* Confirmation Dialog for Transaction Row Deletion */}
+      <ConfirmDeleteModal
+        isOpen={deleteConfirmation.isOpen}
+        title="Hapus Transaksi"
+        description="Apakah kamu yakin ingin menghapus baris transaksi ini? Saldo kantong terkait akan otomatis disesuaikan kembali."
+        itemName={deleteConfirmation.row?.note || (deleteConfirmation.row?.amount ? `Rp ${deleteConfirmation.row.amount.toLocaleString("id-ID")}` : "Baris Transaksi")}
+        isLoading={deleteLoading}
+        onConfirm={executeDeleteRow}
+        onClose={() => setDeleteConfirmation({ isOpen: false, row: null })}
+      />
     </div>
   );
 }
