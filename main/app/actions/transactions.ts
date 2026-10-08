@@ -94,6 +94,23 @@ export async function createTransaction(data: {
     const fromBalance = parseFloat(fromAccount.balance);
     const toBalance = parseFloat(toAccount.balance);
 
+    if (amount > fromBalance) {
+      const fmtFrom = new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        maximumFractionDigits: 0,
+      }).format(fromBalance);
+      const fmtAmount = new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        maximumFractionDigits: 0,
+      }).format(amount);
+
+      throw new Error(
+        `Saldo tidak mencukupi! Saldo "${fromAccount.name}" saat ini hanya ${fmtFrom}, tidak cukup untuk transfer sebesar ${fmtAmount}.`
+      );
+    }
+
     const fromNewBalance = fromBalance - amount;
     const toNewBalance = toBalance + amount;
 
@@ -366,6 +383,22 @@ export async function updateTransaction(
       if (!fromAcc || !toAcc) throw new Error("Kantong asal atau tujuan tidak ditemukan.");
 
       const fromBal = parseFloat(fromAcc.balance) - newAmount;
+      if (fromBal < 0) {
+        const fmtFrom = new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: "IDR",
+          maximumFractionDigits: 0,
+        }).format(parseFloat(fromAcc.balance));
+        const fmtAmount = new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: "IDR",
+          maximumFractionDigits: 0,
+        }).format(newAmount);
+
+        throw new Error(
+          `Saldo tidak mencukupi! Saldo "${fromAcc.name}" saat ini ${fmtFrom}, tidak cukup untuk transfer sebesar ${fmtAmount}.`
+        );
+      }
       const toBal = parseFloat(toAcc.balance) + newAmount;
 
       await tx.update(accounts).set({ balance: fromBal.toString(), updatedAt: new Date() }).where(eq(accounts.id, newAccountId));
@@ -374,6 +407,24 @@ export async function updateTransaction(
       const targetAcc = await tx.query.accounts.findFirst({ where: eq(accounts.id, newAccountId) });
       if (!targetAcc) throw new Error("Kantong tidak ditemukan.");
       const currentBal = parseFloat(targetAcc.balance);
+
+      if (newType === "expense" && currentBal < newAmount) {
+        const fmtCurrent = new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: "IDR",
+          maximumFractionDigits: 0,
+        }).format(currentBal);
+        const fmtAmount = new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: "IDR",
+          maximumFractionDigits: 0,
+        }).format(newAmount);
+
+        throw new Error(
+          `Saldo tidak mencukupi! Saldo "${targetAcc.name}" saat ini ${fmtCurrent}, tidak cukup untuk pengeluaran sebesar ${fmtAmount}.`
+        );
+      }
+
       const newBal = newType === "income" ? currentBal + newAmount : currentBal - newAmount;
       await tx.update(accounts).set({ balance: newBal.toString(), updatedAt: new Date() }).where(eq(accounts.id, newAccountId));
     }

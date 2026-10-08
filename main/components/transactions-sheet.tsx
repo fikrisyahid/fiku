@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { ConfirmDeleteModal } from "@/components/confirm-delete-modal";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { ExportImportModal } from "@/components/export-import-modal";
+import { AlertModal, ModalAlertConfig } from "@/components/ui/alert-modal";
 
 export interface TransactionRow {
   id: string;
@@ -89,6 +90,10 @@ export function TransactionsSheet({
   const [sortField, setSortField] = useState<SortField>("transactionDate");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [isExportImportOpen, setIsExportImportOpen] = useState(false);
+  const [alertModal, setAlertModal] = useState<ModalAlertConfig>({
+    isOpen: false,
+    message: "",
+  });
 
   // Debounce timeout references
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
@@ -217,7 +222,14 @@ export function TransactionsSheet({
     } catch (err: unknown) {
       console.error("Save row error:", err);
       setRowStatus((prev) => ({ ...prev, [id]: "error" }));
-      alert(err instanceof Error ? err.message : "Gagal menyimpan perubahan.");
+      const msg = err instanceof Error ? err.message : "Gagal menyimpan perubahan.";
+      const isBalanceErr = msg.toLowerCase().includes("saldo tidak mencukupi");
+      setAlertModal({
+        isOpen: true,
+        title: isBalanceErr ? "Saldo Tidak Mencukupi" : "Gagal Menyimpan Transaksi",
+        message: msg,
+        variant: isBalanceErr ? "warning" : "error",
+      });
     }
   }
 
@@ -269,7 +281,13 @@ export function TransactionsSheet({
       setDeleteConfirmation({ isOpen: false, row: null });
       await onRefreshAll();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Gagal menghapus transaksi.");
+      const msg = err instanceof Error ? err.message : "Gagal menghapus transaksi.";
+      setAlertModal({
+        isOpen: true,
+        title: "Gagal Menghapus Transaksi",
+        message: msg,
+        variant: "error",
+      });
       setRowStatus((prev) => ({ ...prev, [row.id]: "error" }));
       setDeleteConfirmation({ isOpen: false, row: null });
     } finally {
@@ -716,6 +734,12 @@ export function TransactionsSheet({
         onSuccess={async () => {
           await onRefreshAll();
         }}
+      />
+
+      {/* Dedicated Alert / Error Modal */}
+      <AlertModal
+        config={alertModal}
+        onClose={() => setAlertModal((prev) => ({ ...prev, isOpen: false }))}
       />
     </div>
   );

@@ -5,6 +5,7 @@ import { Sparkles, ArrowRight, RefreshCw, CheckCircle2, AlertCircle } from "luci
 import { processSmartTextInput } from "@/lib/smart-input";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { AlertModal, ModalAlertConfig } from "@/components/ui/alert-modal";
 
 interface SmartInputBarProps {
   userId: string;
@@ -15,6 +16,10 @@ interface SmartInputBarProps {
 export function SmartInputBar({ userId, familyId, onSuccess }: SmartInputBarProps) {
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [alertModal, setAlertModal] = useState<ModalAlertConfig>({
+    isOpen: false,
+    message: "",
+  });
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
     message: string;
@@ -42,15 +47,34 @@ export function SmartInputBar({ userId, familyId, onSuccess }: SmartInputBarProp
         setInputText("");
         await onSuccess();
       } else {
+        const isBalanceErr = res.message.toLowerCase().includes("saldo tidak mencukupi");
+        if (isBalanceErr) {
+          setAlertModal({
+            isOpen: true,
+            title: "Saldo Tidak Mencukupi",
+            message: res.message,
+            variant: "warning",
+          });
+        }
         setFeedback({
           type: "error",
           message: res.message,
         });
       }
     } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan.";
+      const isBalanceErr = msg.toLowerCase().includes("saldo tidak mencukupi");
+      if (isBalanceErr) {
+        setAlertModal({
+          isOpen: true,
+          title: "Saldo Tidak Mencukupi",
+          message: msg,
+          variant: "warning",
+        });
+      }
       setFeedback({
         type: "error",
-        message: err instanceof Error ? err.message : "Terjadi kesalahan.",
+        message: msg,
       });
     } finally {
       setLoading(false);
@@ -114,6 +138,12 @@ export function SmartInputBar({ userId, familyId, onSuccess }: SmartInputBarProp
           </button>
         </div>
       )}
+
+      {/* Dedicated Alert / Insufficient Balance Modal */}
+      <AlertModal
+        config={alertModal}
+        onClose={() => setAlertModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }
