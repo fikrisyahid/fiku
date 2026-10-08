@@ -140,12 +140,13 @@ async function main() {
   // 10. Add encryption & PIN columns to users
   await sql`
     ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS password_hash text,
     ADD COLUMN IF NOT EXISTS pin_hash text,
     ADD COLUMN IF NOT EXISTS pin_salt text,
     ADD COLUMN IF NOT EXISTS public_key text,
     ADD COLUMN IF NOT EXISTS encrypted_private_key text;
   `;
-  console.log("✅ Columns pin_hash, pin_salt, public_key, encrypted_private_key ready in users");
+  console.log("✅ Columns password_hash, pin_hash, pin_salt, public_key, encrypted_private_key ready in users");
 
   console.log("🎉 Database schema synchronization completed!");
   process.exit(0);

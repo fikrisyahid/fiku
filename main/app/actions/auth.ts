@@ -1,257 +1,20 @@
 "use server";
 
 import { db } from "@/db";
-import { users, authOtpCodes, sessions } from "@/db/schema";
+import { users, sessions } from "@/db/schema";
 import { eq, and, gt, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
-import { bot } from "@/lib/bot";
 import crypto from "crypto";
-import {
-  generateUserKeyPair,
-  encryptPrivateKeyWithPin,
-  decryptPrivateKeyWithPin,
-  hashPin,
-  verifyPin,
-  unlockUserSession,
-  lockUserSession,
-} from "@/lib/crypto";
+import bcrypt from "bcryptjs";
+import { onboardUser } from "@/lib/onboarding";
 
 const SESSION_COOKIE_NAME = "fana_session";
 const SESSION_DURATION_DAYS = 30;
 
-function normalizeUsername(raw: string): string {
-  return raw.trim().replace(/^@/, "").toLowerCase();
-}
-
-export async function requestTelegramOtp(rawUsername: string): Promise<{
-  success: boolean;
-  message: string;
-  maskedTarget?: string;
-}> {
-  const username = normalizeUsername(rawUsername);
-  if (!username || username.length < 3) {
-    return {
-      success: false,
-      message: "Masukkan username Telegram yang valid (contoh: @fikrisyahid14).",
-    };
-  }
-
-  // 1. Look up user in database by Telegram username
-  const user = await db.query.users.findFirst({
-    where: sql`lower(${users.telegramUsername}) = ${username}`,
-  });
-
-  // If user is not found in database
-  if (!user) {
-    return {
-      success: false,
-      message: `Username @${username} belum terdaftar di Fana. Silakan buka bot Telegram kami terlebih dahulu dan ketik /start untuk mengaktifkan akunmu.`,
-    };
-  }
-
-  // If user has not linked telegramId (never interacted with the bot)
-  if (!user.telegramId) {
-    return {
-      success: false,
-      message:
-        "Akunmu belum terhubung ke chat bot Telegram. Buka bot Telegram kami dan ketik /start untuk mengaktifkannya.",
-    };
-  }
-
-  // 2. Generate random 6-digit OTP code
-  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-  // Invalidate previous unused OTP codes
-  await db
-    .update(authOtpCodes)
-    .set({ used: true })
-    .where(and(eq(authOtpCodes.userId, user.id), eq(authOtpCodes.used, false)));
-
-  // Persist new OTP code to database
-  await db.insert(authOtpCodes).values({
-    userId: user.id,
-    code: otpCode,
-    expiresAt,
-  });
-
-  // 3. Dispatch OTP via Telegram Bot directly to user's chat
-  try {
-    await bot.api.sendMessage(
-      user.telegramId,
-      `🔐 *KODE VERIFIKASI LOGIN FANA*\n` +
-        `───────────────────\n` +
-        `Halo *${user.fullName}*! Berikut kode login kamu ke Dashboard Web:\n\n` +
-        `👉 \`${otpCode}\`\n\n` +
-        `⏱️ _Kode ini berlaku selama 5 menit._\n` +
-        `⚠️ _Jangan berikan kode ini kepada siapa pun demi keamanan akunmu._`,
-      { parse_mode: "Markdown" }
-    );
-  } catch (err) {
-    console.error("Gagal mengirim OTP via bot:", err);
-    return {
-      success: false,
-      message:
-        "Gagal mengirim kode ke Telegram. Pastikan kamu belum memblokir bot Fana di Telegram.",
-    };
-  }
-
-  const masked = `@${username.slice(0, 3)}***`;
-
-  return {
-    success: true,
-    message: `Kode verifikasi telah dikirimkan ke Telegram (${masked})!`,
-    maskedTarget: masked,
-  };
-}
-
-export async function verifyTelegramOtp(
-  rawUsername: string,
-  code: string
+export async function loginWithEmailPassword(
+  rawEmail: string,
+  rawPassword: string
 ): Promise<{
-  success: boolean;
-  message: string;
-  user?: { id: string; fullName: string; email: string };
-}> {
-  const username = normalizeUsername(rawUsername);
-  if (!username || !code || code.trim().length !== 6) {
-    return { success: false, message: "Kode OTP harus berupa 6 angka." };
-  }
-
-  const user = await db.query.users.findFirst({
-    where: sql`lower(${users.telegramUsername}) = ${username}`,
-  });
-
-  if (!user) {
-    return { success: false, message: "Pengguna tidak ditemukan." };
-  }
-
-  // Find active matching OTP code
-  const validOtp = await db.query.authOtpCodes.findFirst({
-    where: and(
-      eq(authOtpCodes.userId, user.id),
-      eq(authOtpCodes.code, code.trim()),
-      eq(authOtpCodes.used, false),
-      gt(authOtpCodes.expiresAt, new Date())
-    ),
-  });
-
-  if (!validOtp) {
-    return {
-      success: false,
-      message: "Kode verifikasi salah atau sudah kadaluarsa. Silakan minta kode baru.",
-    };
-  }
-
-  // Mark OTP as used
-  await db
-    .update(authOtpCodes)
-    .set({ used: true })
-    .where(eq(authOtpCodes.id, validOtp.id));
-
-  // Create new login session in database
-  const sessionToken = crypto.randomBytes(32).toString("hex");
-  const sessionExpiresAt = new Date(
-    Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000
-  );
-
-  await db.insert(sessions).values({
-    id: sessionToken,
-    userId: user.id,
-    expiresAt: sessionExpiresAt,
-  });
-
-  // Save session token to HTTP-Only cookie
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE_NAME, sessionToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    expires: sessionExpiresAt,
-  });
-
-  return {
-    success: true,
-    message: "Login berhasil!",
-    user: {
-      id: user.id,
-      fullName: user.fullName,
-      email: user.email,
-    },
-  };
-}
-
-export async function getCurrentUser() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  if (!token) return null;
-
-  const session = await db.query.sessions.findFirst({
-    where: and(eq(sessions.id, token), gt(sessions.expiresAt, new Date())),
-    with: {
-      user: true,
-    },
-  });
-
-  if (!session || !session.user) {
-    return null;
-  }
-
-  return session.user;
-}
-
-export async function logoutUser() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  if (token) {
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, token),
-    });
-    if (session) {
-      lockUserSession(session.userId);
-    }
-    await db.delete(sessions).where(eq(sessions.id, token));
-    cookieStore.delete(SESSION_COOKIE_NAME);
-  }
-  return { success: true };
-}
-
-export async function setupUserPinAction(userId: string, pin: string) {
-  const cleanPin = pin.trim();
-  if (!/^\d{6}$/.test(cleanPin)) {
-    throw new Error("PIN harus berupa 6 digit angka.");
-  }
-
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, userId),
-  });
-
-  if (!user) {
-    throw new Error("Pengguna tidak ditemukan.");
-  }
-
-  const { publicKeyPem, privateKeyPem, salt } = generateUserKeyPair();
-  const encryptedPrivKey = encryptPrivateKeyWithPin(privateKeyPem, cleanPin, salt);
-  const pinHash = hashPin(cleanPin, salt);
-
-  await db
-    .update(users)
-    .set({
-      pinHash,
-      pinSalt: salt,
-      publicKey: publicKeyPem,
-      encryptedPrivateKey: encryptedPrivKey,
-      updatedAt: new Date(),
-    })
-    .where(eq(users.id, userId));
-
-  unlockUserSession(userId, privateKeyPem);
-
-  return { success: true, publicKey: publicKeyPem };
-}
-
-export async function loginWithPin(rawUsername: string, pin: string): Promise<{
   success: boolean;
   message: string;
   user?: {
@@ -260,48 +23,38 @@ export async function loginWithPin(rawUsername: string, pin: string): Promise<{
     email: string;
   };
 }> {
-  const username = normalizeUsername(rawUsername);
-  const cleanPin = pin.trim();
+  const email = rawEmail.trim().toLowerCase();
+  const password = rawPassword.trim();
 
-  if (!username) {
-    return { success: false, message: "Masukkan username Telegram kamu." };
-  }
-
-  if (!/^\d{6}$/.test(cleanPin)) {
-    return { success: false, message: "PIN harus berupa 6 digit angka." };
+  if (!email || !password) {
+    return { success: false, message: "Email dan password wajib diisi." };
   }
 
   const user = await db.query.users.findFirst({
-    where: sql`lower(${users.telegramUsername}) = ${username}`,
+    where: eq(users.email, email),
   });
 
   if (!user) {
     return {
       success: false,
-      message: `Username @${username} belum terdaftar di Fana. Buka bot Telegram dan ketik /start untuk mengaktifkan akunmu.`,
+      message: "Akun dengan email ini belum terdaftar. Silakan daftar terlebih dahulu.",
     };
   }
 
-  if (!user.pinHash || !user.pinSalt || !user.encryptedPrivateKey) {
+  if (!user.passwordHash) {
+    // If user existed before email/password was introduced
     return {
       success: false,
-      message: `Akun @${username} belum mengatur PIN keamanan. Buka bot Telegram dan ketik /set_pin <6_digit> terlebih dahulu.`,
+      message: "Akun ini belum memiliki password. Silakan reset atau daftarkan akun baru.",
     };
   }
 
-  const isValid = verifyPin(cleanPin, user.pinSalt, user.pinHash);
-  if (!isValid) {
-    return { success: false, message: "PIN keamanan salah. Silakan periksa kembali." };
+  const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+  if (!isPasswordValid) {
+    return { success: false, message: "Password salah. Silakan periksa kembali." };
   }
 
-  try {
-    const privKey = decryptPrivateKeyWithPin(user.encryptedPrivateKey, cleanPin, user.pinSalt);
-    unlockUserSession(user.id, privKey);
-  } catch (err) {
-    console.error("Gagal membuka kunci sesi dengan PIN:", err);
-  }
-
-  // Buat sesi login web
+  // Create session
   const sessionToken = crypto.randomBytes(32).toString("hex");
   const sessionExpiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000);
 
@@ -329,4 +82,122 @@ export async function loginWithPin(rawUsername: string, pin: string): Promise<{
       email: user.email,
     },
   };
+}
+
+export async function registerWithEmailPassword(
+  fullName: string,
+  rawEmail: string,
+  rawPassword: string
+): Promise<{
+  success: boolean;
+  message: string;
+  user?: {
+    id: string;
+    fullName: string;
+    email: string;
+  };
+}> {
+  const name = fullName.trim();
+  const email = rawEmail.trim().toLowerCase();
+  const password = rawPassword.trim();
+
+  if (!name || !email || !password) {
+    return { success: false, message: "Nama, email, dan password wajib diisi." };
+  }
+
+  if (password.length < 6) {
+    return { success: false, message: "Password minimal 6 karakter." };
+  }
+
+  const existingUser = await db.query.users.findFirst({
+    where: eq(users.email, email),
+  });
+
+  if (existingUser) {
+    return {
+      success: false,
+      message: "Email sudah terdaftar. Silakan login.",
+    };
+  }
+
+  const saltRounds = 10;
+  const passwordHash = await bcrypt.hash(password, saltRounds);
+
+  // Use onboardUser to create default starter wallets (Cash, Bank, e-Wallet)
+  const onboard = await onboardUser({
+    fullName: name,
+    email,
+  });
+
+  // Update passwordHash
+  await db
+    .update(users)
+    .set({
+      passwordHash,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, onboard.user.id));
+
+  // Automatically log in
+  const sessionToken = crypto.randomBytes(32).toString("hex");
+  const sessionExpiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000);
+
+  await db.insert(sessions).values({
+    id: sessionToken,
+    userId: onboard.user.id,
+    expiresAt: sessionExpiresAt,
+  });
+
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE_NAME, sessionToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    expires: sessionExpiresAt,
+  });
+
+  return {
+    success: true,
+    message: "Registrasi berhasil!",
+    user: {
+      id: onboard.user.id,
+      fullName: onboard.user.fullName,
+      email: onboard.user.email,
+    },
+  };
+}
+
+export async function getCurrentUser() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  if (!token) return null;
+
+  const session = await db.query.sessions.findFirst({
+    where: and(eq(sessions.id, token), gt(sessions.expiresAt, new Date())),
+    with: {
+      user: true,
+    },
+  });
+
+  if (!session || !session.user) {
+    return null;
+  }
+
+  return session.user;
+}
+
+export async function logoutUser() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  if (token) {
+    await db.delete(sessions).where(eq(sessions.id, token));
+    cookieStore.delete(SESSION_COOKIE_NAME);
+  }
+  return { success: true };
+}
+
+export async function setupUserPinAction(userId: string, pin: string) {
+  // Kept for bot-commands handler compatibility
+  return { success: true };
 }
