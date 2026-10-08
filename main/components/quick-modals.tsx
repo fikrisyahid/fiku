@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Wallet,
   Tag,
   PiggyBank,
-  HandCoins,
   Plus,
   Trash2,
   Edit2,
@@ -26,6 +25,7 @@ import {
 } from "@/app/actions/categories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ConfirmDeleteModal } from "@/components/confirm-delete-modal";
 
 interface ModalProps {
   userId: string;
@@ -57,6 +57,29 @@ export function QuickModals({
   const [categoryName, setCategoryName] = useState("");
   const [categoryType, setCategoryType] = useState<"income" | "expense">("expense");
   const [categoryIcon, setCategoryIcon] = useState("💸");
+
+  // State for Confirmation Delete Modal
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    type: "account" | "category";
+    target: any;
+  }>({
+    isOpen: false,
+    type: "account",
+    target: null,
+  });
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Close modal when pressing Escape
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape" && activeModal && !deleteConfirmation.isOpen) {
+        setActiveModal(null);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeModal, deleteConfirmation.isOpen]);
 
   function openModal(modal: "saldo" | "kategori" | "kantong") {
     setError(null);
@@ -112,17 +135,27 @@ export function QuickModals({
     }
   }
 
-  async function handleDeleteAccount(acc: any) {
-    if (!confirm(`Hapus kantong "${acc.name}"?`)) return;
+  function triggerDeleteAccount(acc: any) {
+    setDeleteConfirmation({
+      isOpen: true,
+      type: "account",
+      target: acc,
+    });
+  }
+
+  async function executeDeleteAccount() {
+    if (!deleteConfirmation.target) return;
+    setDeleteLoading(true);
     setError(null);
-    setLoading(true);
     try {
-      await deleteAccount(acc.id, userId, familyId);
+      await deleteAccount(deleteConfirmation.target.id, userId, familyId);
+      setDeleteConfirmation({ isOpen: false, type: "account", target: null });
       await onRefresh();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
+      setDeleteConfirmation({ isOpen: false, type: "account", target: null });
     } finally {
-      setLoading(false);
+      setDeleteLoading(false);
     }
   }
 
@@ -160,17 +193,27 @@ export function QuickModals({
     }
   }
 
-  async function handleDeleteCategory(cat: any) {
-    if (!confirm(`Hapus kategori "${cat.name}"?`)) return;
+  function triggerDeleteCategory(cat: any) {
+    setDeleteConfirmation({
+      isOpen: true,
+      type: "category",
+      target: cat,
+    });
+  }
+
+  async function executeDeleteCategory() {
+    if (!deleteConfirmation.target) return;
+    setDeleteLoading(true);
     setError(null);
-    setLoading(true);
     try {
-      await deleteCategory(cat.id, userId, familyId);
+      await deleteCategory(deleteConfirmation.target.id, userId, familyId);
+      setDeleteConfirmation({ isOpen: false, type: "category", target: null });
       await onRefresh();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
+      setDeleteConfirmation({ isOpen: false, type: "category", target: null });
     } finally {
-      setLoading(false);
+      setDeleteLoading(false);
     }
   }
 
@@ -191,7 +234,7 @@ export function QuickModals({
         <button
           type="button"
           onClick={() => openModal("saldo")}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60 text-xs font-semibold hover:bg-emerald-100 transition-all shadow-sm"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60 text-xs font-semibold hover:bg-emerald-100 transition-all shadow-sm cursor-pointer"
         >
           <Wallet className="w-3.5 h-3.5" />
           <span>/saldo</span>
@@ -200,7 +243,7 @@ export function QuickModals({
         <button
           type="button"
           onClick={() => openModal("kantong")}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all shadow-sm"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all shadow-sm cursor-pointer"
         >
           <PiggyBank className="w-3.5 h-3.5" />
           <span>/kantong</span>
@@ -209,7 +252,7 @@ export function QuickModals({
         <button
           type="button"
           onClick={() => openModal("kategori")}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all shadow-sm"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all shadow-sm cursor-pointer"
         >
           <Tag className="w-3.5 h-3.5" />
           <span>/kategori</span>
@@ -218,8 +261,18 @@ export function QuickModals({
 
       {/* MODAL DIALOG CONTAINER */}
       {activeModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setActiveModal(null);
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150"
+          >
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
               <div className="flex items-center gap-2">
@@ -235,7 +288,7 @@ export function QuickModals({
               <button
                 type="button"
                 onClick={() => setActiveModal(null)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -329,12 +382,12 @@ export function QuickModals({
                   )}
 
                   <div className="flex items-center gap-2 pt-1">
-                    <Button type="submit" size="sm" disabled={loading} className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700">
+                    <Button type="submit" size="sm" disabled={loading} className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 cursor-pointer">
                       {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1" /> : <Check className="w-3.5 h-3.5 mr-1" />}
                       {editingAccount ? "Perbarui Kantong" : "Simpan Kantong"}
                     </Button>
                     {editingAccount && (
-                      <Button type="button" variant="outline" size="sm" onClick={resetAccountForm} className="h-8 text-xs">
+                      <Button type="button" variant="outline" size="sm" onClick={resetAccountForm} className="h-8 text-xs cursor-pointer">
                         Batal
                       </Button>
                     )}
@@ -363,14 +416,14 @@ export function QuickModals({
                               setAccountName(acc.name);
                               setAccountType(acc.type);
                             }}
-                            className="p-1 rounded text-zinc-500 hover:text-emerald-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            className="p-1 rounded text-zinc-500 hover:text-emerald-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDeleteAccount(acc)}
-                            className="p-1 rounded text-zinc-500 hover:text-rose-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            onClick={() => triggerDeleteAccount(acc)}
+                            className="p-1 rounded text-zinc-500 hover:text-rose-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -413,12 +466,12 @@ export function QuickModals({
                   </div>
 
                   <div className="flex items-center gap-2 pt-1">
-                    <Button type="submit" size="sm" disabled={loading} className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700">
+                    <Button type="submit" size="sm" disabled={loading} className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 cursor-pointer">
                       {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1" /> : <Check className="w-3.5 h-3.5 mr-1" />}
                       {editingCategory ? "Perbarui" : "Simpan"}
                     </Button>
                     {editingCategory && (
-                      <Button type="button" variant="outline" size="sm" onClick={resetCategoryForm} className="h-8 text-xs">
+                      <Button type="button" variant="outline" size="sm" onClick={resetCategoryForm} className="h-8 text-xs cursor-pointer">
                         Batal
                       </Button>
                     )}
@@ -460,14 +513,14 @@ export function QuickModals({
                                   setCategoryType(cat.type);
                                   setCategoryIcon(cat.icon || "🏷️");
                                 }}
-                                className="p-1 rounded text-zinc-500 hover:text-emerald-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                className="p-1 rounded text-zinc-500 hover:text-emerald-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleDeleteCategory(cat)}
-                                className="p-1 rounded text-zinc-500 hover:text-rose-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                onClick={() => triggerDeleteCategory(cat)}
+                                className="p-1 rounded text-zinc-500 hover:text-rose-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -483,6 +536,31 @@ export function QuickModals({
           </div>
         </div>
       )}
+
+      {/* Confirmation Dialog for Kantong & Kategori Deletion */}
+      <ConfirmDeleteModal
+        isOpen={deleteConfirmation.isOpen}
+        title={
+          deleteConfirmation.type === "account"
+            ? "Hapus Kantong Keuangan"
+            : "Hapus Kategori Transaksi"
+        }
+        description={
+          deleteConfirmation.type === "account"
+            ? "Apakah kamu yakin ingin menghapus kantong ini? Tindakan ini tidak dapat dibatalkan jika kantong belum memiliki transaksi."
+            : "Apakah kamu yakin ingin menghapus kategori kustom ini?"
+        }
+        itemName={deleteConfirmation.target?.name}
+        isLoading={deleteLoading}
+        onConfirm={
+          deleteConfirmation.type === "account"
+            ? executeDeleteAccount
+            : executeDeleteCategory
+        }
+        onClose={() =>
+          setDeleteConfirmation({ isOpen: false, type: "account", target: null })
+        }
+      />
     </div>
   );
 }
