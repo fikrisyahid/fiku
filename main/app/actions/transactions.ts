@@ -181,3 +181,104 @@ export async function deleteTransaction(
 
   return deleted;
 }
+
+export async function updateTransaction(
+  transactionId: string,
+  data: {
+    userId: string;
+    familyId?: string | null;
+    accountId?: string;
+    categoryId?: string;
+    amount?: number;
+    type?: "income" | "expense";
+    note?: string | null;
+    transactionDate?: string;
+  }
+) {
+  const { userId, familyId = null, accountId, categoryId, amount, type, note, transactionDate } = data;
+
+  const txWhere = familyId
+    ? and(eq(transactions.id, transactionId), eq(transactions.familyId, familyId))
+    : and(eq(transactions.id, transactionId), eq(transactions.userId, userId), isNull(transactions.familyId));
+
+  const existingTx = await db.query.transactions.findFirst({
+    where: txWhere,
+    with: { account: true },
+  });
+
+  if (!existingTx) {
+    throw new Error("Transaksi tidak ditemukan.");
+  }
+
+  const oldAmount = parseFloat(existingTx.amount);
+  const oldType = existingTx.type as "income" | "expense";
+  const oldAccountId = existingTx.accountId;
+
+  const newAmount = amount !== undefined ? amount : oldAmount;
+  const newType = type !== undefined ? type : oldType;
+  const newAccountId = accountId !== undefined ? accountId : oldAccountId;
+
+  if (newAmount <= 0) {
+    throw new Error("Nominal transaksi harus lebih dari 0.");
+  }
+
+  await db.transaction(async (tx) => {
+    // 1. Revert previous effect on previous account
+    const oldAcc = await tx.query.accounts.findFirst({
+      where: eq(accounts.id, oldAccountId),
+    });
+    if (!oldAcc) throw new Error("Akun lama tidak ditemukan.");
+
+    let oldAccBalance = parseFloat(oldAcc.balance);
+    // revert old
+    oldAccBalance = oldType === "income" ? oldAccBalance - oldAmount : oldAccBalance + oldAmount;
+
+    if (oldAccountId === newAccountId) {
+      // Apply new effect on same account
+      const finalBalance = newType === "income" ? oldAccBalance + newAmount : oldAccBalance - newAmount;
+      await tx
+        .update(accounts)
+        .set({ balance: finalBalance.toString(), updatedAt: new Date() })
+        .where(eq(accounts.id, oldAccountId));
+    } else {
+      // Revert old account
+      await tx
+        .update(accounts)
+        .set({ balance: oldAccBalance.toString(), updatedAt: new Date() })
+        .where(eq(accounts.id, oldAccountId));
+
+      // Apply new effect on new account
+      const newAcc = await tx.query.accounts.findFirst({
+        where: eq(accounts.id, newAccountId),
+      });
+      if (!newAcc) throw new Error("Akun baru tidak ditemukan.");
+
+      const newAccCurrentBalance = parseFloat(newAcc.balance);
+      const newAccFinalBalance =
+        newType === "income" ? newAccCurrentBalance + newAmount : newAccCurrentBalance - newAmount;
+
+      await tx
+        .update(accounts)
+        .set({ balance: newAccFinalBalance.toString(), updatedAt: new Date() })
+        .where(eq(accounts.id, newAccountId));
+    }
+
+    // 2. Update transaction record
+    const updatePayload: Record<string, any> = {
+      amount: newAmount.toString(),
+      type: newType,
+      updatedAt: new Date(),
+    };
+    if (accountId !== undefined) updatePayload.accountId = accountId;
+    if (categoryId !== undefined) updatePayload.categoryId = categoryId;
+    if (note !== undefined) updatePayload.note = note ? note.trim() : null;
+    if (transactionDate !== undefined) updatePayload.transactionDate = transactionDate;
+
+    await tx
+      .update(transactions)
+      .set(updatePayload)
+      .where(eq(transactions.id, transactionId));
+  });
+
+  return { success: true };
+}
