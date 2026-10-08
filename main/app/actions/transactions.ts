@@ -398,3 +398,96 @@ export async function updateTransaction(
 
   return { success: true };
 }
+
+export async function importTransactionsBatch(
+  userId: string,
+  familyId: string | null | undefined,
+  records: Array<{
+    transactionDate: string;
+    type: "income" | "expense" | "transfer";
+    accountId: string;
+    toAccountId?: string | null;
+    categoryId?: string | null;
+    amount: number;
+    note?: string;
+  }>
+) {
+  if (!records || records.length === 0) {
+    return { success: true, count: 0 };
+  }
+
+  return await db.transaction(async (tx) => {
+    let imported = 0;
+    for (const item of records) {
+      if (item.amount <= 0) continue;
+
+      if (item.type === "transfer") {
+        if (!item.toAccountId || item.accountId === item.toAccountId) continue;
+        const fromAcc = await tx.query.accounts.findFirst({
+          where: eq(accounts.id, item.accountId),
+        });
+        const toAcc = await tx.query.accounts.findFirst({
+          where: eq(accounts.id, item.toAccountId),
+        });
+        if (!fromAcc || !toAcc) continue;
+
+        const fromBal = parseFloat(fromAcc.balance) - item.amount;
+        const toBal = parseFloat(toAcc.balance) + item.amount;
+
+        await tx
+          .update(accounts)
+          .set({ balance: fromBal.toString(), updatedAt: new Date() })
+          .where(eq(accounts.id, item.accountId));
+        await tx
+          .update(accounts)
+          .set({ balance: toBal.toString(), updatedAt: new Date() })
+          .where(eq(accounts.id, item.toAccountId));
+
+        await tx.insert(transactions).values({
+          userId,
+          familyId: familyId || null,
+          accountId: item.accountId,
+          toAccountId: item.toAccountId,
+          categoryId: null,
+          amount: item.amount.toString(),
+          type: "transfer",
+          note: item.note ? item.note.trim() : null,
+          source: "web",
+          transactionDate: item.transactionDate,
+        });
+        imported++;
+      } else {
+        const acc = await tx.query.accounts.findFirst({
+          where: eq(accounts.id, item.accountId),
+        });
+        if (!acc) continue;
+
+        const currentBal = parseFloat(acc.balance);
+        const newBal =
+          item.type === "income" ? currentBal + item.amount : currentBal - item.amount;
+
+        await tx
+          .update(accounts)
+          .set({ balance: newBal.toString(), updatedAt: new Date() })
+          .where(eq(accounts.id, item.accountId));
+
+        await tx.insert(transactions).values({
+          userId,
+          familyId: familyId || null,
+          accountId: item.accountId,
+          toAccountId: null,
+          categoryId: item.categoryId || null,
+          amount: item.amount.toString(),
+          type: item.type,
+          note: item.note ? item.note.trim() : null,
+          source: "web",
+          transactionDate: item.transactionDate,
+        });
+        imported++;
+      }
+    }
+
+    return { success: true, count: imported };
+  });
+}
+

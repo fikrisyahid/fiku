@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Calendar,
   AlertCircle,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   createTransaction,
@@ -24,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDeleteModal } from "@/components/confirm-delete-modal";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { ExportImportModal } from "@/components/export-import-modal";
 
 export interface TransactionRow {
   id: string;
@@ -86,6 +88,7 @@ export function TransactionsSheet({
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>("transactionDate");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [isExportImportOpen, setIsExportImportOpen] = useState(false);
 
   // Debounce timeout references
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
@@ -347,6 +350,17 @@ export function TransactionsSheet({
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            onClick={() => setIsExportImportOpen(true)}
+            variant="outline"
+            size="sm"
+            className="h-10 text-xs font-semibold border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800"
+          >
+            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-emerald-600" />
+            Ekspor / Impor
+          </Button>
+
           <Button
             type="button"
             onClick={handleAddNewRow}
@@ -688,6 +702,20 @@ export function TransactionsSheet({
         isLoading={deleteLoading}
         onConfirm={executeDeleteRow}
         onClose={() => setDeleteConfirmation({ isOpen: false, row: null })}
+      />
+
+      {/* Export & Import Modal */}
+      <ExportImportModal
+        isOpen={isExportImportOpen}
+        onClose={() => setIsExportImportOpen(false)}
+        userId={userId}
+        familyId={familyId}
+        transactions={initialTransactions}
+        accounts={accounts}
+        categories={categories}
+        onSuccess={async () => {
+          await onRefreshAll();
+        }}
       />
     </div>
   );
