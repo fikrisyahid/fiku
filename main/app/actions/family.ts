@@ -115,12 +115,14 @@ export async function createFamily(data: {
       // Skip if account is not found in mapping
       if (!targetAccountId) continue;
 
-      const targetCategoryId = categoryMap.get(tx.categoryId) || tx.categoryId;
+      const targetCategoryId = tx.categoryId ? (categoryMap.get(tx.categoryId) || tx.categoryId) : null;
+      const targetToAccountId = tx.toAccountId ? (accountMap.get(tx.toAccountId) || tx.toAccountId) : null;
 
       await db.insert(transactions).values({
         userId: adminUserId,
         familyId: newFamily.id,
         accountId: targetAccountId,
+        toAccountId: targetToAccountId,
         categoryId: targetCategoryId,
         amount: tx.amount,
         type: tx.type,

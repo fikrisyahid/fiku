@@ -62,8 +62,9 @@ export function TransactionsSheet({
     id: tx.id,
     transactionDate: tx.transactionDate || new Date().toISOString().split("T")[0],
     type: tx.type,
-    categoryId: tx.categoryId,
+    categoryId: tx.categoryId || "",
     accountId: tx.accountId,
+    toAccountId: tx.toAccountId || undefined,
     amount: parseFloat(tx.amount || "0"),
     note: tx.note || "",
   });
@@ -161,26 +162,16 @@ export function TransactionsSheet({
     setRowStatus((prev) => ({ ...prev, [id]: "saving" }));
 
     try {
-      if (row.type === "transfer") {
-        if (!row.toAccountId || row.accountId === row.toAccountId) {
+      if (row.isNew) {
+        if (row.type === "transfer" && (!row.toAccountId || row.accountId === row.toAccountId)) {
           throw new Error("Pilih kantong sumber dan tujuan yang berbeda.");
         }
-        await transferBetweenAccounts({
-          userId,
-          familyId,
-          fromAccountId: row.accountId,
-          toAccountId: row.toAccountId,
-          amount: row.amount,
-          note: row.note || "Transfer",
-          source: "web",
-          transactionDate: row.transactionDate,
-        });
-      } else if (row.isNew) {
         const res = await createTransaction({
           userId,
           familyId,
           accountId: row.accountId,
-          categoryId: row.categoryId,
+          toAccountId: row.type === "transfer" ? row.toAccountId : null,
+          categoryId: row.type === "transfer" ? null : row.categoryId,
           amount: row.amount,
           type: row.type,
           note: row.note,
@@ -194,11 +185,15 @@ export function TransactionsSheet({
           )
         );
       } else {
+        if (row.type === "transfer" && (!row.toAccountId || row.accountId === row.toAccountId)) {
+          throw new Error("Pilih kantong sumber dan tujuan yang berbeda.");
+        }
         await updateTransaction(id, {
           userId,
           familyId,
           accountId: row.accountId,
-          categoryId: row.categoryId,
+          toAccountId: row.type === "transfer" ? row.toAccountId : null,
+          categoryId: row.type === "transfer" ? null : row.categoryId,
           amount: row.amount,
           type: row.type,
           note: row.note,
@@ -515,7 +510,7 @@ export function TransactionsSheet({
                         options={[
                           { value: "expense", label: "Pengeluaran", badge: "out", badgeClassName: "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300" },
                           { value: "income", label: "Pemasukan", badge: "in", badgeClassName: "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300" },
-                          ...(row.isNew ? [{ value: "transfer", label: "Transfer", badge: "tf", badgeClassName: "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300" }] : []),
+                          { value: "transfer", label: "Transfer", badge: "tf", badgeClassName: "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300" },
                         ]}
                         triggerClassName={`h-8 font-semibold ${
                           row.type === "income"

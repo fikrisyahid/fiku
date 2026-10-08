@@ -133,12 +133,11 @@ export const transactions = pgTable("transactions", {
   accountId: uuid("account_id")
     .references(() => accounts.id, { onDelete: "restrict" })
     .notNull(),
-  categoryId: uuid("category_id")
-    .references(() => categories.id, { onDelete: "set null" })
-    .notNull(),
+  toAccountId: uuid("to_account_id").references(() => accounts.id, { onDelete: "restrict" }),
+  categoryId: uuid("category_id").references(() => categories.id, { onDelete: "set null" }),
   budgetId: uuid("budget_id").references(() => budgets.id, { onDelete: "set null" }),
   amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
-  type: text("type").notNull(), // 'income' | 'expense'
+  type: text("type").notNull(), // 'income' | 'expense' | 'transfer'
   note: text("note"),
   source: text("source").default("telegram").notNull(), // 'web', 'whatsapp', 'telegram'
   transactionDate: date("transaction_date").notNull(),
@@ -306,6 +305,10 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   }),
   account: one(accounts, {
     fields: [transactions.accountId],
+    references: [accounts.id],
+  }),
+  toAccount: one(accounts, {
+    fields: [transactions.toAccountId],
     references: [accounts.id],
   }),
   category: one(categories, {

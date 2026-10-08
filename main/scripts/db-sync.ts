@@ -40,10 +40,11 @@ async function main() {
   `;
   console.log("✅ Constraint source in transactions updated (web, whatsapp, telegram)");
 
-  // 4. Add budget_id to transactions
+  // 4. Add budget_id and to_account_id to transactions
   await sql`
     ALTER TABLE transactions 
-    ADD COLUMN IF NOT EXISTS budget_id uuid REFERENCES budgets(id) ON DELETE SET NULL;
+    ADD COLUMN IF NOT EXISTS budget_id uuid REFERENCES budgets(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS to_account_id uuid REFERENCES accounts(id) ON DELETE RESTRICT;
   `;
 
   // 5. Trigger protection preventing default categories (is_default = true) from being deleted
