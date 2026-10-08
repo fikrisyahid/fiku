@@ -23,6 +23,7 @@ import { transferBetweenAccounts } from "@/app/actions/accounts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDeleteModal } from "@/components/confirm-delete-modal";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 export interface TransactionRow {
   id: string;
@@ -506,23 +507,24 @@ export function TransactionsSheet({
 
                     {/* Tipe */}
                     <td className="p-2">
-                      <select
+                      <CustomSelect
                         value={row.type}
-                        onChange={(e) =>
-                          handleCellChange(row.id, "type", e.target.value as any)
+                        onChange={(val) =>
+                          handleCellChange(row.id, "type", val as any)
                         }
-                        className={`w-full h-8 px-2 rounded-lg text-xs font-semibold border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 outline-hidden ${
+                        options={[
+                          { value: "expense", label: "Pengeluaran", badge: "out", badgeClassName: "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300" },
+                          { value: "income", label: "Pemasukan", badge: "in", badgeClassName: "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300" },
+                          ...(row.isNew ? [{ value: "transfer", label: "Transfer", badge: "tf", badgeClassName: "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300" }] : []),
+                        ]}
+                        triggerClassName={`h-8 font-semibold ${
                           row.type === "income"
                             ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/30"
                             : row.type === "expense"
                             ? "text-rose-600 dark:text-rose-400 bg-rose-50/50 dark:bg-rose-950/30"
                             : "text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30"
                         }`}
-                      >
-                        <option value="expense">Pengeluaran</option>
-                        <option value="income">Pemasukan</option>
-                        {row.isNew && <option value="transfer">Transfer</option>}
-                      </select>
+                      />
                     </td>
 
                     {/* Kategori */}
@@ -532,21 +534,20 @@ export function TransactionsSheet({
                           Mutasi Internal
                         </div>
                       ) : (
-                        <select
+                        <CustomSelect
                           value={row.categoryId}
-                          onChange={(e) =>
-                            handleCellChange(row.id, "categoryId", e.target.value)
+                          onChange={(val) =>
+                            handleCellChange(row.id, "categoryId", val)
                           }
-                          className="w-full h-8 px-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs outline-hidden truncate"
-                        >
-                          {categories
+                          options={categories
                             .filter((c) => c.type === row.type)
-                            .map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.icon || "🏷️"} {c.name}
-                              </option>
-                            ))}
-                        </select>
+                            .map((c) => ({
+                              value: c.id,
+                              label: c.name,
+                              icon: c.icon || "🏷️",
+                            }))}
+                          triggerClassName="h-8"
+                        />
                       )}
                     </td>
 
@@ -554,48 +555,47 @@ export function TransactionsSheet({
                     <td className="p-2">
                       {row.type === "transfer" ? (
                         <div className="flex items-center gap-1">
-                          <select
+                          <CustomSelect
                             value={row.accountId}
-                            onChange={(e) =>
-                              handleCellChange(row.id, "accountId", e.target.value)
+                            onChange={(val) =>
+                              handleCellChange(row.id, "accountId", val)
                             }
-                            className="w-1/2 h-8 px-1.5 rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden truncate"
-                          >
-                            {accounts.map((a) => (
-                              <option key={a.id} value={a.id}>
-                                {a.name}
-                              </option>
-                            ))}
-                          </select>
+                            options={accounts.map((a) => ({
+                              value: a.id,
+                              label: a.name,
+                              icon: a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱",
+                            }))}
+                            triggerClassName="h-8 border-zinc-200 dark:border-zinc-700"
+                          />
                           <span className="text-[10px] text-zinc-400">➔</span>
-                          <select
+                          <CustomSelect
                             value={row.toAccountId || ""}
-                            onChange={(e) =>
-                              handleCellChange(row.id, "toAccountId", e.target.value)
+                            onChange={(val) =>
+                              handleCellChange(row.id, "toAccountId", val)
                             }
-                            className="w-1/2 h-8 px-1.5 rounded-lg bg-transparent border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden truncate"
-                          >
-                            {accounts.map((a) => (
-                              <option key={a.id} value={a.id}>
-                                {a.name}
-                              </option>
-                            ))}
-                          </select>
+                            options={accounts.map((a) => ({
+                              value: a.id,
+                              label: a.name,
+                              icon: a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱",
+                            }))}
+                            triggerClassName="h-8 border-zinc-200 dark:border-zinc-700"
+                          />
                         </div>
                       ) : (
-                        <select
+                        <CustomSelect
                           value={row.accountId}
-                          onChange={(e) =>
-                            handleCellChange(row.id, "accountId", e.target.value)
+                          onChange={(val) =>
+                            handleCellChange(row.id, "accountId", val)
                           }
-                          className="w-full h-8 px-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs outline-hidden truncate"
-                        >
-                          {accounts.map((a) => (
-                            <option key={a.id} value={a.id}>
-                              {a.name} ({formatRupiah(parseFloat(a.balance))})
-                            </option>
-                          ))}
-                        </select>
+                          options={accounts.map((a) => ({
+                            value: a.id,
+                            label: a.name,
+                            icon: a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱",
+                            badge: formatRupiah(parseFloat(a.balance)),
+                            badgeClassName: "font-mono font-normal text-zinc-500",
+                          }))}
+                          triggerClassName="h-8"
+                        />
                       )}
                     </td>
 

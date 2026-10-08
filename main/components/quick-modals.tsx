@@ -26,6 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDeleteModal } from "@/components/confirm-delete-modal";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 interface ModalProps {
   userId: string;
@@ -356,15 +357,16 @@ export function QuickModals({
                     </div>
                     <div>
                       <label className="text-[11px] text-zinc-500 font-medium">Tipe Kantong</label>
-                      <select
+                      <CustomSelect
                         value={accountType}
-                        onChange={(e) => setAccountType(e.target.value)}
-                        className="w-full h-9 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 text-xs"
-                      >
-                        <option value="cash">💵 Tunai (Cash)</option>
-                        <option value="bank">🏦 Bank (Rekening)</option>
-                        <option value="ewallet">📱 e-Wallet</option>
-                      </select>
+                        onChange={(val) => setAccountType(val)}
+                        options={[
+                          { value: "cash", label: "Tunai (Cash)", icon: "💵" },
+                          { value: "bank", label: "Bank (Rekening)", icon: "🏦" },
+                          { value: "ewallet", label: "e-Wallet", icon: "📱" },
+                        ]}
+                        triggerClassName="h-9 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                      />
                     </div>
                   </div>
 
@@ -454,14 +456,15 @@ export function QuickModals({
                     </div>
                     <div>
                       <label className="text-[11px] text-zinc-500 font-medium">Tipe</label>
-                      <select
+                      <CustomSelect
                         value={categoryType}
-                        onChange={(e) => setCategoryType(e.target.value as any)}
-                        className="w-full h-9 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 text-xs"
-                      >
-                        <option value="expense">Pengeluaran</option>
-                        <option value="income">Pemasukan</option>
-                      </select>
+                        onChange={(val) => setCategoryType(val as any)}
+                        options={[
+                          { value: "expense", label: "Pengeluaran", badge: "out", badgeClassName: "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300" },
+                          { value: "income", label: "Pemasukan", badge: "in", badgeClassName: "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300" },
+                        ]}
+                        triggerClassName="h-9 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                      />
                     </div>
                   </div>
 
