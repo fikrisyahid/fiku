@@ -12,8 +12,6 @@ Menyimpan profil pengguna dan kredensial autentikasi.
 - `email`: Text (Unique, Not Null).
 - `passwordHash`: Text (Bcrypt password hash).
 - `fullName`: Text (Not Null).
-- `activeMode`: Text (`personal` | `family`).
-- `activeFamilyId`: UUID (Foreign Key -> `families.id`).
 - `pinHash`, `pinSalt`: Text (Keamanan PIN sekunder / legacy).
 - `publicKey`, `encryptedPrivateKey`: Text (Kunci enkripsi asimetris).
 
@@ -28,7 +26,6 @@ Menyimpan sesi login web.
 Kantong keuangan, rekening bank, e-wallet, atau uang tunai.
 - `id`: UUID.
 - `userId`: UUID (Pemilik).
-- `familyId`: UUID (Nullable, jika berbagi dalam keluarga).
 - `name`: Text (e.g. "Dompet Tunai", "BCA", "GoPay").
 - `type`: Text (`bank` | `ewallet` | `cash`).
 - `balance`: Numeric(15, 2).
@@ -46,21 +43,14 @@ Kategori transaksi pemasukan dan pengeluaran.
 Catatan transaksi keuangan harian maupun transfer antar kantong.
 - `id`: UUID.
 - `userId`: UUID (Pemilik transaksi).
-- `familyId`: UUID (Nullable).
 - `accountId`: UUID (Foreign Key -> `accounts.id`, kantong sumber).
 - `toAccountId`: UUID (Nullable, Foreign Key -> `accounts.id`, kantong tujuan transfer).
 - `categoryId`: UUID (Nullable, Foreign Key -> `categories.id`).
-- `budgetId`: UUID (Nullable).
 - `amount`: Numeric(15, 2).
 - `type`: Text (`income` | `expense` | `transfer`).
 - `note`: Text (Keterangan transaksi).
-- `source`: Text (`web` | `telegram`).
+- `source`: Text (`web`).
 - `transactionDate`: Date.
-
-### 6. `families` & `family_members`
-Dukungan kolaborasi keuangan bersama keluarga / pasangan.
-- `families`: `id`, `name`, `adminUserId`.
-- `family_members`: `id`, `familyId`, `userId`, `role` (`admin` | `member`), `status` (`pending` | `accepted` | `declined`), `invitedBy`.
 
 ---
 

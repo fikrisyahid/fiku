@@ -14,6 +14,10 @@ import {
   Calendar,
   AlertCircle,
   FileSpreadsheet,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import {
   createTransaction,
@@ -27,6 +31,7 @@ import { ConfirmDeleteModal } from "@/components/confirm-delete-modal";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { ExportImportModal } from "@/components/export-import-modal";
 import { AlertModal, ModalAlertConfig } from "@/components/ui/alert-modal";
+import { getLocalTodayDateString } from "@/lib/utils";
 
 export interface TransactionRow {
   id: string;
@@ -84,8 +89,6 @@ export function TransactionsSheet({
   const rowStatusRef = useRef(rowStatus);
   rowStatusRef.current = rowStatus;
 
-  const [globalSaving, setGlobalSaving] = useState(false);
-
   // Filter & Search states
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>("transactionDate");
@@ -96,8 +99,17 @@ export function TransactionsSheet({
     message: "",
   });
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(25);
+
   // Debounce timeout references
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // Reset to first page when search query or itemsPerPage changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, itemsPerPage]);
 
   // Sync state when initialTransactions changes without wiping unsaved or actively edited rows
   useEffect(() => {
@@ -141,9 +153,9 @@ export function TransactionsSheet({
   const defaultCategory =
     categories.find((c) => c.type === "expense") || categories[0];
 
-  // Add new blank row at top
+  // Add new blank row at top with local user time
   function handleAddNewRow() {
-    const today = new Date().toISOString().split("T")[0];
+    const today = getLocalTodayDateString();
     const newRowId = `new_${Date.now()}`;
     const newRow: TransactionRow = {
       id: newRowId,
@@ -158,6 +170,7 @@ export function TransactionsSheet({
     };
 
     setRows((prev) => [newRow, ...prev]);
+    setCurrentPage(1); // Jump to page 1 so user immediately sees the newly added row
   }
 
   // Update cell and trigger debounced auto-save
@@ -263,16 +276,6 @@ export function TransactionsSheet({
     }
   }
 
-  // Manual save all pending rows
-  async function handleSaveAll() {
-    setGlobalSaving(true);
-    for (const r of rowsRef.current) {
-      if (r.amount > 0) {
-        await saveRow(r.id);
-      }
-    }
-    setGlobalSaving(false);
-  }
 
   // Confirmation delete modal state
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
@@ -382,9 +385,19 @@ export function TransactionsSheet({
     return result;
   }, [rows, searchQuery, sortField, sortOrder, categories, accounts]);
 
+  // Pagination calculation
+  const totalItems = filteredAndSortedRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
+  const paginatedRows = useMemo(() => {
+    const startIndex = (safeCurrentPage - 1) * itemsPerPage;
+    return filteredAndSortedRows.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredAndSortedRows, safeCurrentPage, itemsPerPage]);
+
   return (
     <div className="space-y-4">
-      {/* Top Toolbar: Search, Add Row, Save Status */}
+      {/* Top Toolbar: Search, Add Row, Export/Import */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -416,22 +429,6 @@ export function TransactionsSheet({
             className="flex-1 sm:flex-initial h-10 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm"
           >
             <Plus className="w-4 h-4 mr-1.5" /> Baris Baru (Row)
-          </Button>
-
-          <Button
-            type="button"
-            onClick={handleSaveAll}
-            disabled={globalSaving}
-            variant="outline"
-            size="sm"
-            className="w-full sm:w-auto h-10 text-xs font-semibold border-zinc-200 dark:border-zinc-800 rounded-xl"
-          >
-            {globalSaving ? (
-              <RefreshCw className="w-4 h-4 animate-spin mr-1.5 text-emerald-600" />
-            ) : (
-              <Save className="w-4 h-4 mr-1.5" />
-            )}
-            Simpan Semua
           </Button>
         </div>
       </div>
@@ -525,14 +522,15 @@ export function TransactionsSheet({
           </thead>
 
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {filteredAndSortedRows.length === 0 ? (
+            {paginatedRows.length === 0 ? (
               <tr>
                 <td colSpan={8} className="p-8 text-center text-zinc-400 text-xs">
                   Tidak ada transaksi yang cocok. Klik tombol <b>+ Baris Baru</b> untuk mulai mencatat.
                 </td>
               </tr>
             ) : (
-              filteredAndSortedRows.map((row, index) => {
+              paginatedRows.map((row, index) => {
+                const globalIndex = (safeCurrentPage - 1) * itemsPerPage + index + 1;
                 const status = rowStatus[row.id];
                 const isSaving = status === "saving";
                 const isSaved = status === "saved";
@@ -547,7 +545,7 @@ export function TransactionsSheet({
                   >
                     {/* Index */}
                     <td className="p-2.5 text-center text-[11px] text-zinc-400 font-mono">
-                      {index + 1}
+                      {globalIndex}
                     </td>
 
                     {/* Tanggal */}
@@ -736,9 +734,95 @@ export function TransactionsSheet({
           </tbody>
         </table>
       </div>
-      <div className="flex items-center justify-between text-[11px] text-zinc-400 px-1">
-        <span>Menampilkan {filteredAndSortedRows.length} transaksi</span>
-        <span>Perubahan baris otomatis tersimpan secara live (debounce 700ms).</span>
+
+      {/* Pagination & Status Footer */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500 dark:text-zinc-400 px-1 pt-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span>
+            Menampilkan{" "}
+            <span className="font-medium text-zinc-800 dark:text-zinc-200">
+              {totalItems === 0 ? 0 : (safeCurrentPage - 1) * itemsPerPage + 1}
+            </span>{" "}
+            -{" "}
+            <span className="font-medium text-zinc-800 dark:text-zinc-200">
+              {Math.min(safeCurrentPage * itemsPerPage, totalItems)}
+            </span>{" "}
+            dari{" "}
+            <span className="font-medium text-zinc-800 dark:text-zinc-200">{totalItems}</span>{" "}
+            transaksi
+          </span>
+
+          <div className="flex items-center gap-1.5 ml-2">
+            <span className="text-[11px] text-zinc-400">Tampilkan:</span>
+            <CustomSelect
+              value={String(itemsPerPage)}
+              onChange={(val) => setItemsPerPage(Number(val))}
+              options={[
+                { value: "10", label: "10 / hal" },
+                { value: "25", label: "25 / hal" },
+                { value: "50", label: "50 / hal" },
+                { value: "100", label: "100 / hal" },
+              ]}
+              triggerClassName="h-7 text-[11px] px-2.5 py-1 rounded-lg border-zinc-200 dark:border-zinc-800"
+            />
+          </div>
+        </div>
+
+        {/* Pagination Navigation */}
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(1)}
+            disabled={safeCurrentPage <= 1}
+            title="Halaman Pertama"
+            className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-800"
+          >
+            <ChevronsLeft className="w-4 h-4" />
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={safeCurrentPage <= 1}
+            title="Halaman Sebelumnya"
+            className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-800"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+
+          <span className="text-xs px-2 select-none">
+            Hal <span className="font-semibold text-zinc-800 dark:text-zinc-200">{safeCurrentPage}</span> dari{" "}
+            <span className="font-semibold text-zinc-800 dark:text-zinc-200">{totalPages}</span>
+          </span>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safeCurrentPage >= totalPages}
+            title="Halaman Berikutnya"
+            className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-800"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={safeCurrentPage >= totalPages}
+            title="Halaman Terakhir"
+            className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-800"
+          >
+            <ChevronsRight className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Confirmation Dialog for Transaction Row Deletion */}

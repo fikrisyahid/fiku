@@ -18,14 +18,7 @@ export async function getUserTransactions(
 
   return await db.query.transactions.findMany({
     where: (tx, { eq: eqField, and: andFields }) => {
-      const conditions = [];
-
-      if (familyId) {
-        conditions.push(eqField(tx.familyId, familyId));
-      } else {
-        conditions.push(eqField(tx.userId, userId));
-        conditions.push(isNull(tx.familyId));
-      }
+      const conditions = [eqField(tx.userId, userId)];
 
       if (options?.type) conditions.push(eqField(tx.type, options.type));
       if (options?.accountId) conditions.push(eqField(tx.accountId, options.accountId));
@@ -35,7 +28,6 @@ export async function getUserTransactions(
       account: true,
       toAccount: true,
       category: true,
-      budget: true,
       user: true,
     },
     orderBy: [desc(transactions.transactionDate), desc(transactions.createdAt)],
@@ -48,7 +40,6 @@ export async function createTransaction(data: {
   accountId: string;
   toAccountId?: string | null;
   categoryId?: string | null;
-  budgetId?: string;
   amount: number;
   type: "income" | "expense" | "transfer";
   note?: string;
@@ -61,7 +52,6 @@ export async function createTransaction(data: {
     accountId,
     toAccountId = null,
     categoryId,
-    budgetId,
     amount,
     type,
     note,
@@ -134,11 +124,9 @@ export async function createTransaction(data: {
         .insert(transactions)
         .values({
           userId,
-          familyId,
           accountId,
           toAccountId,
           categoryId: categoryId || null,
-          budgetId: budgetId || null,
           amount: amount.toString(),
           type: "transfer",
           note: note?.trim() || `Transfer ke ${toAccount.name}`,
@@ -160,12 +148,8 @@ export async function createTransaction(data: {
   }
 
   // 1. Fetch destination wallet
-  const accountWhere = familyId
-    ? and(eq(accounts.id, accountId), eq(accounts.familyId, familyId))
-    : and(eq(accounts.id, accountId), eq(accounts.userId, userId), isNull(accounts.familyId));
-
   const account = await db.query.accounts.findFirst({
-    where: accountWhere,
+    where: and(eq(accounts.id, accountId), eq(accounts.userId, userId)),
   });
 
   if (!account) {
@@ -200,11 +184,9 @@ export async function createTransaction(data: {
     .insert(transactions)
     .values({
       userId,
-      familyId,
       accountId,
       toAccountId: null,
       categoryId: categoryId || null,
-      budgetId: budgetId || null,
       amount: amount.toString(),
       type,
       note: note?.trim() || null,
@@ -236,12 +218,8 @@ export async function deleteTransaction(
   userId: string,
   familyId?: string | null
 ) {
-  const txWhere = familyId
-    ? and(eq(transactions.id, transactionId), eq(transactions.familyId, familyId))
-    : and(eq(transactions.id, transactionId), eq(transactions.userId, userId), isNull(transactions.familyId));
-
   const tx = await db.query.transactions.findFirst({
-    where: txWhere,
+    where: and(eq(transactions.id, transactionId), eq(transactions.userId, userId)),
     with: { account: true, toAccount: true },
   });
 
@@ -325,12 +303,8 @@ export async function updateTransaction(
     transactionDate,
   } = data;
 
-  const txWhere = familyId
-    ? and(eq(transactions.id, transactionId), eq(transactions.familyId, familyId))
-    : and(eq(transactions.id, transactionId), eq(transactions.userId, userId), isNull(transactions.familyId));
-
   const existingTx = await db.query.transactions.findFirst({
-    where: txWhere,
+    where: and(eq(transactions.id, transactionId), eq(transactions.userId, userId)),
     with: { account: true, toAccount: true },
   });
 
@@ -496,7 +470,6 @@ export async function importTransactionsBatch(
 
         await tx.insert(transactions).values({
           userId,
-          familyId: familyId || null,
           accountId: item.accountId,
           toAccountId: item.toAccountId,
           categoryId: null,
@@ -524,7 +497,6 @@ export async function importTransactionsBatch(
 
         await tx.insert(transactions).values({
           userId,
-          familyId: familyId || null,
           accountId: item.accountId,
           toAccountId: null,
           categoryId: item.categoryId || null,

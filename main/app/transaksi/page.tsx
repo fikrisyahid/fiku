@@ -23,7 +23,7 @@ export default async function TransaksiPage() {
   const [accounts, categories, transactionsList] = await Promise.all([
     getUserAccounts(user.id, familyId),
     getCategories(user.id, familyId),
-    getUserTransactions(user.id, { limit: 100, familyId }),
+    getUserTransactions(user.id, { limit: 1000, familyId }),
   ]);
 
   return (
