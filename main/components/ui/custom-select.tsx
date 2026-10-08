@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Check } from "lucide-react";
 
 export interface CustomSelectOption {
@@ -33,39 +34,88 @@ export function CustomSelect({
   disabled = false,
 }: CustomSelectProps) {
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number; placeAbove: boolean }>({
+    top: 0,
+    left: 0,
+    width: 0,
+    placeAbove: false,
+  });
+
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const selectedOption = options.find((opt) => opt.value === value);
 
-  // Close on outside click or Escape key
-  useEffect(() => {
-    function handlePointerDown(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setOpen(false);
-      }
-    }
+  // Calculate absolute coordinates in viewport
+  const updatePosition = () => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const estimatedHeight = Math.min(options.length * 38 + 16, 240);
+    const placeAbove = spaceBelow < estimatedHeight && rect.top > estimatedHeight;
 
+    setCoords({
+      top: placeAbove ? rect.top - 4 : rect.bottom + 4,
+      left: rect.left,
+      width: Math.max(rect.width, 160),
+      placeAbove,
+    });
+  };
+
+  useEffect(() => {
     if (open) {
+      updatePosition();
+
+      function handleScrollOrResize() {
+        updatePosition();
+      }
+
+      function handlePointerDown(e: MouseEvent) {
+        if (
+          buttonRef.current &&
+          !buttonRef.current.contains(e.target as Node) &&
+          dropdownRef.current &&
+          !dropdownRef.current.contains(e.target as Node)
+        ) {
+          setOpen(false);
+        }
+      }
+
+      function handleKeyDown(e: KeyboardEvent) {
+        if (e.key === "Escape") {
+          setOpen(false);
+        }
+      }
+
+      window.addEventListener("scroll", handleScrollOrResize, true);
+      window.addEventListener("resize", handleScrollOrResize);
       window.addEventListener("pointerdown", handlePointerDown);
       window.addEventListener("keydown", handleKeyDown);
+
+      return () => {
+        window.removeEventListener("scroll", handleScrollOrResize, true);
+        window.removeEventListener("resize", handleScrollOrResize);
+        window.removeEventListener("pointerdown", handlePointerDown);
+        window.removeEventListener("keydown", handleKeyDown);
+      };
     }
-    return () => {
-      window.removeEventListener("pointerdown", handlePointerDown);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open]);
+  }, [open, options.length]);
 
   return (
-    <div ref={containerRef} className={`relative inline-block w-full text-xs ${className}`}>
+    <div className={`relative inline-block w-full text-xs ${className}`}>
       <button
+        ref={buttonRef}
         type="button"
         disabled={disabled}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          updatePosition();
+          setOpen((prev) => !prev);
+        }}
         className={`w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-lg border text-left transition-all outline-hidden cursor-pointer ${
           open
             ? "border-emerald-500 ring-2 ring-emerald-500/10 bg-white dark:bg-zinc-800"
@@ -98,10 +148,20 @@ export function CustomSelect({
         />
       </button>
 
-      {/* Modern Popover Dropdown Menu */}
-      {open && (
+      {/* Render menu into Portal at document body to avoid any table overflow/clipping */}
+      {mounted && open && createPortal(
         <div
-          className={`absolute left-0 mt-1 z-50 min-w-full w-max max-w-[280px] max-h-60 overflow-y-auto rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-100 ${menuClassName}`}
+          ref={dropdownRef}
+          style={{
+            position: "fixed",
+            top: coords.placeAbove ? undefined : `${coords.top}px`,
+            bottom: coords.placeAbove ? `${window.innerHeight - coords.top}px` : undefined,
+            left: `${coords.left}px`,
+            minWidth: `${coords.width}px`,
+            maxWidth: "320px",
+            zIndex: 99999,
+          }}
+          className={`max-h-60 overflow-y-auto rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100 ${menuClassName}`}
         >
           {options.length === 0 ? (
             <div className="px-3 py-2 text-center text-zinc-400 text-[11px]">
@@ -140,7 +200,8 @@ export function CustomSelect({
               );
             })
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
