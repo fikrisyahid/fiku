@@ -1,83 +1,77 @@
-# Database Schema & Data Models
+# Skema Database & Model Data
 
-Fana uses **PostgreSQL** managed through **Drizzle ORM** (`main/db/schema.ts`).
+Fana menggunakan **PostgreSQL** yang dikelola melalui **Drizzle ORM** (`main/db/schema.ts`).
 
 ---
 
-## 🗄️ Primary Tables
+## 🗄️ Tabel Utama
 
 ### 1. `users`
-Stores user profile information, authentication credentials, and active workspace modes.
+Menyimpan profil pengguna dan kredensial autentikasi.
 - `id`: UUID (Primary Key).
 - `email`: Text (Unique, Not Null).
+- `passwordHash`: Text (Bcrypt password hash).
 - `fullName`: Text (Not Null).
-- `telegramId`: Text (Unique, Nullable).
-- `telegramUsername`: Text (Nullable).
 - `activeMode`: Text (`personal` | `family`).
 - `activeFamilyId`: UUID (Foreign Key -> `families.id`).
-- `pinHash`, `pinSalt`: Text (PIN authentication security).
-- `publicKey`, `encryptedPrivateKey`: Text (Cryptographic account keypair).
+- `pinHash`, `pinSalt`: Text (Keamanan PIN sekunder / legacy).
+- `publicKey`, `encryptedPrivateKey`: Text (Kunci enkripsi asimetris).
 
-### 2. `families` & `family_members`
-Supports collaborative financial management across family members.
-- `families`: `id`, `name`, `adminUserId`.
-- `family_members`: `id`, `familyId`, `userId`, `role` (`admin` | `member`), `status` (`pending` | `accepted` | `declined`), `invitedBy`.
+### 2. `sessions`
+Menyimpan sesi login web.
+- `id`: Text (Session token 64 hex characters, Primary Key).
+- `userId`: UUID (Foreign Key -> `users.id`).
+- `expiresAt`: Timestamp (Masa berlaku sesi).
+- `createdAt`: Timestamp.
 
 ### 3. `accounts`
-Financial accounts, bank accounts, digital e-wallets, or cash wallets.
+Kantong keuangan, rekening bank, e-wallet, atau uang tunai.
 - `id`: UUID.
-- `userId`: UUID (Owner).
-- `familyId`: UUID (Nullable, when shared within a family).
-- `name`: Text (e.g. "BCA", "GoPay", "Cash Wallet").
+- `userId`: UUID (Pemilik).
+- `familyId`: UUID (Nullable, jika berbagi dalam keluarga).
+- `name`: Text (e.g. "Dompet Tunai", "BCA", "GoPay").
 - `type`: Text (`bank` | `ewallet` | `cash`).
 - `balance`: Numeric(15, 2).
 - `isDefault`: Boolean.
 
 ### 4. `categories`
-Categories for transaction grouping.
+Kategori transaksi pemasukan dan pengeluaran.
 - `id`: UUID.
 - `name`: Text.
 - `type`: Text (`income` | `expense`).
-- `icon`: Text (Emoji or icon identifier).
+- `icon`: Text (Emoji / identifier ikon).
 - `isDefault`: Boolean.
 
-### 5. `budgets`
-Spending limits with date range intervals.
+### 5. `transactions`
+Catatan transaksi keuangan harian maupun transfer antar kantong.
 - `id`: UUID.
-- `categoryId`: UUID (Foreign Key).
-- `amountLimit`: Numeric(15, 2).
-- `periodStart`: Date.
-- `periodEnd`: Date.
-
-### 6. `transactions`
-Log of income and expense transactions.
-- `id`: UUID.
-- `accountId`: UUID (Foreign Key -> `accounts`).
-- `categoryId`: UUID (Foreign Key -> `categories`).
+- `userId`: UUID (Pemilik transaksi).
+- `familyId`: UUID (Nullable).
+- `accountId`: UUID (Foreign Key -> `accounts.id`, kantong sumber).
+- `toAccountId`: UUID (Nullable, Foreign Key -> `accounts.id`, kantong tujuan transfer).
+- `categoryId`: UUID (Nullable, Foreign Key -> `categories.id`).
 - `budgetId`: UUID (Nullable).
 - `amount`: Numeric(15, 2).
-- `type`: Text (`income` | `expense`).
-- `source`: Text (`web` | `telegram` | `whatsapp`).
+- `type`: Text (`income` | `expense` | `transfer`).
+- `note`: Text (Keterangan transaksi).
+- `source`: Text (`web` | `telegram`).
 - `transactionDate`: Date.
 
-### 7. `debts`
-Payable and receivable debt tracking.
-- `id`: UUID.
-- `type`: Text (`payable` / debt I owe | `receivable` / money owed to me).
-- `personName`: Text.
-- `amount`: Numeric(15, 2).
-- `dueDate`: Date (Nullable).
-- `isSettled`: Boolean.
+### 6. `families` & `family_members`
+Dukungan kolaborasi keuangan bersama keluarga / pasangan.
+- `families`: `id`, `name`, `adminUserId`.
+- `family_members`: `id`, `familyId`, `userId`, `role` (`admin` | `member`), `status` (`pending` | `accepted` | `declined`), `invitedBy`.
 
 ---
 
-## ⚙️ Drizzle Kit Commands
+## ⚙️ Perintah Drizzle ORM
 
-Run these commands from the repository root via `bun run` or directly in `main/`:
+Jalankan perintah ini dari folder `main/`:
 
 ```bash
-bun run db:generate   # Generate new SQL migration files from schema
-bun run db:push       # Push schema changes directly to PostgreSQL
-bun run db:migrate    # Apply pending database migrations
-bun run db:studio     # Open the Drizzle Studio visual web interface
+bun run db:sync       # Sinkronisasi kolom terbaru langsung ke Supabase
+bun run db:push       # Push schema langsung ke PostgreSQL
+bun run db:generate   # Generate file migrasi SQL baru
+bun run db:migrate    # Terapkan migrasi tertunda
+bun run db:studio     # Buka antarmuka Drizzle Studio di browser
 ```

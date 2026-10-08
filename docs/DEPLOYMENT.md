@@ -1,48 +1,49 @@
-# Deployment & Operations Guide
+# Panduan Deployment (Vercel & Next.js)
 
-This guide describes deployment strategies for **Fana**, from local development to production on **Cloudflare Workers**.
-
----
-
-## 💻 1. Local Development Mode
-
-During local development:
-- The Web Dashboard runs via `bun run dev` (port 3000).
-- The Telegram Bot runs via `bun run bot:dev` (using **long-polling** via GrammY, eliminating the need for a public HTTPS webhook during local testing).
+Fana adalah aplikasi **Next.js 16 (App Router)** murni yang dapat di-deploy dengan mudah ke platform serverless seperti **Vercel**.
 
 ---
 
-## ☁️ 2. Cloudflare Workers Production Architecture
+## 🚀 1. Deploy ke Vercel
 
-When deployed to Cloudflare Workers:
-1. **Serverless HTTP Webhook**:
-   - Long-polling is **not** used in serverless edge runtimes.
-   - Telegram sends updates to the public webhook endpoint:
-     `POST https://<your-domain>/api/bot`
-   - GrammY provides a native standard web fetch adapter (`webhookCallback(bot, "std/http")`) that runs seamlessly in Cloudflare Workers.
-
-2. **Database Connectivity (PostgreSQL)**:
-   - Use a PostgreSQL provider supporting serverless/edge environments via connection poolers or Cloudflare Hyperdrive (e.g. Supabase, Neon, or Hyperdrive).
-   - Ensure the database driver supports V8 runtime requirements.
-
-3. **Registering the Webhook with Telegram**:
-   Configure the webhook via the built-in script:
-   ```bash
-   TELEGRAM_BOT_WEBHOOK_URL="https://<your-domain>/api/bot" bun run webhook:set
+### Langkah Cepat via Vercel Dashboard
+1. Impor repositori GitHub Fana ke dashboard Vercel.
+2. Di bagian **Root Directory**, pilih:
    ```
-   To inspect the current webhook status:
-   ```bash
-   bun run webhook:info
+   main
    ```
+3. Framework Preset akan otomatis terdeteksi sebagai **Next.js**.
+4. Isi Environment Variables yang diperlukan (lihat bagian di bawah).
+5. Klik **Deploy**.
 
 ---
 
-## 🔒 3. Required Environment Variables
+## ⚙️ 2. Environment Variables yang Dibutuhkan
 
-| Variable | Description |
-| :--- | :--- |
-| `DATABASE_URL` | PostgreSQL connection string (e.g. `postgres://user:pass@host:5432/db`) |
-| `TELEGRAM_BOT_TOKEN` | Bot token provided by Telegram BotFather |
-| `TELEGRAM_BOT_WEBHOOK_URL` | Public HTTPS webhook endpoint on Cloudflare Workers |
-| `ENCRYPTION_PEPPER` | Cryptographic secret pepper for PIN derivation |
-| `NEXTAUTH_SECRET` / `SESSION_SECRET` | Secret key used for signing session cookies |
+Pastikan variabel berikut telah dikonfigurasi di pengaturan Environment Variables Vercel:
+
+| Variabel | Deskripsi | Contoh |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | PostgreSQL connection string (Supabase Session Pooler / Direct) | `postgresql://postgres.[REF]:[PASS]@aws-0-[REGION].pooler.supabase.com:6543/postgres` |
+| `ENCRYPTION_PEPPER` | Secret key server untuk proteksi kriptografi | `random_secret_salt_or_hash_key` |
+| `APP_SECRET_KEY` | Secret key server tambahan untuk double protection data enkripsi | `fana_production_secret_key_32_characters` |
+
+---
+
+## 🛠️ 3. Menjalankan di Lokal (Local Development)
+
+```bash
+# Masuk ke folder aplikasi
+cd main
+
+# Install dependensi
+bun install
+
+# Setup database (sinkronisasi kolom Drizzle)
+bun run db:sync
+
+# Jalankan server development
+bun run dev
+```
+
+Aplikasi dapat diakses di browser pada `http://localhost:3000`.

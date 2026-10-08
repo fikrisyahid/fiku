@@ -1,60 +1,49 @@
-# Telegram Bot Commands & Interactions
+# Panduan Format Smart Input
 
-The Fana Telegram bot is built using the [GrammY](https://grammy.dev/) framework and supports two interaction modes: **Explicit Commands** and **Smart Natural Text Parsing**.
-
----
-
-## 💡 Smart Natural Text Parsing
-
-Users can record expenses and income naturally without typing the `/catat` command.
-
-- Expenses:
-  - `-25k kopi susu` -> Records an expense of Rp 25,000 under "Food & Drinks".
-  - `-15000 bensin pertalite` -> Records an expense of Rp 15,000.
-- Income:
-  - `+5jt gaji bulanan` -> Records income of Rp 5,000,000.
-  - `+50k bonus freelance` -> Records income of Rp 50,000.
+Fitur **Smart Input** di Fana memungkinkan pencatatan transaksi secara instan tanpa perlu mengisi form bertahap, baik di bar pencarian pintar Web UI maupun pesan teks alami.
 
 ---
 
-## 📜 Bot Command Reference
+## 💡 Pola Penulisan Smart Input
 
-### 1. Security & Account
-- `/start` - Initialize the bot and trigger new user onboarding.
-- `/help` - Interactive help menu with inline keyboards.
-- `/set_pin <pin>` - Set a 6-digit numeric security PIN.
-- `/buka <pin>` - Unlock the encrypted wallet session.
-- `/kunci` - Lock the encryption session immediately.
-- `/reset` - Wipe out all user data (requires two-step confirmation).
+Sistem otomatis mendeteksi tanda minus (`-`) untuk pengeluaran, tanda plus (`+`) untuk pemasukan, dan format transfer (`tf` / `transfer`):
 
-### 2. Wallets & Balances
-- `/saldo` or `/dompet` - View all wallets and their current balances.
-- `/dompet_utama <wallet_name>` - Set default wallet for transactions.
-- `/tambah_dompet <name> [type] [initial_balance]` - Create a new wallet (`bank`, `ewallet`, `cash`).
-- `/edit_dompet <old_name> <new_name>` - Rename an existing wallet.
-- `/hapus_dompet <name>` - Delete a wallet.
-- `/transfer <from> ke <to> <amount>` (alias: `/tf`) - Transfer funds between wallets.
-- `/tarik <from_bank> <amount>` - Withdraw cash from a bank wallet into physical cash.
+### 1. Pengeluaran (Expense)
+Format: `-[nominal] [keterangan] [nama_kantong]`
+- `-25k sayur cash`
+  - Nominal: Rp 25.000
+  - Keterangan: sayur
+  - Kantong: cash (Dompet Tunai)
+- `-50k bensin vario cash`
+  - Nominal: Rp 50.000
+  - Keterangan: bensin vario
+  - Kantong: cash
+- `-15000 kopi kenangan bca`
+  - Nominal: Rp 15.000
+  - Keterangan: kopi kenangan
+  - Kantong: bca
 
-### 3. Transactions & Categories
-- `/catat <type> <amount> <category> [note]` - Explicitly log a transaction (`masuk` / `keluar`).
-- `/riwayat` - Display recent transaction history.
-- `/kategori` - View all active categories.
-- `/tambah_kategori <type> <name> [icon]` - Create a new category.
-- `/edit_kategori <old_name> <new_name>` - Rename a category.
-- `/hapus_kategori <name>` - Delete a category.
+### 2. Pemasukan (Income)
+Format: `+[nominal] [keterangan] [nama_kantong]`
+- `+5jt gaji bulanan bca`
+  - Nominal: Rp 5.000.000
+  - Keterangan: gaji bulanan
+  - Kantong: bca
+- `+50k bonus freelance gopay`
+  - Nominal: Rp 50.000
+  - Keterangan: bonus freelance
+  - Kantong: gopay
 
-### 4. Budget Allocations
-- `/alokasi` - View active budget allocations and remaining spending limits.
-- `/tambah_alokasi <category> <limit> [start_date] [end_date]` - Set a budget limit.
+### 3. Transfer Antar Kantong
+Format: `tf [nominal] [kantong_asal] ke [kantong_tujuan]`
+- `tf 100k bca ke gopay`
+  - Memindahkan saldo Rp 100.000 dari BCA ke GoPay tanpa mengubah total saldo keseluruhan.
+- `transfer 500k bank ke cash tarik atm`
+  - Memindahkan saldo Rp 500.000 dari Bank ke Tunai dengan catatan "tarik atm".
 
-### 5. Debts & Receivables
-- `/utang` - View payables (debts you owe) and receivables (debts owed to you).
-- `/tambah_utang <type> <person> <amount> [due_date] [note]` - Create a debt/receivable entry.
-- `/lunas <debt_id>` - Mark a debt or receivable as fully settled.
+---
 
-### 6. Family Mode
-- `/keluarga` - View family group status, members, and shared balance.
-- `/buat_keluarga <name>` - Create a new family group (creator becomes admin).
-- `/undang_keluarga <username/telegram_id>` - Invite a member to the family group.
-- `/mode` - Switch active mode (`personal` <-> `family`).
+## ⚡ Notasi Singkatan Nominal yang Didukung
+- `k` atau `rb`: Ribu (contoh: `25k` = `25.000`)
+- `jt` atau `m`: Juta (contoh: `2.5jt` = `2.500.000`)
+- Angka polos: (contoh: `15000` = `15.000`)
