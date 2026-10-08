@@ -56,7 +56,7 @@ export default async function HomePage() {
               F
             </div>
             <span className="font-bold text-base tracking-tight text-zinc-900 dark:text-zinc-100">
-              Fana Finance
+              Fana
             </span>
           </Link>
 
@@ -298,7 +298,7 @@ export default async function HomePage() {
           </a>
         </div>
         <p className="text-[11px] text-zinc-400">
-          Fana Finance &copy; {new Date().getFullYear()} • Zero-Knowledge Personal Finance Platform
+          Fana &copy; {new Date().getFullYear()} • Zero-Knowledge Personal Finance Platform
         </p>
       </footer>
     </div>

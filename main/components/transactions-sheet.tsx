@@ -76,9 +76,13 @@ export function TransactionsSheet({
     initialTransactions.map(mapTxToRow)
   );
 
-  // Sync state when initialTransactions changes
+  // Sync state when initialTransactions changes without wiping unsaved rows
   useEffect(() => {
-    setRows(initialTransactions.map(mapTxToRow));
+    setRows((prev) => {
+      const unsavedRows = prev.filter((r) => r.isNew);
+      const serverRows = initialTransactions.map(mapTxToRow);
+      return [...unsavedRows, ...serverRows];
+    });
   }, [initialTransactions]);
 
   // Saving state tracking per row id: 'idle' | 'saving' | 'saved' | 'error'

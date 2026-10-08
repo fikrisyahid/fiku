@@ -7,7 +7,7 @@ import { AppNavbar } from "@/components/app-navbar";
 import { TransactionsClient } from "@/components/transactions-client";
 
 export const metadata = {
-  title: "Transaksi • Fana Finance",
+  title: "Transaksi • Fana",
   description: "Pencatatan dan edit transaksi instan ala Google Sheet",
 };
 

@@ -71,11 +71,8 @@ export function AppNavbar({ user }: AppNavbarProps) {
                 F
               </div>
               <div>
-                <span className="font-bold text-base tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-1.5">
+                <span className="font-bold text-base tracking-tight text-zinc-900 dark:text-zinc-50">
                   Fana
-                  <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
-                    Web
-                  </span>
                 </span>
               </div>
             </Link>
@@ -147,7 +144,7 @@ export function AppNavbar({ user }: AppNavbarProps) {
                     F
                   </div>
                   <span className="font-bold text-sm tracking-tight text-zinc-900 dark:text-zinc-100">
-                    Fana Finance
+                    Fana
                   </span>
                 </div>
                 <button

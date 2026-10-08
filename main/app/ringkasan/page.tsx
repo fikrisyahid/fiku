@@ -6,7 +6,7 @@ import { AppNavbar } from "@/components/app-navbar";
 import { RingkasanClient } from "@/components/ringkasan-client";
 
 export const metadata = {
-  title: "Ringkasan • Fana Finance",
+  title: "Ringkasan • Fana",
   description: "Laporan dan analisis keuangan tahunan, bulanan, mingguan, dan harian",
 };
 
