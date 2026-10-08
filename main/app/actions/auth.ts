@@ -7,6 +7,12 @@ import { cookies } from "next/headers";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { onboardUser } from "@/lib/onboarding";
+import {
+  generateUserKeyPair,
+  encryptPrivateKeyWithSecret,
+  unlockUserSessionWithPassword,
+  lockUserSession,
+} from "@/lib/crypto";
 
 const SESSION_COOKIE_NAME = "fana_session";
 const SESSION_DURATION_DAYS = 30;
@@ -52,6 +58,41 @@ export async function loginWithEmailPassword(
   const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
   if (!isPasswordValid) {
     return { success: false, message: "Password salah. Silakan periksa kembali." };
+  }
+
+  // Double Protection: Unlock user session vault using Password + Server Secret Key (.env)
+  if (user.encryptedPrivateKey && user.pinSalt) {
+    unlockUserSessionWithPassword(
+      user.id,
+      password,
+      user.pinSalt,
+      user.encryptedPrivateKey
+    );
+  } else {
+    // Generate and securely store keypair for user if not yet present
+    const keyPair = generateUserKeyPair();
+    const encryptedPrivateKey = encryptPrivateKeyWithSecret(
+      keyPair.privateKeyPem,
+      password,
+      keyPair.salt
+    );
+
+    await db
+      .update(users)
+      .set({
+        publicKey: keyPair.publicKeyPem,
+        encryptedPrivateKey,
+        pinSalt: keyPair.salt,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, user.id));
+
+    unlockUserSessionWithPassword(
+      user.id,
+      password,
+      keyPair.salt,
+      encryptedPrivateKey
+    );
   }
 
   // Create session
@@ -129,14 +170,33 @@ export async function registerWithEmailPassword(
     email,
   });
 
-  // Update passwordHash
+  // Generate and securely store user keypair with Double Protection (Password + APP_SECRET_KEY)
+  const keyPair = generateUserKeyPair();
+  const encryptedPrivateKey = encryptPrivateKeyWithSecret(
+    keyPair.privateKeyPem,
+    password,
+    keyPair.salt
+  );
+
+  // Update passwordHash & cryptographic keys
   await db
     .update(users)
     .set({
       passwordHash,
+      publicKey: keyPair.publicKeyPem,
+      encryptedPrivateKey,
+      pinSalt: keyPair.salt,
       updatedAt: new Date(),
     })
     .where(eq(users.id, onboard.user.id));
+
+  // Unlock RAM session vault
+  unlockUserSessionWithPassword(
+    onboard.user.id,
+    password,
+    keyPair.salt,
+    encryptedPrivateKey
+  );
 
   // Automatically log in
   const sessionToken = crypto.randomBytes(32).toString("hex");
@@ -191,6 +251,12 @@ export async function logoutUser() {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (token) {
+    const session = await db.query.sessions.findFirst({
+      where: eq(sessions.id, token),
+    });
+    if (session?.userId) {
+      lockUserSession(session.userId);
+    }
     await db.delete(sessions).where(eq(sessions.id, token));
     cookieStore.delete(SESSION_COOKIE_NAME);
   }

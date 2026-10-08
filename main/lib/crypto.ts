@@ -1,6 +1,7 @@
 import crypto from "crypto";
 
 const SERVER_PEPPER = process.env.ENCRYPTION_PEPPER || "fana_secure_server_pepper_default_2026";
+const APP_SECRET_KEY = process.env.APP_SECRET_KEY || "fana_app_secret_key_double_protection_2026";
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 Hours
 
 // In-Memory RAM Session Vault for user private keys (Zero-Knowledge Session)
@@ -12,11 +13,22 @@ interface ActiveSession {
 const ramSessionVault = new Map<string, ActiveSession>();
 
 /**
- * Derive 256-bit encryption key from user PIN + Salt + Pepper
+ * Derive 256-bit encryption key combining:
+ * 1. User Secret (Password or PIN)
+ * 2. Per-User Salt
+ * 3. Server Pepper (ENCRYPTION_PEPPER)
+ * 4. Master Secret Key (.env APP_SECRET_KEY) -> Double Protection
+ */
+export function deriveKeyFromSecret(userSecret: string, salt: string): Buffer {
+  const combinedSecret = `${userSecret}:${SERVER_PEPPER}:${APP_SECRET_KEY}`;
+  return crypto.pbkdf2Sync(combinedSecret, salt, 100000, 32, "sha256");
+}
+
+/**
+ * Legacy alias for deriveKeyFromPin
  */
 export function deriveKeyFromPin(pin: string, salt: string): Buffer {
-  const combinedSecret = `${pin}:${SERVER_PEPPER}`;
-  return crypto.pbkdf2Sync(combinedSecret, salt, 100000, 32, "sha256");
+  return deriveKeyFromSecret(pin, salt);
 }
 
 /**
@@ -54,10 +66,10 @@ export function generateUserKeyPair() {
 }
 
 /**
- * Encrypt user Private Key using PIN-derived key (AES-256-GCM)
+ * Encrypt user Private Key using User Secret (Password or PIN) + Server Secret Key (Double Protection)
  */
-export function encryptPrivateKeyWithPin(privateKeyPem: string, pin: string, salt: string): string {
-  const key = deriveKeyFromPin(pin, salt);
+export function encryptPrivateKeyWithSecret(privateKeyPem: string, secret: string, salt: string): string {
+  const key = deriveKeyFromSecret(secret, salt);
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
 
@@ -70,15 +82,15 @@ export function encryptPrivateKeyWithPin(privateKeyPem: string, pin: string, sal
 }
 
 /**
- * Decrypt user Private Key using PIN
+ * Decrypt user Private Key using User Secret (Password or PIN) + Server Secret Key (Double Protection)
  */
-export function decryptPrivateKeyWithPin(encryptedPayload: string, pin: string, salt: string): string {
+export function decryptPrivateKeyWithSecret(encryptedPayload: string, secret: string, salt: string): string {
   const [ivB64, authTagB64, ciphertextB64] = encryptedPayload.split(":");
   if (!ivB64 || !authTagB64 || !ciphertextB64) {
     throw new Error("Invalid encrypted key format.");
   }
 
-  const key = deriveKeyFromPin(pin, salt);
+  const key = deriveKeyFromSecret(secret, salt);
   const iv = Buffer.from(ivB64, "base64");
   const authTag = Buffer.from(authTagB64, "base64");
   const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
@@ -88,6 +100,20 @@ export function decryptPrivateKeyWithPin(encryptedPayload: string, pin: string, 
   decrypted += decipher.final("utf8");
 
   return decrypted;
+}
+
+/**
+ * Encrypt user Private Key using PIN-derived key (AES-256-GCM)
+ */
+export function encryptPrivateKeyWithPin(privateKeyPem: string, pin: string, salt: string): string {
+  return encryptPrivateKeyWithSecret(privateKeyPem, pin, salt);
+}
+
+/**
+ * Decrypt user Private Key using PIN
+ */
+export function decryptPrivateKeyWithPin(encryptedPayload: string, pin: string, salt: string): string {
+  return decryptPrivateKeyWithSecret(encryptedPayload, pin, salt);
 }
 
 /**
@@ -189,6 +215,26 @@ export function getActiveUserPrivateKey(userId: string): string | null {
   // Refresh TTL on active interaction
   session.expiresAt = Date.now() + SESSION_TTL_MS;
   return session.privateKey.toString("utf8");
+}
+
+/**
+ * Unlock user key session in RAM after password verification
+ * Uses Password + per-user Salt + Server Pepper + APP_SECRET_KEY (Double Protection)
+ */
+export function unlockUserSessionWithPassword(
+  userId: string,
+  password: string,
+  salt: string,
+  encryptedPrivateKey: string
+): boolean {
+  try {
+    const privKey = decryptPrivateKeyWithSecret(encryptedPrivateKey, password, salt);
+    unlockUserSession(userId, privKey);
+    return true;
+  } catch (err) {
+    console.error("Failed to unlock user session with password:", err);
+    return false;
+  }
 }
 
 /**
