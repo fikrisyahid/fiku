@@ -1,8 +1,9 @@
 "use server";
 
 import { createTransaction } from "@/app/actions/transactions";
-import { transferBetweenAccounts, getUserAccounts } from "@/app/actions/accounts";
+import { getUserAccounts } from "@/app/actions/accounts";
 import { getCategories } from "@/app/actions/categories";
+import { getLocalTodayDateString } from "@/lib/utils";
 
 export interface SmartInputResult {
   success: boolean;
@@ -255,8 +256,10 @@ export async function processSmartTextInput(data: {
   userId: string;
   familyId?: string | null;
   text: string;
+  transactionDate?: string;
 }): Promise<SmartInputResult> {
   const { userId, familyId = null, text } = data;
+  const transactionDate = data.transactionDate || getLocalTodayDateString();
   const rawText = text.trim();
   if (!rawText) {
     return {
@@ -302,23 +305,26 @@ export async function processSmartTextInput(data: {
     }
 
     try {
-      const res = await transferBetweenAccounts({
+      const res = await createTransaction({
         userId,
         familyId,
-        fromAccountId: parsed.fromAccount.id,
+        accountId: parsed.fromAccount.id,
         toAccountId: parsed.toAccount.id,
+        categoryId: null,
         amount: parsed.amount,
-        note: parsed.note || "Transfer via Smart Input",
+        type: "transfer",
+        note: parsed.note || `Transfer ke ${parsed.toAccount.name}`,
         source: "web",
+        transactionDate,
       });
 
       return {
         success: true,
-        message: `Transfer berhasil! Rp ${parsed.amount.toLocaleString("id-ID")} dipindahkan dari ${res.fromAccount.name} ke ${res.toAccount.name}.`,
+        message: `Transfer berhasil! Rp ${parsed.amount.toLocaleString("id-ID")} dipindahkan dari ${parsed.fromAccount.name} ke ${parsed.toAccount.name}.`,
         type: "transfer",
         amount: parsed.amount,
-        accountName: res.fromAccount.name,
-        toAccountName: res.toAccount.name,
+        accountName: parsed.fromAccount.name,
+        toAccountName: parsed.toAccount.name,
         note: parsed.note,
       };
     } catch (err: unknown) {
@@ -365,22 +371,25 @@ export async function processSmartTextInput(data: {
     }
 
     try {
-      const res = await transferBetweenAccounts({
+      const res = await createTransaction({
         userId,
         familyId,
-        fromAccountId: fromAccount.id,
+        accountId: fromAccount.id,
         toAccountId: cashAccount.id,
+        categoryId: null,
         amount,
+        type: "transfer",
         note,
         source: "web",
+        transactionDate,
       });
 
       return {
         success: true,
-        message: `Tarik tunai berhasil! Rp ${amount.toLocaleString("id-ID")} dari ${res.fromAccount.name} ke ${cashAccount.name}.`,
+        message: `Tarik tunai berhasil! Rp ${amount.toLocaleString("id-ID")} dari ${fromAccount.name} ke ${cashAccount.name}.`,
         type: "transfer",
         amount,
-        accountName: res.fromAccount.name,
+        accountName: fromAccount.name,
         toAccountName: cashAccount.name,
         note,
       };
@@ -467,6 +476,7 @@ export async function processSmartTextInput(data: {
       type,
       note: description,
       source: "web",
+      transactionDate,
     });
 
     const actionText = type === "income" ? "Pemasukan" : "Pengeluaran";

@@ -6,6 +6,7 @@ import { processSmartTextInput } from "@/lib/smart-input";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AlertModal, ModalAlertConfig } from "@/components/ui/alert-modal";
+import { getLocalTodayDateString } from "@/lib/utils";
 
 interface SmartInputBarProps {
   userId: string;
@@ -37,6 +38,7 @@ export function SmartInputBar({ userId, familyId, onSuccess }: SmartInputBarProp
         userId,
         familyId,
         text: inputText,
+        transactionDate: getLocalTodayDateString(),
       });
 
       if (res.success) {
