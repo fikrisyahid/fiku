@@ -596,21 +596,24 @@ export function TransactionsSheet({
 
                     {/* Nominal */}
                     <td className="p-2">
-                      <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={row.amount || ""}
-                        onChange={(e) =>
-                          handleCellChange(
-                            row.id,
-                            "amount",
-                            parseFloat(e.target.value) || 0
-                          )
-                        }
-                        placeholder="0"
-                        className="w-full h-8 px-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono font-bold outline-hidden"
-                      />
+                      <div className="relative flex items-center">
+                        <span className="absolute left-2.5 text-xs font-semibold text-zinc-400 select-none pointer-events-none">
+                          Rp
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={row.amount ? row.amount.toLocaleString("id-ID") : ""}
+                          onChange={(e) => {
+                            // Strip everything except digits
+                            const rawDigits = e.target.value.replace(/\D/g, "");
+                            const numericVal = rawDigits ? parseInt(rawDigits, 10) : 0;
+                            handleCellChange(row.id, "amount", numericVal);
+                          }}
+                          placeholder="0"
+                          className="w-full h-8 pl-8 pr-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono font-bold outline-hidden"
+                        />
+                      </div>
                     </td>
 
                     {/* Keterangan */}
