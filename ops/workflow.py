@@ -117,14 +117,6 @@ def dev(port: int) -> None:
     sys.exit(code)
 
 
-@cli.command("bot")
-def bot() -> None:
-    """Start Telegram Bot locally with long-polling (dev-bot.ts)."""
-    console.print(Panel.fit("[bold cyan]Fana Finance - Telegram Bot Dev (Polling)[/bold cyan]", border_style="cyan"))
-    code = run_command(["bun", "run", "bot:dev"])
-    sys.exit(code)
-
-
 @cli.command("install")
 def install() -> None:
     """Install project dependencies (Bun inside main/)."""
@@ -203,35 +195,6 @@ def db_studio() -> None:
 def db_sync() -> None:
     """Run helper script db-sync.ts."""
     code = run_command(["bun", "run", "db:sync"])
-    sys.exit(code)
-
-
-@cli.group("webhook")
-def webhook_group() -> None:
-    """Telegram Webhook management commands (Cloudflare / Production)."""
-    pass
-
-
-@webhook_group.command("set")
-@click.option("--url", default="", help="Custom Webhook URL. If omitted, reads TELEGRAM_BOT_WEBHOOK_URL.")
-def webhook_set(url: str) -> None:
-    """Set Telegram Webhook to a public URL."""
-    env = {"TELEGRAM_BOT_WEBHOOK_URL": url} if url else None
-    code = run_command(["bun", "run", "webhook:set"], env_extra=env)
-    sys.exit(code)
-
-
-@webhook_group.command("info")
-def webhook_info() -> None:
-    """Inspect current Telegram webhook status."""
-    code = run_command(["bun", "run", "webhook:info"])
-    sys.exit(code)
-
-
-@webhook_group.command("delete")
-def webhook_delete() -> None:
-    """Delete Telegram webhook (revert to polling mode if needed)."""
-    code = run_command(["bun", "run", "webhook:delete"])
     sys.exit(code)
 
 

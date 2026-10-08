@@ -5,8 +5,6 @@
   "description": "Fana Finance Platform - Root Task Runner",
   "scripts": {
     "dev": "uv run ops/workflow.py dev",
-    "bot:dev": "uv run ops/workflow.py bot",
-    "bot": "uv run ops/workflow.py bot",
     "check": "uv run ops/workflow.py check",
     "lint": "uv run ops/workflow.py lint",
     "build": "uv run ops/workflow.py build",
@@ -18,9 +16,6 @@
     "db:migrate": "uv run ops/workflow.py db migrate",
     "db:studio": "uv run ops/workflow.py db studio",
     "db:sync": "uv run ops/workflow.py db sync",
-    "webhook:set": "uv run ops/workflow.py webhook set",
-    "webhook:info": "uv run ops/workflow.py webhook info",
-    "webhook:delete": "uv run ops/workflow.py webhook delete",
     "fana": "uv run ops/workflow.py"
   },
   "packageManager": "bun@1.4.2"
