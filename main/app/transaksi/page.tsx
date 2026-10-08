@@ -17,13 +17,10 @@ export default async function TransaksiPage() {
     redirect("/login");
   }
 
-  const isFamily = user.activeMode === "family" && Boolean(user.activeFamilyId);
-  const familyId = isFamily ? user.activeFamilyId : null;
-
   const [accounts, categories, transactionsList] = await Promise.all([
-    getUserAccounts(user.id, familyId),
-    getCategories(user.id, familyId),
-    getUserTransactions(user.id, { limit: 1000, familyId }),
+    getUserAccounts(user.id),
+    getCategories(user.id),
+    getUserTransactions(user.id, { limit: 1000 }),
   ]);
 
   return (
@@ -42,7 +39,6 @@ export default async function TransaksiPage() {
 
         <TransactionsClient
           userId={user.id}
-          familyId={familyId}
           accounts={accounts}
           categories={categories}
           initialTransactions={transactionsList}

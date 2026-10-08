@@ -16,12 +16,9 @@ export default async function RingkasanPage() {
     redirect("/login");
   }
 
-  const isFamily = user.activeMode === "family" && Boolean(user.activeFamilyId);
-  const familyId = isFamily ? user.activeFamilyId : null;
-
   const [accounts, transactionsList] = await Promise.all([
-    getUserAccounts(user.id, familyId),
-    getUserTransactions(user.id, { limit: 500, familyId }),
+    getUserAccounts(user.id),
+    getUserTransactions(user.id, { limit: 500 }),
   ]);
 
   return (

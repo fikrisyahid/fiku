@@ -20,8 +20,6 @@ export const users = pgTable("users", {
   phone: text("phone"),
   telegramId: text("telegram_id").unique(),
   telegramUsername: text("telegram_username"),
-  activeMode: text("active_mode").default("personal").notNull(), // 'personal'
-  activeFamilyId: uuid("active_family_id"),
   passwordHash: text("password_hash"),
   pinHash: text("pin_hash"),
   pinSalt: text("pin_salt"),

@@ -52,22 +52,26 @@ async function main() {
   await sql`ALTER TABLE transactions DROP COLUMN IF EXISTS budget_id CASCADE;`;
   console.log("✅ Deprecated columns (family_id, budget_id, active_family_id) removed");
 
-  // 5. Update transactions source check constraint
+  // 5. Update transactions source & type check constraints
   await sql`
     ALTER TABLE transactions 
-    DROP CONSTRAINT IF EXISTS transactions_source_check;
+    DROP CONSTRAINT IF EXISTS transactions_source_check,
+    DROP CONSTRAINT IF EXISTS transactions_type_check;
   `;
   await sql`
     ALTER TABLE transactions 
     ADD CONSTRAINT transactions_source_check 
-    CHECK (source IN ('web', 'whatsapp', 'telegram'));
+    CHECK (source IN ('web', 'whatsapp', 'telegram')),
+    ADD CONSTRAINT transactions_type_check 
+    CHECK (type IN ('income', 'expense', 'transfer'));
   `;
-  console.log("✅ Constraint source in transactions updated");
+  console.log("✅ Constraints source and type ('income', 'expense', 'transfer') updated");
 
-  // 6. Add to_account_id to transactions if not exists
+  // 6. Add to_account_id to transactions if not exists and allow null category_id (for transfer)
   await sql`
     ALTER TABLE transactions 
-    ADD COLUMN IF NOT EXISTS to_account_id uuid REFERENCES accounts(id) ON DELETE RESTRICT;
+    ADD COLUMN IF NOT EXISTS to_account_id uuid REFERENCES accounts(id) ON DELETE RESTRICT,
+    ALTER COLUMN category_id DROP NOT NULL;
   `;
 
   // 7. Trigger protection preventing default categories (is_default = true) from being deleted
