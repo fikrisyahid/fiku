@@ -76,17 +76,14 @@ export function TransactionsSheet({
     initialTransactions.map(mapTxToRow)
   );
 
-  // Sync state when initialTransactions changes without wiping unsaved rows
-  useEffect(() => {
-    setRows((prev) => {
-      const unsavedRows = prev.filter((r) => r.isNew);
-      const serverRows = initialTransactions.map(mapTxToRow);
-      return [...unsavedRows, ...serverRows];
-    });
-  }, [initialTransactions]);
+  const rowsRef = useRef<TransactionRow[]>(rows);
+  rowsRef.current = rows;
 
   // Saving state tracking per row id: 'idle' | 'saving' | 'saved' | 'error'
   const [rowStatus, setRowStatus] = useState<Record<string, "saving" | "saved" | "error">>({});
+  const rowStatusRef = useRef(rowStatus);
+  rowStatusRef.current = rowStatus;
+
   const [globalSaving, setGlobalSaving] = useState(false);
 
   // Filter & Search states
@@ -101,6 +98,35 @@ export function TransactionsSheet({
 
   // Debounce timeout references
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // Sync state when initialTransactions changes without wiping unsaved or actively edited rows
+  useEffect(() => {
+    setRows((prev) => {
+      const serverMap = new Map(initialTransactions.map((tx) => [tx.id, mapTxToRow(tx)]));
+
+      // Keep order of prev rows while updating with server data when safe
+      const updatedPrev = prev.map((localRow) => {
+        // Keep unsaved newly added rows
+        if (localRow.isNew) return localRow;
+
+        // If row is currently saving or has a pending debounced auto-save, preserve local changes
+        if (rowStatusRef.current[localRow.id] === "saving" || debounceTimers.current[localRow.id]) {
+          return localRow;
+        }
+
+        // Otherwise sync with server data if available
+        return serverMap.get(localRow.id) || localRow;
+      });
+
+      // Append any server rows that are not in prev (e.g. added from another device/source)
+      const prevIds = new Set(prev.map((p) => p.id));
+      const newlyArrivedFromServer = initialTransactions
+        .filter((tx) => !prevIds.has(tx.id))
+        .map(mapTxToRow);
+
+      return [...updatedPrev, ...newlyArrivedFromServer];
+    });
+  }, [initialTransactions]);
 
   // Helpers
   const formatRupiah = (val: number) => {
@@ -163,7 +189,7 @@ export function TransactionsSheet({
 
   // Save specific row
   async function saveRow(id: string) {
-    const row = rows.find((r) => r.id === id);
+    const row = rowsRef.current.find((r) => r.id === id);
     if (!row) return;
 
     if (row.amount <= 0) {
@@ -240,7 +266,7 @@ export function TransactionsSheet({
   // Manual save all pending rows
   async function handleSaveAll() {
     setGlobalSaving(true);
-    for (const r of rows) {
+    for (const r of rowsRef.current) {
       if (r.amount > 0) {
         await saveRow(r.id);
       }
