@@ -13,6 +13,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FinancialChart } from "@/components/financial-chart";
 
 interface RingkasanClientProps {
   transactions: any[];
@@ -287,6 +288,13 @@ export function RingkasanClient({
           </CardContent>
         </Card>
       </div>
+
+      {/* Financial Chart Component */}
+      <FinancialChart
+        period={period}
+        periodLabel={periodLabel}
+        transactions={filteredTransactions}
+      />
 
       {/* Detail Breakdown by Category & Wallets */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -349,13 +349,13 @@ export function TransactionsSheet({
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             onClick={() => setIsExportImportOpen(true)}
             variant="outline"
             size="sm"
-            className="h-10 text-xs font-semibold border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800"
+            className="flex-1 sm:flex-initial h-10 text-xs font-semibold border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800"
           >
             <FileSpreadsheet className="w-4 h-4 mr-1.5 text-emerald-600" />
             Ekspor / Impor
@@ -365,7 +365,7 @@ export function TransactionsSheet({
             type="button"
             onClick={handleAddNewRow}
             size="sm"
-            className="h-10 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm"
+            className="flex-1 sm:flex-initial h-10 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm"
           >
             <Plus className="w-4 h-4 mr-1.5" /> Baris Baru (Row)
           </Button>
@@ -376,7 +376,7 @@ export function TransactionsSheet({
             disabled={globalSaving}
             variant="outline"
             size="sm"
-            className="h-10 text-xs font-semibold border-zinc-200 dark:border-zinc-800 rounded-xl"
+            className="w-full sm:w-auto h-10 text-xs font-semibold border-zinc-200 dark:border-zinc-800 rounded-xl"
           >
             {globalSaving ? (
               <RefreshCw className="w-4 h-4 animate-spin mr-1.5 text-emerald-600" />

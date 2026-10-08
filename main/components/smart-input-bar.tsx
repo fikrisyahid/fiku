@@ -68,15 +68,15 @@ export function SmartInputBar({ userId, familyId, onSuccess }: SmartInputBarProp
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           disabled={loading}
-          placeholder='Ketik smart input, misal: "-25k sayur cash" atau "-50k bensin vario cash" atau "tf 100k bca ke gopay"'
-          className="h-12 pl-10 pr-28 rounded-2xl text-xs sm:text-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:border-emerald-500 focus:ring-emerald-500/20 font-medium placeholder:text-zinc-400"
+          placeholder='Smart input, misal: "-25k sayur cash" atau "tf 100k bca ke gopay"'
+          className="h-12 pl-10 pr-24 sm:pr-28 rounded-2xl text-xs sm:text-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:border-emerald-500 focus:ring-emerald-500/20 font-medium placeholder:text-zinc-400 placeholder:truncate"
         />
         <div className="absolute right-1.5 flex items-center">
           <Button
             type="submit"
             disabled={loading || !inputText.trim()}
             size="sm"
-            className="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm transition-all"
+            className="h-9 px-3 sm:px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm transition-all"
           >
             {loading ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
