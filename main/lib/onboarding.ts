@@ -57,12 +57,6 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
       });
     }
 
-    if (!existingUser && fullName && fullName !== "Sobat Fana") {
-      existingUser = await db.query.users.findFirst({
-        where: eq(users.fullName, fullName),
-      });
-    }
-
     let currentUser: typeof users.$inferSelect;
     let isNew = false;
 
@@ -72,6 +66,9 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
         updatedAt: new Date(),
       };
 
+      if (email && existingUser.email.startsWith("tg_")) {
+        updateData.email = email;
+      }
       if (telegramId && !existingUser.telegramId) {
         updateData.telegramId = telegramId;
       }

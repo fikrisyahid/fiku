@@ -178,17 +178,20 @@ export async function registerWithEmailPassword(
     keyPair.salt
   );
 
-  // Update passwordHash & cryptographic keys
-  await db
+  // Update passwordHash & cryptographic keys, and ensure email & fullName
+  const [updatedUser] = await db
     .update(users)
     .set({
+      fullName: name,
+      email,
       passwordHash,
       publicKey: keyPair.publicKeyPem,
       encryptedPrivateKey,
       pinSalt: keyPair.salt,
       updatedAt: new Date(),
     })
-    .where(eq(users.id, onboard.user.id));
+    .where(eq(users.id, onboard.user.id))
+    .returning();
 
   // Unlock RAM session vault
   unlockUserSessionWithPassword(
@@ -221,9 +224,9 @@ export async function registerWithEmailPassword(
     success: true,
     message: "Registrasi berhasil!",
     user: {
-      id: onboard.user.id,
-      fullName: onboard.user.fullName,
-      email: onboard.user.email,
+      id: updatedUser?.id || onboard.user.id,
+      fullName: updatedUser?.fullName || name,
+      email: updatedUser?.email || email,
     },
   };
 }
