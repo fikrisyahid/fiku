@@ -2,6 +2,8 @@ import { db } from "@/db";
 import { users, accounts } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
+import { Locale, getDictionary, DEFAULT_LOCALE } from "@/lib/i18n/dictionary";
+
 export interface OnboardUserInput {
   fullName: string;
   email?: string | null;
@@ -11,6 +13,7 @@ export interface OnboardUserInput {
   initialCashBalance?: number;
   initialBankBalance?: number;
   initialEwalletBalance?: number;
+  locale?: Locale;
 }
 
 export interface OnboardUserResult {
@@ -118,11 +121,13 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
       where: eq(accounts.userId, currentUser.id),
     });
 
+    const dict = getDictionary(input.locale || DEFAULT_LOCALE);
+
     if (userAccounts.length === 0) {
       const defaultWallets = [
         {
           userId: currentUser.id,
-          name: "Cash (Dompet Tunai)",
+          name: dict.defaultWallets.cash,
           type: "cash",
           balance: "0",
           currency: "IDR",
@@ -130,7 +135,7 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
         },
         {
           userId: currentUser.id,
-          name: "Rekening Bank",
+          name: dict.defaultWallets.bank,
           type: "bank",
           balance: "0",
           currency: "IDR",
@@ -138,7 +143,7 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
         },
         {
           userId: currentUser.id,
-          name: "e-Wallet (GoPay/OVO)",
+          name: dict.defaultWallets.ewallet,
           type: "ewallet",
           balance: "0",
           currency: "IDR",

@@ -4,22 +4,34 @@ import { db } from "@/db";
 import { categories, transactions } from "@/db/schema";
 import { eq, or, and, isNull } from "drizzle-orm";
 
+import { getServerLocale } from "@/lib/i18n/server";
+import { translateCategoryName } from "@/lib/i18n/dictionary";
+
 export async function getCategories(userId?: string, _familyId?: string | null) {
+  const locale = await getServerLocale();
+
+  let results;
   // Ambil kategori default sistem (userId null / isDefault true) + kategori custom milik user
   if (userId) {
-    return await db.query.categories.findMany({
+    results = await db.query.categories.findMany({
       where: or(
         isNull(categories.userId),
         eq(categories.userId, userId)
       ),
       orderBy: (cat, { asc }) => [asc(cat.type), asc(cat.name)],
     });
+  } else {
+    results = await db.query.categories.findMany({
+      where: isNull(categories.userId),
+      orderBy: (cat, { asc }) => [asc(cat.type), asc(cat.name)],
+    });
   }
 
-  return await db.query.categories.findMany({
-    where: isNull(categories.userId),
-    orderBy: (cat, { asc }) => [asc(cat.type), asc(cat.name)],
-  });
+  return results.map((cat) => ({
+    ...cat,
+    name: translateCategoryName(cat.name, locale),
+    rawName: cat.name,
+  }));
 }
 
 export async function createCategory(data: {

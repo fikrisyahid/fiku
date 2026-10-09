@@ -4,11 +4,21 @@ import { db } from "@/db";
 import { accounts, transactions, categories } from "@/db/schema";
 import { eq, and, or, isNull } from "drizzle-orm";
 
+import { getServerLocale } from "@/lib/i18n/server";
+import { translateAccountName } from "@/lib/i18n/dictionary";
+
 export async function getUserAccounts(userId: string, _familyId?: string | null) {
-  return await db.query.accounts.findMany({
+  const locale = await getServerLocale();
+  const accs = await db.query.accounts.findMany({
     where: eq(accounts.userId, userId),
     orderBy: (acc, { desc, asc }) => [desc(acc.isDefault), asc(acc.createdAt)],
   });
+
+  return accs.map((a) => ({
+    ...a,
+    name: translateAccountName(a.name, locale),
+    rawName: a.name,
+  }));
 }
 
 export async function getAccountById(

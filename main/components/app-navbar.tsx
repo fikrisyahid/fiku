@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoutButton } from "@/components/logout-button";
 import { ArrowLeftRight, BarChart3, Menu, X, User } from "lucide-react";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { Locale, getDictionary } from "@/lib/i18n/dictionary";
 
 interface AppNavbarProps {
   user: {
@@ -12,10 +14,12 @@ interface AppNavbarProps {
     email: string;
     activeMode?: string;
   };
+  locale?: Locale;
 }
 
-export function AppNavbar({ user }: AppNavbarProps) {
+export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
   const pathname = usePathname();
+  const dict = getDictionary(locale);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Close sidebar on path change
@@ -48,13 +52,13 @@ export function AppNavbar({ user }: AppNavbarProps) {
 
   const navItems = [
     {
-      label: "Transaksi",
+      label: dict.nav.transactions,
       href: "/transaksi",
       icon: ArrowLeftRight,
       active: pathname.startsWith("/transaksi") || pathname === "/",
     },
     {
-      label: "Ringkasan",
+      label: dict.nav.summary,
       href: "/ringkasan",
       icon: BarChart3,
       active: pathname.startsWith("/ringkasan"),
@@ -99,8 +103,9 @@ export function AppNavbar({ user }: AppNavbarProps) {
             </nav>
           </div>
 
-          {/* Desktop Right User & Logout */}
+          {/* Desktop Right User & Logout & Language Switcher */}
           <div className="hidden md:flex items-center gap-3">
+            <LanguageSwitcher currentLocale={locale} />
             <div className="flex flex-col text-right">
               <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                 {user.fullName}
@@ -112,8 +117,9 @@ export function AppNavbar({ user }: AppNavbarProps) {
             <LogoutButton />
           </div>
 
-          {/* Mobile Sidebar Hamburger Toggle Button */}
-          <div className="flex md:hidden items-center">
+          {/* Mobile Sidebar Hamburger & Compact Lang Switcher */}
+          <div className="flex md:hidden items-center gap-2">
+            <LanguageSwitcher currentLocale={locale} compact />
             <button
               type="button"
               onClick={() => setIsSidebarOpen(true)}

@@ -4,6 +4,9 @@ import { db } from "@/db";
 import { transactions, accounts } from "@/db/schema";
 import { eq, and, desc, isNull } from "drizzle-orm";
 
+import { getServerLocale } from "@/lib/i18n/server";
+import { translateCategoryName, translateAccountName } from "@/lib/i18n/dictionary";
+
 export async function getUserTransactions(
   userId: string,
   options?: {
@@ -15,8 +18,9 @@ export async function getUserTransactions(
 ) {
   const limit = options?.limit || 15;
   const familyId = options?.familyId;
+  const locale = await getServerLocale();
 
-  return await db.query.transactions.findMany({
+  const txs = await db.query.transactions.findMany({
     where: (tx, { eq: eqField, and: andFields }) => {
       const conditions = [eqField(tx.userId, userId)];
 
@@ -33,6 +37,19 @@ export async function getUserTransactions(
     orderBy: [desc(transactions.transactionDate), desc(transactions.createdAt)],
     limit,
   });
+
+  return txs.map((tx) => ({
+    ...tx,
+    account: tx.account
+      ? { ...tx.account, name: translateAccountName(tx.account.name, locale), rawName: tx.account.name }
+      : tx.account,
+    toAccount: tx.toAccount
+      ? { ...tx.toAccount, name: translateAccountName(tx.toAccount.name, locale), rawName: tx.toAccount.name }
+      : tx.toAccount,
+    category: tx.category
+      ? { ...tx.category, name: translateCategoryName(tx.category.name, locale), rawName: tx.category.name }
+      : tx.category,
+  }));
 }
 
 export async function createTransaction(data: {
