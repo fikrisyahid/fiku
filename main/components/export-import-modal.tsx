@@ -383,7 +383,7 @@ export function ExportImportModal({
               <div className="flex items-center justify-between p-3.5 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-900/40">
                 <div className="text-xs">
                   <p className="font-semibold text-emerald-800 dark:text-emerald-300">
-                    Template Excel Fana
+                    Template Excel Fiku
                   </p>
                   <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
                     Gunakan template ini agar nama kolom dan data sesuai

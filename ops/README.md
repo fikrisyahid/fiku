@@ -1,6 +1,6 @@
 # Operations & CI/CD
 
-This folder contains operational configurations and task runners for Fana.
+This folder contains operational configurations and task runners for Fiku.
 
 ---
 

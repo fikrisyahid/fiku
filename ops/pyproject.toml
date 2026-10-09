@@ -1,7 +1,7 @@
 [project]
-name = "fana-ops"
+name = "fiku-ops"
 version = "0.1.0"
-description = "Operations and workflow management for Fana"
+description = "Operations and workflow management for Fiku"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-fana = "workflow:cli"
+fiku = "workflow:cli"
 
 [build-system]
 requires = ["hatchling"]

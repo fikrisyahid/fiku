@@ -1,13 +1,13 @@
 # Panduan Deployment (Vercel & Next.js)
 
-Fana adalah aplikasi **Next.js 16 (App Router)** murni yang dapat di-deploy dengan mudah ke platform serverless seperti **Vercel**.
+Fiku adalah aplikasi **Next.js 16 (App Router)** murni yang dapat di-deploy dengan mudah ke platform serverless seperti **Vercel**.
 
 ---
 
 ## 🚀 1. Deploy ke Vercel
 
 ### Langkah Cepat via Vercel Dashboard
-1. Impor repositori GitHub Fana ke dashboard Vercel.
+1. Impor repositori GitHub Fiku ke dashboard Vercel.
 2. Di bagian **Root Directory**, pilih:
    ```
    main

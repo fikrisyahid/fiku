@@ -1,6 +1,6 @@
 # Panduan Format Smart Input
 
-Fitur **Smart Input** di Fana memungkinkan pencatatan transaksi secara instan tanpa perlu mengisi form bertahap, baik di bar pencarian pintar Web UI maupun pesan teks alami.
+Fitur **Smart Input** di Fiku memungkinkan pencatatan transaksi secara instan tanpa perlu mengisi form bertahap, baik di bar pencarian pintar Web UI maupun pesan teks alami.
 
 ---
 

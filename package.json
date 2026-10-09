@@ -1,8 +1,8 @@
 {
-  "name": "fana-root",
+  "name": "fiku-root",
   "version": "0.1.0",
   "private": true,
-  "description": "Fana Finance Platform - Root Task Runner",
+  "description": "Fiku Finance Platform - Root Task Runner",
   "scripts": {
     "dev": "uv run ops/workflow.py dev",
     "check": "uv run ops/workflow.py check",
@@ -16,7 +16,7 @@
     "db:migrate": "uv run ops/workflow.py db migrate",
     "db:studio": "uv run ops/workflow.py db studio",
     "db:sync": "uv run ops/workflow.py db sync",
-    "fana": "uv run ops/workflow.py"
+    "fiku": "uv run ops/workflow.py"
   },
   "packageManager": "bun@1.4.2"
 }

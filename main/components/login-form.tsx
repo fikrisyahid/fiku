@@ -97,12 +97,12 @@ export function LoginForm() {
           <Lock className="w-6 h-6" />
         </div>
         <CardTitle className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          {isRegister ? "Buat Akun Baru" : "Masuk ke Fana"}
+          {isRegister ? "Buat Akun Baru" : "Masuk ke Fiku"}
         </CardTitle>
         <CardDescription className="text-xs text-zinc-500 dark:text-zinc-400">
           {isRegister
             ? "Daftar dengan email dan password untuk mulai mengelola keuangan"
-            : "Masuk dengan email dan password akun Fana kamu"}
+            : "Masuk dengan email dan password akun Fiku kamu"}
         </CardDescription>
       </CardHeader>
 

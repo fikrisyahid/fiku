@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 export const metadata = {
-  title: "Fana • Catat Cepat, Kendalikan Keuangan Pribadi",
+  title: "Fiku • Catat Cepat, Kendalikan Keuangan Pribadi",
   description:
     "Aplikasi pencatat keuangan instan dengan Smart Input dan spreadsheet live-sync. Data terenkripsi dengan Zero-Knowledge Security.",
 };
@@ -30,19 +30,19 @@ export default async function HomePage() {
     },
     {
       q: "Seberapa aman data keuangan saya? Apakah data saya bisa diintip?",
-      a: "Fana menerapkan prinsip Zero-Knowledge Encryption dan Double Protection. Kunci enkripsi akun kamu dilindungi ganda oleh password kamu sendiri serta secret key server (.env). Data kamu dienkripsi menggunakan standar kriptografi AES-256-GCM. Kami maupun pihak ketiga tidak dapat melihat atau membaca nominal transaksi serta mutasi keuangan kamu.",
+      a: "Fiku menerapkan prinsip Zero-Knowledge Encryption dan Double Protection. Kunci enkripsi akun kamu dilindungi ganda oleh password kamu sendiri serta secret key server (.env). Data kamu dienkripsi menggunakan standar kriptografi AES-256-GCM. Kami maupun pihak ketiga tidak dapat melihat atau membaca nominal transaksi serta mutasi keuangan kamu.",
     },
     {
       q: "Apakah data transaksi bisa diekspor atau diimpor?",
-      a: "Tentu! Fana menyediakan fitur ekspor ke format Excel (.xlsx) dengan pilihan rentang waktu (bulan ini, tahun ini, atau semua transaksi), serta fitur impor file Excel massal lengkap dengan template resmi yang dapat diunduh.",
+      a: "Tentu! Fiku menyediakan fitur ekspor ke format Excel (.xlsx) dengan pilihan rentang waktu (bulan ini, tahun ini, atau semua transaksi), serta fitur impor file Excel massal lengkap dengan template resmi yang dapat diunduh.",
     },
     {
-      q: "Apakah Fana gratis dan open source?",
-      a: "Ya! Fana dikembangkan sebagai platform keuangan yang transparan dan dapat diaudit secara terbuka. Kode sumber tersedia secara publik di GitHub.",
+      q: "Apakah Fiku gratis dan open source?",
+      a: "Ya! Fiku dikembangkan sebagai platform keuangan yang transparan dan dapat diaudit secara terbuka. Kode sumber tersedia secara publik di GitHub.",
     },
     {
       q: "Bagaimana jika saya ingin mengedit banyak transaksi sekaligus?",
-      a: "Halaman transaksi Fana bekerja persis seperti Google Sheets atau Excel. Kamu bisa mengedit sel tanggal, tipe, nominal, kantong, atau catatan secara live dengan fitur auto-save debounced otomatis.",
+      a: "Halaman transaksi Fiku bekerja persis seperti Google Sheets atau Excel. Kamu bisa mengedit sel tanggal, tipe, nominal, kantong, atau catatan secara live dengan fitur auto-save debounced otomatis.",
     },
   ];
 
@@ -56,13 +56,13 @@ export default async function HomePage() {
               F
             </div>
             <span className="font-bold text-base tracking-tight text-zinc-900 dark:text-zinc-100">
-              Fana
+              Fiku
             </span>
           </Link>
 
           <div className="flex items-center gap-3">
             <a
-              href="https://github.com/fikri/fana"
+              href="https://github.com/fikrisyahid/fiku"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="GitHub Repository"
@@ -117,7 +117,7 @@ export default async function HomePage() {
             Mulai Sekarang — Gratis <ArrowRight className="w-4 h-4" />
           </Link>
           <a
-            href="https://github.com/fikri/fana"
+            href="https://github.com/fikrisyahid/fiku"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full sm:w-auto h-12 px-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 font-semibold text-sm inline-flex items-center justify-center gap-2 transition-all"
@@ -174,7 +174,7 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              Kenapa Memilih Fana?
+              Kenapa Memilih Fiku?
             </h2>
             <p className="text-xs sm:text-sm text-zinc-500">
               Dibangun untuk kecepatan, kepraktisan, dan keamanan tanpa kompromi.
@@ -229,10 +229,10 @@ export default async function HomePage() {
             <span>Pertanyaan yang Sering Diajukan</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            FAQ Seputar Fana
+            FAQ Seputar Fiku
           </h2>
           <p className="text-xs sm:text-sm text-zinc-500">
-            Segala hal yang perlu kamu ketahui tentang fitur dan perlindungan data di Fana.
+            Segala hal yang perlu kamu ketahui tentang fitur dan perlindungan data di Fiku.
           </p>
         </div>
 
@@ -270,7 +270,7 @@ export default async function HomePage() {
               href={user ? "/transaksi" : "/login"}
               className="h-11 px-6 rounded-xl bg-white text-emerald-700 font-bold text-xs inline-flex items-center gap-2 hover:bg-emerald-50 transition-all shadow-md"
             >
-              Mulai Pakai Fana Sekarang <ArrowRight className="w-3.5 h-3.5" />
+              Mulai Pakai Fiku Sekarang <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
@@ -286,7 +286,7 @@ export default async function HomePage() {
             Ringkasan
           </Link>
           <a
-            href="https://github.com/fikri/fana"
+            href="https://github.com/fikrisyahid/fiku"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center gap-1"
@@ -298,7 +298,7 @@ export default async function HomePage() {
           </a>
         </div>
         <p className="text-[11px] text-zinc-400">
-          Fana &copy; {new Date().getFullYear()} • Zero-Knowledge Personal Finance Platform
+          Fiku &copy; {new Date().getFullYear()} • Zero-Knowledge Personal Finance Platform
         </p>
       </footer>
     </div>

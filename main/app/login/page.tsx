@@ -5,8 +5,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata = {
-  title: "Masuk • Fana",
-  description: "Masuk ke Fana menggunakan email dan password.",
+  title: "Masuk • Fiku",
+  description: "Masuk ke Fiku menggunakan email dan password.",
 };
 
 export default async function LoginPage() {
@@ -34,7 +34,7 @@ export default async function LoginPage() {
             F
           </div>
           <span className="font-bold text-lg tracking-tight text-zinc-900 dark:text-zinc-50">
-            Fana
+            Fiku
           </span>
         </Link>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -50,7 +50,7 @@ export default async function LoginPage() {
       </main>
 
       <footer className="mt-8 text-[11px] text-zinc-500 text-center">
-        Fana &copy; {new Date().getFullYear()} • Zero-Knowledge
+        Fiku &copy; {new Date().getFullYear()} • Zero-Knowledge
       </footer>
     </div>
   );

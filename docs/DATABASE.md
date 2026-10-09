@@ -1,6 +1,6 @@
 # Skema Database & Model Data
 
-Fana menggunakan **PostgreSQL** yang dikelola melalui **Drizzle ORM** (`main/db/schema.ts`).
+Fiku menggunakan **PostgreSQL** yang dikelola melalui **Drizzle ORM** (`main/db/schema.ts`).
 
 ---
 

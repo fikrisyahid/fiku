@@ -72,7 +72,7 @@ export function AppNavbar({ user }: AppNavbarProps) {
               </div>
               <div>
                 <span className="font-bold text-base tracking-tight text-zinc-900 dark:text-zinc-50">
-                  Fana
+                  Fiku
                 </span>
               </div>
             </Link>
@@ -144,7 +144,7 @@ export function AppNavbar({ user }: AppNavbarProps) {
                     F
                   </div>
                   <span className="font-bold text-sm tracking-tight text-zinc-900 dark:text-zinc-100">
-                    Fana
+                    Fiku
                   </span>
                 </div>
                 <button

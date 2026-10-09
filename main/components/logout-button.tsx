@@ -53,7 +53,7 @@ export function LogoutButton() {
               Konfirmasi Keluar
             </h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Apakah kamu yakin ingin keluar dari akun Fana? Sesi aktif di perangkat ini akan diakhiri.
+              Apakah kamu yakin ingin keluar dari akun Fiku? Sesi aktif di perangkat ini akan diakhiri.
             </p>
           </div>
         </div>

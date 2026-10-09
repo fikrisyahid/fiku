@@ -97,7 +97,7 @@ def run_command(cmd: list[str], cwd: Path | None = None, env_extra: dict[str, st
 
 @click.group()
 def cli() -> None:
-    """Fana CLI - Unified Task Runner for Next.js & Telegram Bot."""
+    """Fiku CLI - Unified Task Runner for Next.js & Telegram Bot."""
     pass
 
 
@@ -112,7 +112,7 @@ def sync_env_cmd() -> None:
 @click.option("--port", "-p", default=3000, help="Port for Next.js web dashboard.")
 def dev(port: int) -> None:
     """Start Next.js Web Dashboard in development mode."""
-    console.print(Panel.fit("[bold green]Fana Finance - Web Dashboard Dev Server[/bold green]", border_style="green"))
+    console.print(Panel.fit("[bold green]Fiku Finance - Web Dashboard Dev Server[/bold green]", border_style="green"))
     code = run_command(["bun", "run", "dev", "--port", str(port)])
     sys.exit(code)
 

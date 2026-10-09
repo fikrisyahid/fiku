@@ -75,7 +75,7 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
       if (telegramUsername && !existingUser.telegramUsername) {
         updateData.telegramUsername = telegramUsername;
       }
-      if (fullName && (!existingUser.fullName || existingUser.fullName === "Sobat Fana")) {
+      if (fullName && (!existingUser.fullName || existingUser.fullName === "Sobat Fiku")) {
         updateData.fullName = fullName;
       }
       if (phone && !existingUser.phone) {
@@ -96,13 +96,13 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
       // Create new user record
       isNew = true;
       // Database email column is NOT NULL: generate placeholder if registered via Telegram without email
-      const userEmail = email || `tg_${telegramId || Date.now()}@fana.app`;
+      const userEmail = email || `tg_${telegramId || Date.now()}@fiku.app`;
 
       const [newUser] = await db
         .insert(users)
         .values({
           id: crypto.randomUUID(),
-          fullName: fullName || "Sobat Fana",
+          fullName: fullName || "Sobat Fiku",
           email: userEmail,
           phone: phone || null,
           telegramId: telegramId || null,
@@ -153,7 +153,7 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
       success: true,
       message: isNew
         ? "Account successfully created with default wallets."
-        : "Welcome back to Fana!",
+        : "Welcome back to Fiku!",
       isNewUser: isNew,
       user: currentUser,
       accounts: userAccounts,

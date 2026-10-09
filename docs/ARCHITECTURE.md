@@ -1,12 +1,12 @@
-# Arsitektur Sistem Fana
+# Arsitektur Sistem Fiku
 
-Dokumen ini memberikan gambaran tingkat tinggi mengenai arsitektur **Fana Finance Platform**.
+Dokumen ini memberikan gambaran tingkat tinggi mengenai arsitektur **Fiku Finance Platform**.
 
 ---
 
 ## 🏗️ Komponen Sistem
 
-Fana dibangun sebagai aplikasi **Next.js modern (App Router)** yang dirancang untuk kemudahan deploy di Vercel / serverless environment dengan PostgreSQL Supabase:
+Fiku dibangun sebagai aplikasi **Next.js modern (App Router)** yang dirancang untuk kemudahan deploy di Vercel / serverless environment dengan PostgreSQL Supabase:
 
 ```
 [ Pengguna (Web & Mobile Browser) ]

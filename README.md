@@ -1,13 +1,13 @@
-# Fana - Personal & Family Finance Management
+# Fiku - Personal & Family Finance Management
 
-Fana is a multi-platform personal and family finance management system powered by **Next.js 16**, **TypeScript**, and **Telegram Bot** (GrammY). All financial data is synchronized in real time and cryptographically secured.
+Fiku is a multi-platform personal and family finance management system powered by **Next.js 16**, **TypeScript**, and **Telegram Bot** (GrammY). All financial data is synchronized in real time and cryptographically secured.
 
 ---
 
 ## 📁 Repository Structure
 
 ```text
-fana/
+fiku/
 ├── main/              # Core application source code (Next.js, Telegram Bot, DB, API)
 │   ├── app/           # Next.js App Router (Dashboard web, Server Actions, Webhook API)
 │   ├── components/    # UI components (Tailwind v4, Shadcn)
