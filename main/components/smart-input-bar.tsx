@@ -9,6 +9,8 @@ import { AlertModal, ModalAlertConfig } from "@/components/ui/alert-modal";
 import { SmartInputHelpModal } from "@/components/smart-input-help-modal";
 import { getLocalTodayDateString } from "@/lib/utils";
 
+import { useI18n } from "@/lib/i18n/context";
+
 interface SmartInputBarProps {
   userId: string;
   familyId?: string | null;
@@ -16,6 +18,7 @@ interface SmartInputBarProps {
 }
 
 export function SmartInputBar({ userId, familyId, onSuccess }: SmartInputBarProps) {
+  const { dict } = useI18n();
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -51,11 +54,11 @@ export function SmartInputBar({ userId, familyId, onSuccess }: SmartInputBarProp
         setInputText("");
         await onSuccess();
       } else {
-        const isBalanceErr = res.message.toLowerCase().includes("saldo tidak mencukupi");
+        const isBalanceErr = res.message.toLowerCase().includes("saldo tidak mencukupi") || res.message.toLowerCase().includes("insufficient");
         if (isBalanceErr) {
           setAlertModal({
             isOpen: true,
-            title: "Saldo Tidak Mencukupi",
+            title: dict.transaksi.insufficientBalanceTitle,
             message: res.message,
             variant: "warning",
           });
@@ -66,12 +69,12 @@ export function SmartInputBar({ userId, familyId, onSuccess }: SmartInputBarProp
         });
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Terjadi kesalahan.";
-      const isBalanceErr = msg.toLowerCase().includes("saldo tidak mencukupi");
+      const msg = err instanceof Error ? err.message : dict.common.loading;
+      const isBalanceErr = msg.toLowerCase().includes("saldo tidak mencukupi") || msg.toLowerCase().includes("insufficient");
       if (isBalanceErr) {
         setAlertModal({
           isOpen: true,
-          title: "Saldo Tidak Mencukupi",
+          title: dict.transaksi.insufficientBalanceTitle,
           message: msg,
           variant: "warning",
         });
@@ -96,18 +99,18 @@ export function SmartInputBar({ userId, familyId, onSuccess }: SmartInputBarProp
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           disabled={loading}
-          placeholder='Smart input, misal: "-25k sayur cash" atau "tf 100k bca ke gopay"'
+          placeholder={dict.transaksi.smartInputPlaceholder}
           className="h-12 pl-10 pr-44 sm:pr-48 rounded-2xl text-xs sm:text-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:border-emerald-500 focus:ring-emerald-500/20 font-medium placeholder:text-zinc-400 placeholder:truncate"
         />
         <div className="absolute right-1.5 flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setIsHelpOpen(true)}
-            title="Lihat petunjuk dan format penulisan Smart Input"
+            title={dict.transaksi.smartInputGuideBtn}
             className="h-9 px-2.5 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 border border-emerald-200/80 dark:border-emerald-800/60 transition-colors shadow-2xs"
           >
             <HelpCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span className="hidden xs:inline sm:inline">Panduan</span>
+            <span className="hidden xs:inline sm:inline">{dict.transaksi.smartInputGuideBtn}</span>
           </button>
           <Button
             type="submit"
@@ -119,7 +122,7 @@ export function SmartInputBar({ userId, familyId, onSuccess }: SmartInputBarProp
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
             ) : (
               <span className="inline-flex items-center gap-1">
-                Catat <ArrowRight className="w-3.5 h-3.5" />
+                {dict.transaksi.smartInputSubmitBtn} <ArrowRight className="w-3.5 h-3.5" />
               </span>
             )}
           </Button>

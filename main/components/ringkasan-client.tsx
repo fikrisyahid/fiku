@@ -15,6 +15,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FinancialChart } from "@/components/financial-chart";
 
+import { useI18n } from "@/lib/i18n/context";
+
 interface RingkasanClientProps {
   transactions: any[];
   accounts: any[];
@@ -26,16 +28,19 @@ export function RingkasanClient({
   transactions,
   accounts,
 }: RingkasanClientProps) {
+  const { dict, locale } = useI18n();
   const [period, setPeriod] = useState<PeriodMode>("bulanan");
   const [offset, setOffset] = useState<number>(0); // 0 = current, -1 = previous, etc.
 
-  const formatRupiah = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat(locale === "en" ? "en-US" : "id-ID", {
       style: "currency",
       currency: "IDR",
       maximumFractionDigits: 0,
     }).format(amount || 0);
   };
+
+  const dateLocale = locale === "en" ? "en-US" : "id-ID";
 
   // Helper date calculations based on period and offset
   const { periodLabel, filteredTransactions } = useMemo(() => {
@@ -45,7 +50,7 @@ export function RingkasanClient({
     if (period === "harian") {
       targetDate.setDate(now.getDate() + offset);
       const targetStr = targetDate.toISOString().split("T")[0];
-      const label = targetDate.toLocaleDateString("id-ID", {
+      const label = targetDate.toLocaleDateString(dateLocale, {
         weekday: "long",
         day: "numeric",
         month: "long",
@@ -68,10 +73,10 @@ export function RingkasanClient({
       const monStr = monday.toISOString().split("T")[0];
       const sunStr = sunday.toISOString().split("T")[0];
 
-      const label = `${monday.toLocaleDateString("id-ID", {
+      const label = `${monday.toLocaleDateString(dateLocale, {
         day: "numeric",
         month: "short",
-      })} - ${sunday.toLocaleDateString("id-ID", {
+      })} - ${sunday.toLocaleDateString(dateLocale, {
         day: "numeric",
         month: "short",
         year: "numeric",
@@ -88,7 +93,7 @@ export function RingkasanClient({
       const year = targetDate.getFullYear();
       const month = String(targetDate.getMonth() + 1).padStart(2, "0");
       const prefix = `${year}-${month}`;
-      const label = targetDate.toLocaleDateString("id-ID", {
+      const label = targetDate.toLocaleDateString(dateLocale, {
         month: "long",
         year: "numeric",
       });
@@ -101,12 +106,12 @@ export function RingkasanClient({
     // tahunan
     targetDate.setFullYear(now.getFullYear() + offset);
     const yearStr = `${targetDate.getFullYear()}`;
-    const label = `Tahun ${yearStr}`;
+    const label = `${dict.ringkasan.yearLabel} ${yearStr}`;
     const filtered = transactions.filter((t) =>
       t.transactionDate.startsWith(yearStr)
     );
     return { periodLabel: label, filteredTransactions: filtered };
-  }, [period, offset, transactions]);
+  }, [period, offset, transactions, dateLocale, dict.ringkasan.yearLabel]);
 
   // Aggregate financial metrics
   const totalIncome = useMemo(() => {
@@ -152,23 +157,34 @@ export function RingkasanClient({
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-zinc-900 p-2 sm:p-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
         <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800/70 p-1 rounded-xl">
           {(["harian", "mingguan", "bulanan", "tahunan"] as PeriodMode[]).map(
-            (mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => {
-                  setPeriod(mode);
-                  setOffset(0);
-                }}
-                className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
-                  period === mode
-                    ? "bg-white dark:bg-zinc-900 text-emerald-700 dark:text-emerald-300 shadow-xs"
-                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
-                }`}
-              >
-                {mode}
-              </button>
-            )
+            (mode) => {
+              const label =
+                mode === "harian"
+                  ? dict.ringkasan.tabDaily
+                  : mode === "mingguan"
+                  ? dict.ringkasan.tabWeekly
+                  : mode === "bulanan"
+                  ? dict.ringkasan.tabMonthly
+                  : dict.ringkasan.tabYearly;
+
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => {
+                    setPeriod(mode);
+                    setOffset(0);
+                  }}
+                  className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
+                    period === mode
+                      ? "bg-white dark:bg-zinc-900 text-emerald-700 dark:text-emerald-300 shadow-xs"
+                      : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            }
           )}
         </div>
 
@@ -200,7 +216,7 @@ export function RingkasanClient({
               onClick={() => setOffset(0)}
               className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold hover:underline ml-1"
             >
-              Reset
+              {dict.ringkasan.btnReset}
             </button>
           )}
         </div>
@@ -212,15 +228,15 @@ export function RingkasanClient({
         <Card className="rounded-2xl border-zinc-200 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
           <CardHeader className="p-4 pb-1">
             <CardTitle className="text-xs font-medium text-zinc-500 flex items-center justify-between">
-              Total Saldo Semua Kantong
+              {dict.ringkasan.totalBalanceAll}
               <Wallet className="w-4 h-4 text-emerald-600" />
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-1">
             <div className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-zinc-50">
-              {formatRupiah(totalSaldoAkumulasi)}
+              {formatCurrency(totalSaldoAkumulasi)}
             </div>
-            <p className="text-[11px] text-zinc-400 mt-0.5">Kekayaan tunai & tabungan</p>
+            <p className="text-[11px] text-zinc-400 mt-0.5">{dict.ringkasan.totalBalanceDesc}</p>
           </CardContent>
         </Card>
 
@@ -228,7 +244,7 @@ export function RingkasanClient({
         <Card className="rounded-2xl border-zinc-200 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
           <CardHeader className="p-4 pb-1">
             <CardTitle className="text-xs font-medium text-zinc-500 flex items-center justify-between">
-              Pemasukan ({period})
+              {dict.ringkasan.incomeThisPeriod}
               <div className="p-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600">
                 <ArrowDownRight className="w-3.5 h-3.5" />
               </div>
@@ -236,10 +252,10 @@ export function RingkasanClient({
           </CardHeader>
           <CardContent className="p-4 pt-1">
             <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
-              {formatRupiah(totalIncome)}
+              {formatCurrency(totalIncome)}
             </div>
             <p className="text-[11px] text-zinc-400 mt-0.5">
-              Dari {filteredTransactions.filter((t) => t.type === "income").length} transaksi
+              {dict.ringkasan.txCount(filteredTransactions.filter((t) => t.type === "income").length)}
             </p>
           </CardContent>
         </Card>
@@ -248,7 +264,7 @@ export function RingkasanClient({
         <Card className="rounded-2xl border-zinc-200 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
           <CardHeader className="p-4 pb-1">
             <CardTitle className="text-xs font-medium text-zinc-500 flex items-center justify-between">
-              Pengeluaran ({period})
+              {dict.ringkasan.expenseThisPeriod}
               <div className="p-1 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600">
                 <ArrowUpRight className="w-3.5 h-3.5" />
               </div>
@@ -256,10 +272,10 @@ export function RingkasanClient({
           </CardHeader>
           <CardContent className="p-4 pt-1">
             <div className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400">
-              {formatRupiah(totalExpense)}
+              {formatCurrency(totalExpense)}
             </div>
             <p className="text-[11px] text-zinc-400 mt-0.5">
-              Dari {filteredTransactions.filter((t) => t.type === "expense").length} transaksi
+              {dict.ringkasan.txCount(filteredTransactions.filter((t) => t.type === "expense").length)}
             </p>
           </CardContent>
         </Card>
@@ -268,7 +284,7 @@ export function RingkasanClient({
         <Card className="rounded-2xl border-zinc-200 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
           <CardHeader className="p-4 pb-1">
             <CardTitle className="text-xs font-medium text-zinc-500 flex items-center justify-between">
-              Arus Kas Bersih (Net)
+              {dict.ringkasan.netSavings}
               <TrendingUp className="w-4 h-4 text-emerald-600" />
             </CardTitle>
           </CardHeader>
@@ -280,10 +296,10 @@ export function RingkasanClient({
                   : "text-rose-600 dark:text-rose-400"
               }`}
             >
-              {formatRupiah(netSavings)}
+              {formatCurrency(netSavings)}
             </div>
             <p className="text-[11px] text-zinc-400 mt-0.5">
-              {netSavings >= 0 ? "Surplus (Hemat)" : "Defisit (Lebih besar belanja)"}
+              {netSavings >= 0 ? dict.ringkasan.netSavingsSurplus : dict.ringkasan.netSavingsDeficit}
             </p>
           </CardContent>
         </Card>
@@ -303,13 +319,13 @@ export function RingkasanClient({
           <CardHeader className="p-4 sm:p-5 border-b border-zinc-100 dark:border-zinc-800">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
               <PieChart className="w-4 h-4 text-emerald-600" />
-              Alokasi Pengeluaran per Kategori
+              {dict.ringkasan.categoryAllocationTitle}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 sm:p-5 space-y-3">
             {expensesByCategory.length === 0 ? (
               <div className="py-8 text-center text-xs text-zinc-400">
-                Belum ada pengeluaran pada periode {periodLabel}.
+                {dict.ringkasan.emptyCategoryExpenses}
               </div>
             ) : (
               expensesByCategory.map((cat) => {
@@ -323,7 +339,7 @@ export function RingkasanClient({
                         <span>{cat.icon}</span> {cat.name}
                       </span>
                       <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                        {formatRupiah(cat.total)} ({percentage}%)
+                        {formatCurrency(cat.total)} ({percentage}%)
                       </span>
                     </div>
                     <div className="w-full h-2 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
@@ -344,7 +360,7 @@ export function RingkasanClient({
           <CardHeader className="p-4 sm:p-5 border-b border-zinc-100 dark:border-zinc-800">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
               <Wallet className="w-4 h-4 text-emerald-600" />
-              Status Kantong & Rekening
+              {dict.ringkasan.walletStatusTitle}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 sm:p-5 divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -359,13 +375,13 @@ export function RingkasanClient({
                       {acc.name}
                     </div>
                     <div className="text-[10px] text-zinc-400 uppercase tracking-wider">
-                      {acc.type} {acc.isDefault ? "• Dompet Utama" : ""}
+                      {acc.type} {acc.isDefault ? `• ${dict.ringkasan.primaryWalletBadge}` : ""}
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                    {formatRupiah(parseFloat(acc.balance || "0"))}
+                    {formatCurrency(parseFloat(acc.balance || "0"))}
                   </div>
                 </div>
               </div>

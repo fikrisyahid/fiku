@@ -6,10 +6,13 @@ import { AppNavbar } from "@/components/app-navbar";
 import { RingkasanClient } from "@/components/ringkasan-client";
 import { getServerLocale, getServerDictionary } from "@/lib/i18n/server";
 
-export const metadata = {
-  title: "Ringkasan • Fiku",
-  description: "Laporan dan analisis keuangan tahunan, bulanan, mingguan, dan harian",
-};
+export async function generateMetadata() {
+  const dict = await getServerDictionary();
+  return {
+    title: dict.ringkasan.metaTitle,
+    description: dict.ringkasan.metaDesc,
+  };
+}
 
 export default async function RingkasanPage() {
   const user = await getCurrentUser();

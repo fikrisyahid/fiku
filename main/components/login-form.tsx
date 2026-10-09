@@ -26,8 +26,11 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+import { useI18n } from "@/lib/i18n/context";
+
 export function LoginForm() {
   const router = useRouter();
+  const { dict } = useI18n();
   const [isRegister, setIsRegister] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -43,17 +46,17 @@ export function LoginForm() {
     setSuccessMessage(null);
 
     if (!email.trim() || !password.trim()) {
-      setErrorMessage("Email dan password wajib diisi.");
+      setErrorMessage(dict.login.errEmailPasswordReq);
       return;
     }
 
     if (isRegister && !fullName.trim()) {
-      setErrorMessage("Nama lengkap wajib diisi.");
+      setErrorMessage(dict.login.errFullNameReq);
       return;
     }
 
     if (password.length < 6) {
-      setErrorMessage("Password minimal 6 karakter.");
+      setErrorMessage(dict.login.errPasswordMin);
       return;
     }
 
@@ -63,7 +66,7 @@ export function LoginForm() {
       if (isRegister) {
         const res = await registerWithEmailPassword(fullName, email, password);
         if (res.success) {
-          setSuccessMessage("Registrasi berhasil! Mengalihkan ke dashboard...");
+          setSuccessMessage(dict.login.registerSuccess);
           setTimeout(() => {
             router.push("/transaksi");
             router.refresh();
@@ -74,7 +77,7 @@ export function LoginForm() {
       } else {
         const res = await loginWithEmailPassword(email, password);
         if (res.success) {
-          setSuccessMessage("Login berhasil! Mengalihkan...");
+          setSuccessMessage(dict.login.loginSuccess);
           setTimeout(() => {
             router.push("/transaksi");
             router.refresh();
@@ -84,7 +87,7 @@ export function LoginForm() {
         }
       }
     } catch {
-      setErrorMessage("Terjadi kesalahan koneksi. Silakan coba lagi.");
+      setErrorMessage(dict.login.errConnection);
     } finally {
       setLoading(false);
     }
@@ -97,12 +100,12 @@ export function LoginForm() {
           <Lock className="w-6 h-6" />
         </div>
         <CardTitle className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          {isRegister ? "Buat Akun Baru" : "Masuk ke Fiku"}
+          {isRegister ? dict.login.titleRegister : dict.login.titleLogin}
         </CardTitle>
         <CardDescription className="text-xs text-zinc-500 dark:text-zinc-400">
           {isRegister
-            ? "Daftar dengan email dan password untuk mulai mengelola keuangan"
-            : "Masuk dengan email dan password akun Fiku kamu"}
+            ? dict.login.subtitleRegister
+            : dict.login.subtitleLogin}
         </CardDescription>
       </CardHeader>
 
@@ -128,13 +131,13 @@ export function LoginForm() {
                 htmlFor="fullName"
                 className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
               >
-                Nama Lengkap
+                {dict.login.nameLabel}
               </Label>
               <div className="relative">
                 <Input
                   id="fullName"
                   type="text"
-                  placeholder="misal: Fikri Syahid"
+                  placeholder={dict.login.namePlaceholder}
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   disabled={loading}
@@ -151,13 +154,13 @@ export function LoginForm() {
               htmlFor="email"
               className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
             >
-              Email
+              {dict.login.emailLabel}
             </Label>
             <div className="relative">
               <Input
                 id="email"
                 type="email"
-                placeholder="nama@email.com"
+                placeholder={dict.login.emailPlaceholder}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
@@ -175,7 +178,7 @@ export function LoginForm() {
                 htmlFor="password"
                 className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
               >
-                Password
+                {dict.login.passwordLabel}
               </Label>
               <button
                 type="button"
@@ -184,11 +187,11 @@ export function LoginForm() {
               >
                 {showPassword ? (
                   <>
-                    <EyeOff className="w-3.5 h-3.5" /> Sembunyikan
+                    <EyeOff className="w-3.5 h-3.5" /> {dict.login.hidePassword}
                   </>
                 ) : (
                   <>
-                    <Eye className="w-3.5 h-3.5" /> Tampilkan
+                    <Eye className="w-3.5 h-3.5" /> {dict.login.showPassword}
                   </>
                 )}
               </button>
@@ -197,7 +200,7 @@ export function LoginForm() {
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="Minimal 6 karakter"
+                placeholder={dict.login.passwordPlaceholder}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
@@ -215,11 +218,11 @@ export function LoginForm() {
           >
             {loading ? (
               <span className="inline-flex items-center gap-2">
-                <RefreshCw className="w-4 h-4 animate-spin" /> Memproses...
+                <RefreshCw className="w-4 h-4 animate-spin" /> {dict.login.processing}
               </span>
             ) : (
               <span className="inline-flex items-center gap-2">
-                {isRegister ? "Daftar Akun" : "Masuk"} <ArrowRight className="w-4 h-4" />
+                {isRegister ? dict.login.btnRegister : dict.login.btnLogin} <ArrowRight className="w-4 h-4" />
               </span>
             )}
           </Button>
@@ -228,7 +231,7 @@ export function LoginForm() {
 
       <CardFooter className="flex flex-col border-t border-zinc-100 dark:border-zinc-800/80 pt-3 pb-3 text-center">
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          {isRegister ? "Sudah memiliki akun? " : "Belum punya akun? "}
+          {isRegister ? dict.login.hasAccountPrompt : dict.login.noAccountPrompt}{" "}
           <button
             type="button"
             onClick={() => {
@@ -238,7 +241,7 @@ export function LoginForm() {
             }}
             className="text-emerald-600 dark:text-emerald-400 font-semibold hover:underline"
           >
-            {isRegister ? "Masuk di sini" : "Daftar sekarang"}
+            {isRegister ? dict.login.loginLink : dict.login.registerLink}
           </button>
         </p>
       </CardFooter>

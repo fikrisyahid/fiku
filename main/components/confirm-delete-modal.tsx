@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react";
 import { AlertTriangle, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { useI18n } from "@/lib/i18n/context";
+
 interface ConfirmDeleteModalProps {
   isOpen: boolean;
   title?: string;
@@ -16,13 +18,14 @@ interface ConfirmDeleteModalProps {
 
 export function ConfirmDeleteModal({
   isOpen,
-  title = "Konfirmasi Hapus",
+  title,
   description,
   itemName,
   isLoading = false,
   onConfirm,
   onClose,
 }: ConfirmDeleteModalProps) {
+  const { dict } = useI18n();
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,7 +60,7 @@ export function ConfirmDeleteModal({
           </div>
           <div className="space-y-1">
             <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-50">
-              {title}
+              {title || dict.common.confirmDelete}
             </h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
               {description}
@@ -79,7 +82,7 @@ export function ConfirmDeleteModal({
             disabled={isLoading}
             className="h-9 px-4 text-xs font-medium rounded-xl border-zinc-200 dark:border-zinc-800"
           >
-            Batal
+            {dict.common.cancel}
           </Button>
           <Button
             type="button"
@@ -90,11 +93,11 @@ export function ConfirmDeleteModal({
           >
             {isLoading ? (
               <span className="inline-flex items-center gap-1.5">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Menghapus...
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" /> {dict.common.deleting}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5">
-                <Trash2 className="w-3.5 h-3.5" /> Hapus
+                <Trash2 className="w-3.5 h-3.5" /> {dict.common.delete}
               </span>
             )}
           </Button>

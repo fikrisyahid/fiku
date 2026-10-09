@@ -7,7 +7,10 @@ import { useRouter } from "next/navigation";
 import { LogOut, AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "./ui/button";
 
+import { useI18n } from "@/lib/i18n/context";
+
 export function LogoutButton() {
+  const { dict } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -50,10 +53,10 @@ export function LogoutButton() {
           </div>
           <div className="space-y-1">
             <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-50">
-              Konfirmasi Keluar
+              {dict.common.confirmLogoutTitle}
             </h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Apakah kamu yakin ingin keluar dari akun Fiku? Sesi aktif di perangkat ini akan diakhiri.
+              {dict.common.confirmLogoutDesc}
             </p>
           </div>
         </div>
@@ -67,7 +70,7 @@ export function LogoutButton() {
             onClick={() => setIsOpen(false)}
             className="text-xs font-semibold rounded-xl border-zinc-200 dark:border-zinc-800 cursor-pointer"
           >
-            Batal
+            {dict.common.cancel}
           </Button>
           <Button
             type="button"
@@ -81,7 +84,7 @@ export function LogoutButton() {
             ) : (
               <LogOut className="w-3.5 h-3.5 mr-1.5" />
             )}
-            {loading ? "Keluar..." : "Ya, Keluar"}
+            {loading ? dict.common.loggingOut : dict.common.confirmLogoutBtn}
           </Button>
         </div>
       </div>
@@ -97,7 +100,7 @@ export function LogoutButton() {
         className="w-full sm:w-auto text-xs text-zinc-600 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 border-zinc-200 dark:border-zinc-800 cursor-pointer"
       >
         <LogOut className="w-3.5 h-3.5 mr-1" />
-        Keluar
+        {dict.common.logout}
       </Button>
 
       {mounted && typeof document !== "undefined" && modalContent

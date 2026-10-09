@@ -59,6 +59,8 @@ interface TransactionsSheetProps {
 type SortField = "transactionDate" | "type" | "category" | "account" | "amount" | "note";
 type SortOrder = "asc" | "desc";
 
+import { useI18n } from "@/lib/i18n/context";
+
 export function TransactionsSheet({
   userId,
   familyId,
@@ -67,6 +69,8 @@ export function TransactionsSheet({
   categories,
   onRefreshAll,
 }: TransactionsSheetProps) {
+  const { dict, locale } = useI18n();
+
   // Format initial records to editable sheet rows
   const mapTxToRow = (tx: any): TransactionRow => ({
     id: tx.id,
@@ -151,8 +155,8 @@ export function TransactionsSheet({
   }, [initialTransactions]);
 
   // Helpers
-  const formatRupiah = (val: number) => {
-    return new Intl.NumberFormat("id-ID", {
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat(locale === "en" ? "en-US" : "id-ID", {
       style: "currency",
       currency: "IDR",
       maximumFractionDigits: 0,
@@ -225,7 +229,7 @@ export function TransactionsSheet({
     try {
       if (row.isNew) {
         if (row.type === "transfer" && (!row.toAccountId || row.accountId === row.toAccountId)) {
-          throw new Error("Pilih kantong sumber dan tujuan yang berbeda.");
+          throw new Error(dict.transaksi.errTransferSameWallet);
         }
         const res = await createTransaction({
           userId,
@@ -256,7 +260,7 @@ export function TransactionsSheet({
         );
       } else {
         if (row.type === "transfer" && (!row.toAccountId || row.accountId === row.toAccountId)) {
-          throw new Error("Pilih kantong sumber dan tujuan yang berbeda.");
+          throw new Error(dict.transaksi.errTransferSameWallet);
         }
         await updateTransaction(id, {
           userId,
@@ -284,11 +288,11 @@ export function TransactionsSheet({
     } catch (err: unknown) {
       console.error("Save row error:", err);
       setRowStatus((prev) => ({ ...prev, [id]: "error" }));
-      const msg = err instanceof Error ? err.message : "Gagal menyimpan perubahan.";
-      const isBalanceErr = msg.toLowerCase().includes("saldo tidak mencukupi");
+      const msg = err instanceof Error ? err.message : dict.transaksi.errSaveGeneric;
+      const isBalanceErr = msg.toLowerCase().includes("saldo tidak mencukupi") || msg.toLowerCase().includes("insufficient");
       setAlertModal({
         isOpen: true,
-        title: isBalanceErr ? "Saldo Tidak Mencukupi" : "Gagal Menyimpan Transaksi",
+        title: isBalanceErr ? dict.transaksi.insufficientBalanceTitle : dict.transaksi.errSaveTitle,
         message: msg,
         variant: isBalanceErr ? "warning" : "error",
       });
@@ -338,10 +342,10 @@ export function TransactionsSheet({
       setDeleteConfirmation({ isOpen: false, row: null });
       await onRefreshAll();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menghapus transaksi.";
+      const msg = err instanceof Error ? err.message : dict.transaksi.errDeleteGeneric;
       setAlertModal({
         isOpen: true,
-        title: "Gagal Menghapus Transaksi",
+        title: dict.transaksi.errDeleteTitle,
         message: msg,
         variant: "error",
       });
@@ -405,10 +409,10 @@ export function TransactionsSheet({
       setIsBatchDeleteOpen(false);
       await onRefreshAll();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menghapus transaksi terpilih.";
+      const msg = err instanceof Error ? err.message : dict.transaksi.errBatchDeleteGeneric;
       setAlertModal({
         isOpen: true,
-        title: "Gagal Menghapus Transaksi",
+        title: dict.transaksi.errDeleteTitle,
         message: msg,
         variant: "error",
       });
@@ -505,7 +509,7 @@ export function TransactionsSheet({
           <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <Input
             type="text"
-            placeholder="Cari transaksi (keterangan, nominal, tanggal, kategori, dompet)..."
+            placeholder={dict.transaksi.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 h-10 text-xs bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl"
@@ -523,7 +527,7 @@ export function TransactionsSheet({
                 className="flex-1 sm:flex-initial h-10 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-sm transition-all animate-in fade-in"
               >
                 <Trash2 className="w-4 h-4 mr-1.5" />
-                Hapus ({selectedIds.size}) Terpilih
+                {dict.transaksi.btnDeleteSelected(selectedIds.size)}
               </Button>
               <Button
                 type="button"
@@ -532,7 +536,7 @@ export function TransactionsSheet({
                 onClick={clearSelection}
                 className="h-10 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
               >
-                Batal
+                {dict.common.cancel}
               </Button>
             </div>
           )}
@@ -545,7 +549,7 @@ export function TransactionsSheet({
             className="flex-1 sm:flex-initial h-10 text-xs font-semibold border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800"
           >
             <FileSpreadsheet className="w-4 h-4 mr-1.5 text-emerald-600" />
-            Ekspor / Impor
+            {dict.transaksi.btnExportImport}
           </Button>
 
           <Button
@@ -554,7 +558,7 @@ export function TransactionsSheet({
             size="sm"
             className="flex-1 sm:flex-initial h-10 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm"
           >
-            <Plus className="w-4 h-4 mr-1.5" /> Baris Baru (Row)
+            <Plus className="w-4 h-4 mr-1.5" /> {dict.transaksi.btnNewRow}
           </Button>
         </div>
       </div>
@@ -568,7 +572,7 @@ export function TransactionsSheet({
                 <div className="flex items-center justify-center gap-1.5">
                   <input
                     type="checkbox"
-                    aria-label="Pilih semua baris yang tampil"
+                    aria-label="Select all visible rows"
                     checked={
                       paginatedRows.length > 0 &&
                       paginatedRows.every((r) => selectedIds.has(r.id))
@@ -583,7 +587,7 @@ export function TransactionsSheet({
                 className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-36"
               >
                 <div className="flex items-center gap-1">
-                  <span>Tanggal</span>
+                  <span>{dict.transaksi.colDate}</span>
                   {sortField === "transactionDate" ? (
                     sortOrder === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-emerald-600" /> : <ArrowDown className="w-3.5 h-3.5 text-emerald-600" />
                   ) : (
@@ -596,7 +600,7 @@ export function TransactionsSheet({
                 className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-32"
               >
                 <div className="flex items-center gap-1">
-                  <span>Tipe</span>
+                  <span>{dict.transaksi.colType}</span>
                   {sortField === "type" ? (
                     sortOrder === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-emerald-600" /> : <ArrowDown className="w-3.5 h-3.5 text-emerald-600" />
                   ) : (
@@ -609,7 +613,7 @@ export function TransactionsSheet({
                 className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-44"
               >
                 <div className="flex items-center gap-1">
-                  <span>Kategori</span>
+                  <span>{dict.transaksi.colCategory}</span>
                   {sortField === "category" ? (
                     sortOrder === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-emerald-600" /> : <ArrowDown className="w-3.5 h-3.5 text-emerald-600" />
                   ) : (
@@ -622,7 +626,7 @@ export function TransactionsSheet({
                 className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-52"
               >
                 <div className="flex items-center gap-1">
-                  <span>Kantong / Dompet</span>
+                  <span>{dict.transaksi.colWallet}</span>
                   {sortField === "account" ? (
                     sortOrder === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-emerald-600" /> : <ArrowDown className="w-3.5 h-3.5 text-emerald-600" />
                   ) : (
@@ -635,7 +639,7 @@ export function TransactionsSheet({
                 className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-36"
               >
                 <div className="flex items-center gap-1">
-                  <span>Nominal (Rp)</span>
+                  <span>{dict.transaksi.colAmount}</span>
                   {sortField === "amount" ? (
                     sortOrder === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-emerald-600" /> : <ArrowDown className="w-3.5 h-3.5 text-emerald-600" />
                   ) : (
@@ -648,7 +652,7 @@ export function TransactionsSheet({
                 className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors min-w-[180px]"
               >
                 <div className="flex items-center gap-1">
-                  <span>Keterangan</span>
+                  <span>{dict.transaksi.colNote}</span>
                   {sortField === "note" ? (
                     sortOrder === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-emerald-600" /> : <ArrowDown className="w-3.5 h-3.5 text-emerald-600" />
                   ) : (
@@ -656,7 +660,7 @@ export function TransactionsSheet({
                   )}
                 </div>
               </th>
-              <th className="p-3 w-28 text-center">Status / Aksi</th>
+              <th className="p-3 w-28 text-center">{dict.transaksi.colActions}</th>
             </tr>
           </thead>
 
@@ -664,7 +668,7 @@ export function TransactionsSheet({
             {paginatedRows.length === 0 ? (
               <tr>
                 <td colSpan={8} className="p-8 text-center text-zinc-400 text-xs">
-                  Tidak ada transaksi yang cocok. Klik tombol <b>+ Baris Baru</b> untuk mulai mencatat.
+                  {dict.transaksi.emptyRows}
                 </td>
               </tr>
             ) : (
@@ -723,9 +727,9 @@ export function TransactionsSheet({
                           handleCellChange(row.id, "type", val as any)
                         }
                         options={[
-                          { value: "expense", label: "Pengeluaran", badge: "out", badgeClassName: "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300" },
-                          { value: "income", label: "Pemasukan", badge: "in", badgeClassName: "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300" },
-                          { value: "transfer", label: "Transfer", badge: "tf", badgeClassName: "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300" },
+                          { value: "expense", label: dict.txTypes.expense, badge: "out", badgeClassName: "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300" },
+                          { value: "income", label: dict.txTypes.income, badge: "in", badgeClassName: "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300" },
+                          { value: "transfer", label: dict.txTypes.transfer, badge: "tf", badgeClassName: "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300" },
                         ]}
                         triggerClassName={`h-8 font-semibold ${
                           row.type === "income"
@@ -741,7 +745,7 @@ export function TransactionsSheet({
                     <td className="p-2">
                       {row.type === "transfer" ? (
                         <div className="text-[11px] text-zinc-400 italic px-2">
-                          Mutasi Internal
+                          {dict.transaksi.internalTransfer}
                         </div>
                       ) : (
                         <CustomSelect
@@ -801,7 +805,7 @@ export function TransactionsSheet({
                             value: a.id,
                             label: a.name,
                             icon: a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱",
-                            badge: formatRupiah(parseFloat(a.balance)),
+                            badge: formatCurrency(parseFloat(a.balance)),
                             badgeClassName: "font-mono font-normal text-zinc-500",
                           }))}
                           triggerClassName="h-8"
@@ -818,7 +822,7 @@ export function TransactionsSheet({
                         <input
                           type="text"
                           inputMode="numeric"
-                          value={row.amount ? row.amount.toLocaleString("id-ID") : ""}
+                          value={row.amount ? row.amount.toLocaleString(locale === "en" ? "en-US" : "id-ID") : ""}
                           onChange={(e) => {
                             // Strip everything except digits
                             const rawDigits = e.target.value.replace(/\D/g, "");
@@ -839,7 +843,7 @@ export function TransactionsSheet({
                         onChange={(e) =>
                           handleCellChange(row.id, "note", e.target.value)
                         }
-                        placeholder="Keterangan..."
+                        placeholder={dict.transaksi.notePlaceholder}
                         className="w-full h-8 px-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs outline-hidden"
                       />
                     </td>
@@ -853,7 +857,7 @@ export function TransactionsSheet({
                               <RefreshCw className="w-4 h-4 animate-spin" />
                             </div>
                             <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-medium px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
-                              Menyimpan otomatis...
+                              {dict.transaksi.statusSaving}
                             </span>
                           </div>
                         )}
@@ -863,7 +867,7 @@ export function TransactionsSheet({
                               <CheckCircle2 className="w-4 h-4" />
                             </div>
                             <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-medium px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
-                              Tersimpan
+                              {dict.transaksi.statusSaved}
                             </span>
                           </div>
                         )}
@@ -873,7 +877,7 @@ export function TransactionsSheet({
                               <AlertCircle className="w-4 h-4" />
                             </div>
                             <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-medium px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
-                              Gagal disimpan
+                              {dict.transaksi.statusError}
                             </span>
                           </div>
                         )}
@@ -882,13 +886,13 @@ export function TransactionsSheet({
                             <button
                               type="button"
                               onClick={() => saveRow(row.id)}
-                              aria-label="Simpan perubahan baris"
+                              aria-label={dict.transaksi.tooltipSave}
                               className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all"
                             >
                               <Save className="w-4 h-4" />
                             </button>
                             <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-medium px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
-                              Simpan baris
+                              {dict.transaksi.tooltipSave}
                             </span>
                           </div>
                         )}
@@ -896,13 +900,13 @@ export function TransactionsSheet({
                           <button
                             type="button"
                             onClick={() => handleDeleteRow(row)}
-                            aria-label="Hapus baris transaksi"
+                            aria-label={dict.transaksi.tooltipDelete}
                             className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
                           <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-medium px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
-                            Hapus baris
+                            {dict.transaksi.tooltipDelete}
                           </span>
                         </div>
                       </div>
@@ -919,29 +923,23 @@ export function TransactionsSheet({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500 dark:text-zinc-400 px-1 pt-1">
         <div className="flex flex-wrap items-center gap-2">
           <span>
-            Menampilkan{" "}
-            <span className="font-medium text-zinc-800 dark:text-zinc-200">
-              {totalItems === 0 ? 0 : (safeCurrentPage - 1) * itemsPerPage + 1}
-            </span>{" "}
-            -{" "}
-            <span className="font-medium text-zinc-800 dark:text-zinc-200">
-              {Math.min(safeCurrentPage * itemsPerPage, totalItems)}
-            </span>{" "}
-            dari{" "}
-            <span className="font-medium text-zinc-800 dark:text-zinc-200">{totalItems}</span>{" "}
-            transaksi
+            {dict.transaksi.paginationShowing(
+              totalItems === 0 ? 0 : (safeCurrentPage - 1) * itemsPerPage + 1,
+              Math.min(safeCurrentPage * itemsPerPage, totalItems),
+              totalItems
+            )}
           </span>
 
           <div className="flex items-center gap-1.5 ml-2">
-            <span className="text-[11px] text-zinc-400">Tampilkan:</span>
+            <span className="text-[11px] text-zinc-400">{dict.transaksi.perPageLabel}</span>
             <CustomSelect
               value={String(itemsPerPage)}
               onChange={(val) => setItemsPerPage(Number(val))}
               options={[
-                { value: "10", label: "10 / hal" },
-                { value: "25", label: "25 / hal" },
-                { value: "50", label: "50 / hal" },
-                { value: "100", label: "100 / hal" },
+                { value: "10", label: `10 / ${dict.transaksi.perPageOption}` },
+                { value: "25", label: `25 / ${dict.transaksi.perPageOption}` },
+                { value: "50", label: `50 / ${dict.transaksi.perPageOption}` },
+                { value: "100", label: `100 / ${dict.transaksi.perPageOption}` },
               ]}
               triggerClassName="h-7 text-[11px] px-2.5 py-1 rounded-lg border-zinc-200 dark:border-zinc-800"
             />
@@ -956,7 +954,7 @@ export function TransactionsSheet({
             size="sm"
             onClick={() => setCurrentPage(1)}
             disabled={safeCurrentPage <= 1}
-            title="Halaman Pertama"
+            title={dict.transaksi.pageFirst}
             className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-800"
           >
             <ChevronsLeft className="w-4 h-4" />
@@ -968,15 +966,14 @@ export function TransactionsSheet({
             size="sm"
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={safeCurrentPage <= 1}
-            title="Halaman Sebelumnya"
+            title={dict.transaksi.pagePrev}
             className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-800"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
 
           <span className="text-xs px-2 select-none">
-            Hal <span className="font-semibold text-zinc-800 dark:text-zinc-200">{safeCurrentPage}</span> dari{" "}
-            <span className="font-semibold text-zinc-800 dark:text-zinc-200">{totalPages}</span>
+            {dict.transaksi.pageCurrent(safeCurrentPage, totalPages)}
           </span>
 
           <Button
@@ -985,7 +982,7 @@ export function TransactionsSheet({
             size="sm"
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={safeCurrentPage >= totalPages}
-            title="Halaman Berikutnya"
+            title={dict.transaksi.pageNext}
             className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-800"
           >
             <ChevronRight className="w-4 h-4" />
@@ -997,7 +994,7 @@ export function TransactionsSheet({
             size="sm"
             onClick={() => setCurrentPage(totalPages)}
             disabled={safeCurrentPage >= totalPages}
-            title="Halaman Terakhir"
+            title={dict.transaksi.pageLast}
             className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-800"
           >
             <ChevronsRight className="w-4 h-4" />
@@ -1008,9 +1005,9 @@ export function TransactionsSheet({
       {/* Confirmation Dialog for Transaction Row Deletion */}
       <ConfirmDeleteModal
         isOpen={deleteConfirmation.isOpen}
-        title="Hapus Transaksi"
-        description="Apakah kamu yakin ingin menghapus baris transaksi ini? Saldo kantong terkait akan otomatis disesuaikan kembali."
-        itemName={deleteConfirmation.row?.note || (deleteConfirmation.row?.amount ? `Rp ${deleteConfirmation.row.amount.toLocaleString("id-ID")}` : "Baris Transaksi")}
+        title={dict.transaksi.confirmDeleteRowTitle}
+        description={dict.transaksi.confirmDeleteRowDesc}
+        itemName={deleteConfirmation.row?.note || (deleteConfirmation.row?.amount ? formatCurrency(deleteConfirmation.row.amount) : dict.transaksi.defaultRowItemName)}
         isLoading={deleteLoading}
         onConfirm={executeDeleteRow}
         onClose={() => setDeleteConfirmation({ isOpen: false, row: null })}
@@ -1019,9 +1016,9 @@ export function TransactionsSheet({
       {/* Confirmation Dialog for Batch Transactions Deletion */}
       <ConfirmDeleteModal
         isOpen={isBatchDeleteOpen}
-        title="Hapus Transaksi Terpilih"
-        description={`Apakah kamu yakin ingin menghapus ${selectedIds.size} transaksi yang dipilih? Saldo seluruh kantong terkait akan otomatis disesuaikan kembali.`}
-        itemName={`${selectedIds.size} transaksi`}
+        title={dict.transaksi.confirmDeleteBatchTitle}
+        description={dict.transaksi.confirmDeleteBatchDesc(selectedIds.size)}
+        itemName={dict.transaksi.confirmDeleteBatchItem(selectedIds.size)}
         isLoading={batchDeleteLoading}
         onConfirm={executeBatchDeleteRow}
         onClose={() => setIsBatchDeleteOpen(false)}

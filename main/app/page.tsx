@@ -14,14 +14,16 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-export const metadata = {
-  title: "Fiku • Catat Cepat, Kendalikan Keuangan Pribadi",
-  description:
-    "Aplikasi pencatat keuangan instan dengan Smart Input dan spreadsheet live-sync. Data terenkripsi dengan Zero-Knowledge Security.",
-};
-
 import { getServerLocale, getServerDictionary } from "@/lib/i18n/server";
 import { LanguageSwitcher } from "@/components/language-switcher";
+
+export async function generateMetadata() {
+  const dict = await getServerDictionary();
+  return {
+    title: dict.landing.metaTitle,
+    description: dict.landing.metaDesc,
+  };
+}
 
 export default async function HomePage() {
   const user = await getCurrentUser();

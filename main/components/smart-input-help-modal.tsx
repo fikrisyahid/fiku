@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react";
 import { Info, X, Sparkles, ArrowRightLeft, ArrowDownRight, ArrowUpRight, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { useI18n } from "@/lib/i18n/context";
+
 interface SmartInputHelpModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -15,6 +17,7 @@ export function SmartInputHelpModal({
   onClose,
   onSelectExample,
 }: SmartInputHelpModalProps) {
+  const { dict } = useI18n();
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,55 +34,55 @@ export function SmartInputHelpModal({
 
   const exampleSections = [
     {
-      title: "Pengeluaran Cepat",
-      badge: "Expense",
+      title: dict.smartInputGuide.expenseTitle,
+      badge: dict.smartInputGuide.expenseBadge,
       badgeColor: "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400 border-rose-200 dark:border-rose-900",
       icon: ArrowDownRight,
       iconColor: "text-rose-500",
-      desc: "Ketik nominal (pakai tanda - atau langsung angka), keterangan, lalu nama kantong di akhir.",
+      desc: dict.smartInputGuide.expenseDesc,
       examples: [
-        { text: "-25k kopi susu bca", note: "Keluar Rp 25.000 kategori Makan & Minum dari BCA" },
-        { text: "50rb bensin spbu mandiri", note: "Keluar Rp 50.000 kategori Transport dari Mandiri" },
-        { text: "-150.000 belanja mingguan cash", note: "Keluar Rp 150.000 dari dompet Cash/Tunai" },
-        { text: "1.5jt sewa kos bca", note: "Keluar Rp 1.500.000 kategori Tagihan dari BCA" },
+        { text: "-25k kopi susu bca", note: dict.smartInputGuide.ex1Note },
+        { text: "50rb bensin spbu mandiri", note: dict.smartInputGuide.ex2Note },
+        { text: "-150.000 belanja mingguan cash", note: dict.smartInputGuide.ex3Note },
+        { text: "1.5jt sewa kos bca", note: dict.smartInputGuide.ex4Note },
       ],
     },
     {
-      title: "Pemasukan Cepat",
-      badge: "Income",
+      title: dict.smartInputGuide.incomeTitle,
+      badge: dict.smartInputGuide.incomeBadge,
       badgeColor: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900",
       icon: ArrowUpRight,
       iconColor: "text-emerald-500",
-      desc: "Awali dengan tanda + atau gunakan kata kunci pemasukan (gaji, bonus, thr, dll).",
+      desc: dict.smartInputGuide.incomeDesc,
       examples: [
-        { text: "+5jt gaji bulanan bca", note: "Masuk Rp 5.000.000 kategori Gaji ke BCA" },
-        { text: "+350k freelance desain mandiri", note: "Masuk Rp 350.000 kategori Freelance ke Mandiri" },
-        { text: "+100rb angpao lebaran cash", note: "Masuk Rp 100.000 kategori Hadiah ke dompet Cash" },
+        { text: "+5jt gaji bulanan bca", note: dict.smartInputGuide.in1Note },
+        { text: "+350k freelance desain mandiri", note: dict.smartInputGuide.in2Note },
+        { text: "+100rb angpao lebaran cash", note: dict.smartInputGuide.in3Note },
       ],
     },
     {
-      title: "Transfer Antar Kantong",
-      badge: "Transfer",
+      title: dict.smartInputGuide.transferTitle,
+      badge: dict.smartInputGuide.transferBadge,
       badgeColor: "bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-400 border-sky-200 dark:border-sky-900",
       icon: ArrowRightLeft,
       iconColor: "text-sky-500",
-      desc: "Gunakan awalan 'tf', 'transfer', atau 'pindah' dengan format asal 'ke' tujuan.",
+      desc: dict.smartInputGuide.transferDesc,
       examples: [
-        { text: "tf 100k bca ke gopay topup", note: "Pindah Rp 100.000 dari BCA ke Gopay catatan 'topup'" },
-        { text: "transfer 500rb mandiri ke cash", note: "Pindah Rp 500.000 dari Mandiri ke Cash" },
-        { text: "pindah 50k gopay ke ovo", note: "Pindah saldo Rp 50.000 dari Gopay ke OVO" },
+        { text: "tf 100k bca ke gopay topup", note: dict.smartInputGuide.tf1Note },
+        { text: "transfer 500rb mandiri ke cash", note: dict.smartInputGuide.tf2Note },
+        { text: "pindah 50k gopay ke ovo", note: dict.smartInputGuide.tf3Note },
       ],
     },
     {
-      title: "Tarik Tunai ATM",
-      badge: "Tarik Tunai",
+      title: dict.smartInputGuide.atmTitle,
+      badge: dict.smartInputGuide.atmBadge,
       badgeColor: "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border-amber-200 dark:border-amber-900",
       icon: ArrowRightLeft,
       iconColor: "text-amber-500",
-      desc: "Otomatis memindahkan saldo dari rekening bank pilihan ke kantong tunai/cash.",
+      desc: dict.smartInputGuide.atmDesc,
       examples: [
-        { text: "tarik tunai 500k mandiri", note: "Tarik Rp 500.000 dari Mandiri ke dompet Cash" },
-        { text: "tarik 200rb bca", note: "Tarik Rp 200.000 dari BCA ke dompet Cash" },
+        { text: "tarik tunai 500k mandiri", note: dict.smartInputGuide.atm1Note },
+        { text: "tarik 200rb bca", note: dict.smartInputGuide.atm2Note },
       ],
     },
   ];
@@ -106,10 +109,10 @@ export function SmartInputHelpModal({
             </div>
             <div>
               <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
-                Panduan Smart Input
+                {dict.smartInputGuide.modalTitle}
               </h3>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Catat transaksi dalam 1 kalimat natural dengan auto-detect kategori & kantong
+                {dict.smartInputGuide.modalSubtitle}
               </p>
             </div>
           </div>
@@ -127,10 +130,10 @@ export function SmartInputHelpModal({
           {/* Quick tips alert */}
           <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 space-y-1.5 text-zinc-600 dark:text-zinc-300">
             <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-              <HelpCircle className="w-3.5 h-3.5 text-emerald-600" /> Tips Format Nominal
+              <HelpCircle className="w-3.5 h-3.5 text-emerald-600" /> {dict.smartInputGuide.tipsTitle}
             </div>
             <p className="text-[11px] leading-relaxed">
-              Mendukung singkatan nominal: <span className="font-semibold text-zinc-800 dark:text-zinc-200">k</span> / <span className="font-semibold text-zinc-800 dark:text-zinc-200">rb</span> (ribu), <span className="font-semibold text-zinc-800 dark:text-zinc-200">jt</span> (juta). Contoh: <code className="bg-zinc-200 dark:bg-zinc-700 px-1 py-0.5 rounded text-[10px]">25k</code> = 25.000, <code className="bg-zinc-200 dark:bg-zinc-700 px-1 py-0.5 rounded text-[10px]">1.5jt</code> = 1.500.000.
+              {dict.smartInputGuide.tipsDesc}
             </p>
           </div>
 
@@ -177,7 +180,7 @@ export function SmartInputHelpModal({
                         </div>
                       </div>
                       <span className="text-[10px] text-zinc-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 shrink-0 ml-2 font-medium">
-                        Gunakan ↵
+                        {dict.smartInputGuide.useExample}
                       </span>
                     </button>
                   ))}
@@ -196,7 +199,7 @@ export function SmartInputHelpModal({
             onClick={onClose}
             className="rounded-xl text-xs font-semibold h-9 px-4"
           >
-            Tutup
+            {dict.common.close}
           </Button>
         </div>
       </div>

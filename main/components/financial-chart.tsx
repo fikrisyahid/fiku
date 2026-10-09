@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import { BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { useI18n } from "@/lib/i18n/context";
+
 interface FinancialChartProps {
   period: "harian" | "mingguan" | "bulanan" | "tahunan";
   periodLabel: string;
@@ -15,8 +17,10 @@ export function FinancialChart({
   periodLabel,
   transactions,
 }: FinancialChartProps) {
-  const formatRupiah = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
+  const { dict, locale } = useI18n();
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat(locale === "en" ? "en-US" : "id-ID", {
       style: "currency",
       currency: "IDR",
       maximumFractionDigits: 0,
@@ -24,8 +28,8 @@ export function FinancialChart({
   };
 
   const formatShortNumber = (val: number) => {
-    if (val >= 1_000_000_000) return `${(val / 1_000_000_000).toFixed(1)}M`;
-    if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(1)}jt`;
+    if (val >= 1_000_000_000) return `${(val / 1_000_000_000).toFixed(1)}B`;
+    if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(1)}${locale === "en" ? "M" : "jt"}`;
     if (val >= 1_000) return `${(val / 1_000).toFixed(0)}k`;
     return String(val);
   };
@@ -33,12 +37,11 @@ export function FinancialChart({
   // Group transactions into buckets depending on current period
   const chartData = useMemo(() => {
     if (period === "harian") {
-      // 4 Time intervals: Pagi (00-11), Siang (12-14), Sore (15-18), Malam (19-23)
       const slots = [
-        { key: "pagi", label: "Pagi", income: 0, expense: 0 },
-        { key: "siang", label: "Siang", income: 0, expense: 0 },
-        { key: "sore", label: "Sore", income: 0, expense: 0 },
-        { key: "malam", label: "Malam", income: 0, expense: 0 },
+        { key: "pagi", label: dict.ringkasan.slotMorning, income: 0, expense: 0 },
+        { key: "siang", label: dict.ringkasan.slotAfternoon, income: 0, expense: 0 },
+        { key: "sore", label: dict.ringkasan.slotEvening, income: 0, expense: 0 },
+        { key: "malam", label: dict.ringkasan.slotNight, income: 0, expense: 0 },
       ];
 
       for (const t of transactions) {
@@ -56,15 +59,14 @@ export function FinancialChart({
     }
 
     if (period === "mingguan") {
-      // 7 Days: Sen, Sel, Rab, Kam, Jum, Sab, Min
       const days = [
-        { key: "1", label: "Sen", income: 0, expense: 0 },
-        { key: "2", label: "Sel", income: 0, expense: 0 },
-        { key: "3", label: "Rab", income: 0, expense: 0 },
-        { key: "4", label: "Kam", income: 0, expense: 0 },
-        { key: "5", label: "Jum", income: 0, expense: 0 },
-        { key: "6", label: "Sab", income: 0, expense: 0 },
-        { key: "0", label: "Min", income: 0, expense: 0 },
+        { key: "1", label: dict.ringkasan.dayMon, income: 0, expense: 0 },
+        { key: "2", label: dict.ringkasan.dayTue, income: 0, expense: 0 },
+        { key: "3", label: dict.ringkasan.dayWed, income: 0, expense: 0 },
+        { key: "4", label: dict.ringkasan.dayThu, income: 0, expense: 0 },
+        { key: "5", label: dict.ringkasan.dayFri, income: 0, expense: 0 },
+        { key: "6", label: dict.ringkasan.daySat, income: 0, expense: 0 },
+        { key: "0", label: dict.ringkasan.daySun, income: 0, expense: 0 },
       ];
 
       for (const t of transactions) {
@@ -81,12 +83,11 @@ export function FinancialChart({
     }
 
     if (period === "bulanan") {
-      // 4 Weeks buckets: Mgg 1 (1-7), Mgg 2 (8-14), Mgg 3 (15-21), Mgg 4+ (22+)
       const weeks = [
-        { key: "w1", label: "Mgg 1", income: 0, expense: 0 },
-        { key: "w2", label: "Mgg 2", income: 0, expense: 0 },
-        { key: "w3", label: "Mgg 3", income: 0, expense: 0 },
-        { key: "w4", label: "Mgg 4+", income: 0, expense: 0 },
+        { key: "w1", label: `${dict.ringkasan.weekPrefix} 1`, income: 0, expense: 0 },
+        { key: "w2", label: `${dict.ringkasan.weekPrefix} 2`, income: 0, expense: 0 },
+        { key: "w3", label: `${dict.ringkasan.weekPrefix} 3`, income: 0, expense: 0 },
+        { key: "w4", label: `${dict.ringkasan.weekPrefix} 4+`, income: 0, expense: 0 },
       ];
 
       for (const t of transactions) {
@@ -105,18 +106,18 @@ export function FinancialChart({
 
     // tahunan: 12 Bulan (Jan - Des)
     const months = [
-      { key: "01", label: "Jan", income: 0, expense: 0 },
-      { key: "02", label: "Feb", income: 0, expense: 0 },
-      { key: "03", label: "Mar", income: 0, expense: 0 },
-      { key: "04", label: "Apr", income: 0, expense: 0 },
-      { key: "05", label: "Mei", income: 0, expense: 0 },
-      { key: "06", label: "Jun", income: 0, expense: 0 },
-      { key: "07", label: "Jul", income: 0, expense: 0 },
-      { key: "08", label: "Agu", income: 0, expense: 0 },
-      { key: "09", label: "Sep", income: 0, expense: 0 },
-      { key: "10", label: "Okt", income: 0, expense: 0 },
-      { key: "11", label: "Nov", income: 0, expense: 0 },
-      { key: "12", label: "Des", income: 0, expense: 0 },
+      { key: "01", label: dict.ringkasan.monthJan, income: 0, expense: 0 },
+      { key: "02", label: dict.ringkasan.monthFeb, income: 0, expense: 0 },
+      { key: "03", label: dict.ringkasan.monthMar, income: 0, expense: 0 },
+      { key: "04", label: dict.ringkasan.monthApr, income: 0, expense: 0 },
+      { key: "05", label: dict.ringkasan.monthMay, income: 0, expense: 0 },
+      { key: "06", label: dict.ringkasan.monthJun, income: 0, expense: 0 },
+      { key: "07", label: dict.ringkasan.monthJul, income: 0, expense: 0 },
+      { key: "08", label: dict.ringkasan.monthAug, income: 0, expense: 0 },
+      { key: "09", label: dict.ringkasan.monthSep, income: 0, expense: 0 },
+      { key: "10", label: dict.ringkasan.monthOct, income: 0, expense: 0 },
+      { key: "11", label: dict.ringkasan.monthNov, income: 0, expense: 0 },
+      { key: "12", label: dict.ringkasan.monthDec, income: 0, expense: 0 },
     ];
 
     for (const t of transactions) {
@@ -129,7 +130,7 @@ export function FinancialChart({
       }
     }
     return months;
-  }, [period, transactions]);
+  }, [period, transactions, dict.ringkasan]);
 
   // Max value calculation for bar heights
   const maxVal = useMemo(() => {
@@ -149,16 +150,16 @@ export function FinancialChart({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <CardTitle className="text-sm font-bold flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-emerald-600" />
-            Grafik Arus Kas ({periodLabel})
+            {dict.ringkasan.cashflowChartTitle(periodLabel)}
           </CardTitle>
           <div className="flex items-center gap-4 text-xs font-semibold">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" />
-              <span className="text-zinc-600 dark:text-zinc-300">Pemasukan</span>
+              <span className="text-zinc-600 dark:text-zinc-300">{dict.ringkasan.chartIncomeLegend}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-rose-500 inline-block" />
-              <span className="text-zinc-600 dark:text-zinc-300">Pengeluaran</span>
+              <span className="text-zinc-600 dark:text-zinc-300">{dict.ringkasan.chartExpenseLegend}</span>
             </div>
           </div>
         </div>
@@ -167,7 +168,7 @@ export function FinancialChart({
       <CardContent className="p-4 sm:p-5">
         {!hasData ? (
           <div className="h-56 flex items-center justify-center text-xs text-zinc-400">
-            Belum ada data transaksi untuk ditampilkan pada grafik {periodLabel}.
+            {dict.ringkasan.emptyChartData(periodLabel)}
           </div>
         ) : (
           <div className="w-full">
@@ -190,8 +191,8 @@ export function FinancialChart({
                   >
                     {/* Tooltip on hover */}
                     <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-900 text-white text-[10px] py-1 px-2 rounded-lg pointer-events-none whitespace-nowrap z-20 shadow-md">
-                      <div>Masuk: {formatRupiah(d.income)}</div>
-                      <div>Keluar: {formatRupiah(d.expense)}</div>
+                      <div>{dict.ringkasan.chartInTooltip}: {formatCurrency(d.income)}</div>
+                      <div>{dict.ringkasan.chartOutTooltip}: {formatCurrency(d.expense)}</div>
                     </div>
 
                     <div className="w-full flex items-end justify-center gap-1 sm:gap-1.5 h-full">

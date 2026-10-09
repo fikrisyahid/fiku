@@ -28,6 +28,8 @@ import { Input } from "@/components/ui/input";
 import { ConfirmDeleteModal } from "@/components/confirm-delete-modal";
 import { CustomSelect } from "@/components/ui/custom-select";
 
+import { useI18n } from "@/lib/i18n/context";
+
 interface ModalProps {
   userId: string;
   familyId?: string | null;
@@ -43,6 +45,7 @@ export function QuickModals({
   categories,
   onRefresh,
 }: ModalProps) {
+  const { dict, locale } = useI18n();
   const [activeModal, setActiveModal] = useState<"saldo" | "kategori" | "kantong" | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,7 +110,7 @@ export function QuickModals({
   async function handleSaveAccount(e: React.FormEvent) {
     e.preventDefault();
     if (!accountName.trim()) {
-      setError("Nama dompet/kantong wajib diisi.");
+      setError(dict.quickModals.errWalletNameReq);
       return;
     }
     setError(null);
@@ -164,7 +167,7 @@ export function QuickModals({
   async function handleSaveCategory(e: React.FormEvent) {
     e.preventDefault();
     if (!categoryName.trim()) {
-      setError("Nama kategori wajib diisi.");
+      setError(dict.quickModals.errCategoryNameReq);
       return;
     }
     setError(null);
@@ -218,8 +221,8 @@ export function QuickModals({
     }
   }
 
-  const formatRupiah = (val: number | string) => {
-    return new Intl.NumberFormat("id-ID", {
+  const formatCurrency = (val: number | string) => {
+    return new Intl.NumberFormat(locale === "en" ? "en-US" : "id-ID", {
       style: "currency",
       currency: "IDR",
       maximumFractionDigits: 0,
@@ -238,7 +241,7 @@ export function QuickModals({
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60 text-xs font-semibold hover:bg-emerald-100 transition-all shadow-sm cursor-pointer"
         >
           <Wallet className="w-3.5 h-3.5" />
-          <span>/saldo</span>
+          <span>{dict.quickModals.btnSaldo}</span>
         </button>
 
         <button
@@ -247,7 +250,7 @@ export function QuickModals({
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all shadow-sm cursor-pointer"
         >
           <PiggyBank className="w-3.5 h-3.5" />
-          <span>/kantong</span>
+          <span>{dict.quickModals.btnKantong}</span>
         </button>
 
         <button
@@ -256,7 +259,7 @@ export function QuickModals({
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all shadow-sm cursor-pointer"
         >
           <Tag className="w-3.5 h-3.5" />
-          <span>/kategori</span>
+          <span>{dict.quickModals.btnKategori}</span>
         </button>
       </div>
 
@@ -281,9 +284,9 @@ export function QuickModals({
                 {activeModal === "kantong" && <PiggyBank className="w-5 h-5 text-emerald-600" />}
                 {activeModal === "kategori" && <Tag className="w-5 h-5 text-emerald-600" />}
                 <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-50 capitalize">
-                  {activeModal === "saldo" && "Ringkasan /saldo Dompet"}
-                  {activeModal === "kantong" && "Kelola /kantong (Dompet & Rekening)"}
-                  {activeModal === "kategori" && "Kelola /kategori Transaksi"}
+                  {activeModal === "saldo" && dict.quickModals.titleSaldo}
+                  {activeModal === "kantong" && dict.quickModals.titleKantong}
+                  {activeModal === "kategori" && dict.quickModals.titleKategori}
                 </h3>
               </div>
               <button
@@ -306,10 +309,10 @@ export function QuickModals({
             {activeModal === "saldo" && (
               <div className="space-y-4">
                 <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md">
-                  <div className="text-xs text-emerald-100 font-medium">Total Kekayaan Tersedia</div>
-                  <div className="text-2xl font-black mt-1">{formatRupiah(totalSaldo)}</div>
+                  <div className="text-xs text-emerald-100 font-medium">{dict.quickModals.totalWealth}</div>
+                  <div className="text-2xl font-black mt-1">{formatCurrency(totalSaldo)}</div>
                   <div className="text-[11px] text-emerald-100/80 mt-1">
-                    Tersebar di {accounts.length} dompet dan kantong keuangan
+                    {dict.quickModals.wealthDesc(accounts.length)}
                   </div>
                 </div>
 
@@ -325,12 +328,12 @@ export function QuickModals({
                             {acc.name}
                           </div>
                           <div className="text-[10px] text-zinc-400 uppercase tracking-wider">
-                            {acc.type} {acc.isDefault ? "• Utama" : ""}
+                            {acc.type} {acc.isDefault ? `• ${dict.quickModals.defaultBadge}` : ""}
                           </div>
                         </div>
                       </div>
                       <div className="font-bold text-zinc-800 dark:text-zinc-200">
-                        {formatRupiah(acc.balance)}
+                        {formatCurrency(acc.balance)}
                       </div>
                     </div>
                   ))}
@@ -343,27 +346,27 @@ export function QuickModals({
               <div className="space-y-5">
                 <form onSubmit={handleSaveAccount} className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/60 space-y-3">
                   <div className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
-                    {editingAccount ? `Edit Kantong: ${editingAccount.name}` : "➕ Tambah Kantong Baru"}
+                    {editingAccount ? `${dict.quickModals.editWallet}: ${editingAccount.name}` : `➕ ${dict.quickModals.addWallet}`}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[11px] text-zinc-500 font-medium">Nama Kantong</label>
+                      <label className="text-[11px] text-zinc-500 font-medium">{dict.quickModals.walletNameLabel}</label>
                       <Input
-                        placeholder="misal: BCA, Dompet Tunai"
+                        placeholder={dict.quickModals.walletNamePlaceholder}
                         value={accountName}
                         onChange={(e) => setAccountName(e.target.value)}
                         className="h-9 text-xs"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] text-zinc-500 font-medium">Tipe Kantong</label>
+                      <label className="text-[11px] text-zinc-500 font-medium">{dict.quickModals.walletTypeLabel}</label>
                       <CustomSelect
                         value={accountType}
                         onChange={(val) => setAccountType(val)}
                         options={[
-                          { value: "cash", label: "Tunai (Cash)", icon: "💵" },
-                          { value: "bank", label: "Bank (Rekening)", icon: "🏦" },
-                          { value: "ewallet", label: "e-Wallet", icon: "📱" },
+                          { value: "cash", label: dict.quickModals.cashType, icon: "💵" },
+                          { value: "bank", label: dict.quickModals.bankType, icon: "🏦" },
+                          { value: "ewallet", label: dict.quickModals.ewalletType, icon: "📱" },
                         ]}
                         triggerClassName="h-9 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
                       />
@@ -372,7 +375,7 @@ export function QuickModals({
 
                   {!editingAccount && (
                     <div>
-                      <label className="text-[11px] text-zinc-500 font-medium">Saldo Awal</label>
+                      <label className="text-[11px] text-zinc-500 font-medium">{dict.quickModals.initialBalanceLabel}</label>
                       <Input
                         type="number"
                         placeholder="0"
@@ -386,11 +389,11 @@ export function QuickModals({
                   <div className="flex items-center gap-2 pt-1">
                     <Button type="submit" size="sm" disabled={loading} className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 cursor-pointer">
                       {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1" /> : <Check className="w-3.5 h-3.5 mr-1" />}
-                      {editingAccount ? "Perbarui Kantong" : "Simpan Kantong"}
+                      {editingAccount ? dict.quickModals.btnUpdateWallet : dict.quickModals.btnSaveWallet}
                     </Button>
                     {editingAccount && (
                       <Button type="button" variant="outline" size="sm" onClick={resetAccountForm} className="h-8 text-xs cursor-pointer">
-                        Batal
+                        {dict.common.cancel}
                       </Button>
                     )}
                   </div>
@@ -398,7 +401,7 @@ export function QuickModals({
 
                 <div className="space-y-2">
                   <div className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                    Daftar Kantong Aktif ({accounts.length})
+                    {dict.quickModals.activeWallets(accounts.length)}
                   </div>
                   <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
                     {accounts.map((acc) => (
@@ -407,7 +410,7 @@ export function QuickModals({
                           <span>{acc.type === "cash" ? "💵" : acc.type === "bank" ? "🏦" : "📱"}</span>
                           <div>
                             <span className="font-semibold">{acc.name}</span>
-                            <span className="ml-2 text-zinc-400 font-mono">{formatRupiah(acc.balance)}</span>
+                            <span className="ml-2 text-zinc-400 font-mono">{formatCurrency(acc.balance)}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
@@ -442,26 +445,26 @@ export function QuickModals({
               <div className="space-y-5">
                 <form onSubmit={handleSaveCategory} className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/60 space-y-3">
                   <div className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
-                    {editingCategory ? `Edit Kategori: ${editingCategory.name}` : "➕ Buat Kategori Baru"}
+                    {editingCategory ? `${dict.quickModals.editCategory}: ${editingCategory.name}` : `➕ ${dict.quickModals.addCategory}`}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div className="sm:col-span-2">
-                      <label className="text-[11px] text-zinc-500 font-medium">Nama Kategori</label>
+                      <label className="text-[11px] text-zinc-500 font-medium">{dict.quickModals.categoryNameLabel}</label>
                       <Input
-                        placeholder="misal: Belanja Bulanan"
+                        placeholder={dict.quickModals.categoryNamePlaceholder}
                         value={categoryName}
                         onChange={(e) => setCategoryName(e.target.value)}
                         className="h-9 text-xs"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] text-zinc-500 font-medium">Tipe</label>
+                      <label className="text-[11px] text-zinc-500 font-medium">{dict.quickModals.categoryTypeLabel}</label>
                       <CustomSelect
                         value={categoryType}
                         onChange={(val) => setCategoryType(val as any)}
                         options={[
-                          { value: "expense", label: "Pengeluaran", badge: "out", badgeClassName: "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300" },
-                          { value: "income", label: "Pemasukan", badge: "in", badgeClassName: "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300" },
+                          { value: "expense", label: dict.quickModals.expenseType, badge: "out", badgeClassName: "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300" },
+                          { value: "income", label: dict.quickModals.incomeType, badge: "in", badgeClassName: "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300" },
                         ]}
                         triggerClassName="h-9 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
                       />
@@ -471,11 +474,11 @@ export function QuickModals({
                   <div className="flex items-center gap-2 pt-1">
                     <Button type="submit" size="sm" disabled={loading} className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 cursor-pointer">
                       {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1" /> : <Check className="w-3.5 h-3.5 mr-1" />}
-                      {editingCategory ? "Perbarui" : "Simpan"}
+                      {editingCategory ? dict.quickModals.btnUpdateCategory : dict.quickModals.btnSaveCategory}
                     </Button>
                     {editingCategory && (
                       <Button type="button" variant="outline" size="sm" onClick={resetCategoryForm} className="h-8 text-xs cursor-pointer">
-                        Batal
+                        {dict.common.cancel}
                       </Button>
                     )}
                   </div>
@@ -483,7 +486,7 @@ export function QuickModals({
 
                 <div className="space-y-2">
                   <div className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                    Daftar Kategori ({categories.length})
+                    {dict.quickModals.activeCategories(categories.length)}
                   </div>
                   <div className="max-h-60 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800">
                     {categories.map((cat) => {
@@ -502,7 +505,7 @@ export function QuickModals({
                                 {cat.type === "income" ? "in" : "out"}
                               </span>
                               {isProtected && (
-                                <span className="ml-1 text-[10px] text-zinc-400">(Bawaan)</span>
+                                <span className="ml-1 text-[10px] text-zinc-400">({dict.quickModals.defaultCategoryBadge})</span>
                               )}
                             </div>
                           </div>
@@ -545,13 +548,13 @@ export function QuickModals({
         isOpen={deleteConfirmation.isOpen}
         title={
           deleteConfirmation.type === "account"
-            ? "Hapus Kantong Keuangan"
-            : "Hapus Kategori Transaksi"
+            ? dict.quickModals.confirmDeleteWalletTitle
+            : dict.quickModals.confirmDeleteCategoryTitle
         }
         description={
           deleteConfirmation.type === "account"
-            ? "Apakah kamu yakin ingin menghapus kantong ini? Tindakan ini tidak dapat dibatalkan jika kantong belum memiliki transaksi."
-            : "Apakah kamu yakin ingin menghapus kategori kustom ini?"
+            ? dict.quickModals.confirmDeleteWalletDesc
+            : dict.quickModals.confirmDeleteCategoryDesc
         }
         itemName={deleteConfirmation.target?.name}
         isLoading={deleteLoading}

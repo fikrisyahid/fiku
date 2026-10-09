@@ -7,10 +7,13 @@ import { AppNavbar } from "@/components/app-navbar";
 import { TransactionsClient } from "@/components/transactions-client";
 import { getServerLocale, getServerDictionary } from "@/lib/i18n/server";
 
-export const metadata = {
-  title: "Transaksi • Fiku",
-  description: "Pencatatan dan edit transaksi instan ala Google Sheet",
-};
+export async function generateMetadata() {
+  const dict = await getServerDictionary();
+  return {
+    title: dict.transaksi.metaTitle,
+    description: dict.transaksi.metaDesc,
+  };
+}
 
 export default async function TransaksiPage() {
   const user = await getCurrentUser();

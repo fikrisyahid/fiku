@@ -147,7 +147,7 @@ export function ExportImportModal({
     const worksheet = XLSX.utils.json_to_sheet(sampleRows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
-    XLSX.writeFile(workbook, "fana_template_transaksi.xlsx");
+    XLSX.writeFile(workbook, "fiku_template_transaksi.xlsx");
   }
 
   // FILE PARSER FOR IMPORT
