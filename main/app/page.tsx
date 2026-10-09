@@ -97,14 +97,14 @@ export default async function HomePage() {
                 href="/transaksi"
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all"
               >
-                Dashboard <ArrowRight className="w-3.5 h-3.5" />
+                {dict.nav.dashboard} <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             ) : (
               <Link
                 href="/login"
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all"
               >
-                Masuk / Daftar <ArrowRight className="w-3.5 h-3.5" />
+                {dict.nav.signInRegister} <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             )}
           </div>
@@ -115,16 +115,17 @@ export default async function HomePage() {
       <section className="relative pt-12 sm:pt-20 pb-16 sm:pb-24 px-4 sm:px-6 max-w-5xl mx-auto text-center space-y-6">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold border border-emerald-200 dark:border-emerald-900/60 shadow-xs">
           <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Cara Paling Cepat & Simpel Mencatat Keuangan</span>
+          <span>{dict.landing.heroBadge}</span>
         </div>
 
         <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-zinc-900 dark:text-zinc-100 max-w-4xl mx-auto leading-[1.15]">
-          Beres belanja, ketik sekali,{" "}
-          <span className="text-emerald-600 dark:text-emerald-400">langsung tercatat</span> rapi.
+          {dict.landing.heroTitlePrefix}
+          <span className="text-emerald-600 dark:text-emerald-400">{dict.landing.heroTitleHighlight}</span>
+          {dict.landing.heroTitleSuffix}
         </h1>
 
         <p className="text-sm sm:text-base md:text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-          Gak perlu lagi ribet ngisi form bertahap di pinggir jalan. Cukup ketik seperti chat biasa atau edit langsung di tabel spreadsheet dengan keamanan enkripsi mutlak.
+          {dict.landing.heroSubtitle}
         </p>
 
         {/* Hero CTAs */}
@@ -133,7 +134,7 @@ export default async function HomePage() {
             href={user ? "/transaksi" : "/login"}
             className="w-full sm:w-auto h-12 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm inline-flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 hover:scale-[1.02] transition-all"
           >
-            Mulai Sekarang — Gratis <ArrowRight className="w-4 h-4" />
+            {dict.landing.startFree} <ArrowRight className="w-4 h-4" />
           </Link>
           <a
             href="https://github.com/fikrisyahid/fiku"
@@ -144,7 +145,7 @@ export default async function HomePage() {
             <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
               <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
             </svg>
-            Bintang di GitHub
+            {dict.landing.starGitHub}
           </a>
         </div>
 
@@ -156,32 +157,36 @@ export default async function HomePage() {
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
                 smart-input-preview
               </span>
-              <span className="text-[11px] font-semibold text-emerald-600">Terbaca Otomatis</span>
+              <span className="text-[11px] font-semibold text-emerald-600">{dict.landing.mockupAutoParsed}</span>
             </div>
 
             <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 font-mono text-xs sm:text-sm text-zinc-800 dark:text-zinc-200 truncate">
                 <span className="text-rose-500 font-bold">-25k</span>
-                <span>sayur bayam & tempe</span>
+                <span>{locale === "en" ? "spinach & tofu lunch" : "sayur bayam & tempe"}</span>
                 <span className="text-zinc-400">cash</span>
               </div>
               <span className="shrink-0 text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded font-bold uppercase">
-                Tersimpan
+                {dict.landing.mockupSaved}
               </span>
             </div>
 
             <div className="grid grid-cols-3 gap-2 pt-1 text-center">
               <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800">
-                <div className="text-[10px] text-zinc-400">Pengeluaran</div>
+                <div className="text-[10px] text-zinc-400">{dict.txTypes.expense}</div>
                 <div className="text-xs sm:text-sm font-bold text-rose-600">Rp 25.000</div>
               </div>
               <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800">
-                <div className="text-[10px] text-zinc-400">Kategori</div>
-                <div className="text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-300">🥬 Makanan</div>
+                <div className="text-[10px] text-zinc-400">{dict.common.category}</div>
+                <div className="text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                  🥬 {dict.defaultCategories.food}
+                </div>
               </div>
               <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800">
-                <div className="text-[10px] text-zinc-400">Kantong</div>
-                <div className="text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-300">💵 Dompet Tunai</div>
+                <div className="text-[10px] text-zinc-400">{dict.common.wallet}</div>
+                <div className="text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                  💵 {dict.defaultWallets.cash}
+                </div>
               </div>
             </div>
           </div>
@@ -193,10 +198,10 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              Kenapa Memilih Fiku?
+              {dict.landing.whyChooseTitle}
             </h2>
             <p className="text-xs sm:text-sm text-zinc-500">
-              Dibangun untuk kecepatan, kepraktisan, dan keamanan tanpa kompromi.
+              {dict.landing.whyChooseSub}
             </p>
           </div>
 
@@ -206,10 +211,10 @@ export default async function HomePage() {
                 <Zap className="w-5 h-5" />
               </div>
               <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">
-                Smart Input Kilat
+                {dict.landing.featureSmartTitle}
               </h3>
               <p className="text-xs text-zinc-500 leading-relaxed">
-                Catat pengeluaran di mana saja dalam hitungan detik. Cukup ketik format teks sederhana, sistem otomatis memproses ke kantong yang tepat.
+                {dict.landing.featureSmartDesc}
               </p>
             </div>
 
@@ -218,10 +223,10 @@ export default async function HomePage() {
                 <TableProperties className="w-5 h-5" />
               </div>
               <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">
-                Live Spreadsheet Ala Excel
+                {dict.landing.featureSheetTitle}
               </h3>
               <p className="text-xs text-zinc-500 leading-relaxed">
-                Mau merapikan transaksi di rumah? Edit tanggal, nominal, dan catatan langsung di sel tabel dengan format ribuan otomatis & debounce auto-save.
+                {dict.landing.featureSheetDesc}
               </p>
             </div>
 
@@ -230,10 +235,10 @@ export default async function HomePage() {
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">
-                Zero-Knowledge & Double Protection
+                {dict.landing.featureSecurityTitle}
               </h3>
               <p className="text-xs text-zinc-500 leading-relaxed">
-                Kunci kriptografi akun kamu diamankan oleh kombinasi password dan server secret key. Privasi keuangan kamu terlindungi seutuhnya.
+                {dict.landing.featureSecurityDesc}
               </p>
             </div>
           </div>
@@ -245,13 +250,13 @@ export default async function HomePage() {
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-xs font-semibold">
             <HelpCircle className="w-3.5 h-3.5" />
-            <span>Pertanyaan yang Sering Diajukan</span>
+            <span>{dict.landing.faqTitle}</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            FAQ Seputar Fiku
+            {dict.landing.faqTitle}
           </h2>
           <p className="text-xs sm:text-sm text-zinc-500">
-            Segala hal yang perlu kamu ketahui tentang fitur dan perlindungan data di Fiku.
+            {dict.landing.faqSubtitle}
           </p>
         </div>
 
@@ -279,17 +284,17 @@ export default async function HomePage() {
       <section className="py-12 bg-emerald-600 text-white px-4 sm:px-6 text-center">
         <div className="max-w-2xl mx-auto space-y-4">
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
-            Siap Mengatur Keuangan Lebih Ringan?
+            {dict.landing.ctaTitle}
           </h2>
           <p className="text-xs sm:text-sm text-emerald-100">
-            Daftar sekarang dan rasakan kemudahan mencatat keuangan tanpa ribet.
+            {dict.landing.ctaSub}
           </p>
           <div className="pt-2">
             <Link
               href={user ? "/transaksi" : "/login"}
               className="h-11 px-6 rounded-xl bg-white text-emerald-700 font-bold text-xs inline-flex items-center gap-2 hover:bg-emerald-50 transition-all shadow-md"
             >
-              Mulai Pakai Fiku Sekarang <ArrowRight className="w-3.5 h-3.5" />
+              {dict.landing.ctaBtn} <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
@@ -299,10 +304,10 @@ export default async function HomePage() {
       <footer className="mt-auto border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 py-6 text-center text-xs text-zinc-500 space-y-2">
         <div className="flex items-center justify-center gap-4 text-xs font-medium">
           <Link href="/transaksi" className="hover:text-zinc-900 dark:hover:text-zinc-100">
-            Transaksi
+            {dict.nav.transactions}
           </Link>
           <Link href="/ringkasan" className="hover:text-zinc-900 dark:hover:text-zinc-100">
-            Ringkasan
+            {dict.nav.summary}
           </Link>
           <a
             href="https://github.com/fikrisyahid/fiku"
@@ -317,7 +322,7 @@ export default async function HomePage() {
           </a>
         </div>
         <p className="text-[11px] text-zinc-400">
-          Fiku &copy; {new Date().getFullYear()} • Zero-Knowledge Personal Finance Platform
+          Fiku &copy; {new Date().getFullYear()} • {dict.landing.footerDesc}
         </p>
       </footer>
     </div>
