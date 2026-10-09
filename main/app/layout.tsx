@@ -24,6 +24,12 @@ import { ThemeProvider } from "@/lib/theme/context";
 export const metadata: Metadata = {
   title: "Fiku - Catat Keuangan Cerdas Tanpa Ribet",
   description: "Aplikasi pencatat transaksi harian, pengelolaan kantong dana, dan ringkasan keuangan personal.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Fiku",
+  },
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
