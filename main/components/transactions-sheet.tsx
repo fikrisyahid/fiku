@@ -656,7 +656,7 @@ export function TransactionsSheet({
                   )}
                 </div>
               </th>
-              <th className="p-3 w-20 text-center">Status / Aksi</th>
+              <th className="p-3 w-28 text-center">Status / Aksi</th>
             </tr>
           </thead>
 
@@ -846,40 +846,65 @@ export function TransactionsSheet({
 
                     {/* Status & Actions */}
                     <td className="p-2 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
+                      <div className="flex items-center justify-center gap-1">
                         {isSaving && (
-                          <span title="Menyimpan otomatis...">
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-500" />
-                          </span>
+                          <div className="relative group/tooltip flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-amber-500 bg-amber-50/50 dark:bg-amber-950/20">
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                            </div>
+                            <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-medium px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
+                              Menyimpan otomatis...
+                            </span>
+                          </div>
                         )}
                         {isSaved && (
-                          <span title="Tersimpan!">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                          </span>
+                          <div className="relative group/tooltip flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20">
+                              <CheckCircle2 className="w-4 h-4" />
+                            </div>
+                            <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-medium px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
+                              Tersimpan
+                            </span>
+                          </div>
                         )}
                         {isError && (
-                          <span title="Gagal disimpan">
-                            <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
-                          </span>
+                          <div className="relative group/tooltip flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-rose-500 bg-rose-50/50 dark:bg-rose-950/20">
+                              <AlertCircle className="w-4 h-4" />
+                            </div>
+                            <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-medium px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
+                              Gagal disimpan
+                            </span>
+                          </div>
                         )}
                         {!isSaving && (
+                          <div className="relative group/tooltip flex items-center justify-center">
+                            <button
+                              type="button"
+                              onClick={() => saveRow(row.id)}
+                              aria-label="Simpan perubahan baris"
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all"
+                            >
+                              <Save className="w-4 h-4" />
+                            </button>
+                            <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-medium px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
+                              Simpan baris
+                            </span>
+                          </div>
+                        )}
+                        <div className="relative group/tooltip flex items-center justify-center">
                           <button
                             type="button"
-                            onClick={() => saveRow(row.id)}
-                            title="Simpan baris ini"
-                            className="p-1 rounded text-zinc-400 hover:text-emerald-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            onClick={() => handleDeleteRow(row)}
+                            aria-label="Hapus baris transaksi"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all"
                           >
-                            <Save className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteRow(row)}
-                          title="Hapus baris"
-                          className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                          <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-medium px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
+                            Hapus baris
+                          </span>
+                        </div>
                       </div>
                     </td>
                   </tr>
