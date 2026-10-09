@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { LogoutButton } from "@/components/logout-button";
 import { ArrowLeftRight, BarChart3, Menu, X, User } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Locale, getDictionary } from "@/lib/i18n/dictionary";
 
 interface AppNavbarProps {
@@ -103,12 +104,13 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
             </nav>
           </div>
 
-          {/* Desktop Right User & Logout & Language Switcher */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Desktop Right User & Logout & Theme Switcher & Language Switcher */}
+          <div className="hidden md:flex items-center gap-2.5">
+            <ThemeSwitcher />
             <LanguageSwitcher currentLocale={locale} />
             {user ? (
               <>
-                <div className="flex flex-col text-right">
+                <div className="flex flex-col text-right pl-1">
                   <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                     {user.fullName}
                   </span>
@@ -128,14 +130,15 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
             )}
           </div>
 
-          {/* Mobile Sidebar Hamburger & Compact Lang Switcher */}
-          <div className="flex md:hidden items-center gap-2">
+          {/* Mobile Sidebar Hamburger & Quick Switchers */}
+          <div className="flex md:hidden items-center gap-1.5">
+            <ThemeSwitcher compact />
             <LanguageSwitcher currentLocale={locale} compact />
             <button
               type="button"
               onClick={() => setIsSidebarOpen(true)}
               aria-label="Buka menu navigasi"
-              className="p-2 rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer ml-0.5"
             >
               <Menu className="w-6 h-6" />
             </button>
@@ -197,6 +200,16 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
                     </Link>
                   );
                 })}
+              </div>
+
+              {/* Theme & Preferences in Mobile Drawer */}
+              <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider px-2">
+                  {dict.nav.themeToggle}
+                </p>
+                <div className="px-1">
+                  <ThemeSwitcher fullWidth />
+                </div>
               </div>
             </div>
 

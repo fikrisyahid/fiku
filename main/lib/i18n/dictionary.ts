@@ -47,6 +47,10 @@ export interface Dictionary {
     navigation: string;
     dashboard: string;
     signInRegister: string;
+    themeLight: string;
+    themeDark: string;
+    themeSystem: string;
+    themeToggle: string;
   };
 
   // Transaction Types
@@ -372,6 +376,10 @@ export const idDict: Dictionary = {
     navigation: "Navigasi",
     dashboard: "Dashboard",
     signInRegister: "Masuk / Daftar",
+    themeLight: "Terang",
+    themeDark: "Gelap",
+    themeSystem: "Sistem",
+    themeToggle: "Ganti Tema",
   },
   txTypes: {
     expense: "Pengeluaran",
@@ -681,6 +689,10 @@ export const enDict: Dictionary = {
     navigation: "Navigation",
     dashboard: "Dashboard",
     signInRegister: "Sign In / Register",
+    themeLight: "Light",
+    themeDark: "Dark",
+    themeSystem: "System",
+    themeToggle: "Toggle Theme",
   },
   txTypes: {
     expense: "Expense",

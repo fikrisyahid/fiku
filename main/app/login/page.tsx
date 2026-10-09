@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { getServerLocale, getServerDictionary } from "@/lib/i18n/server";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 
 export async function generateMetadata() {
   const dict = await getServerDictionary();
@@ -26,7 +27,7 @@ export default async function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 via-zinc-100 to-zinc-200 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 flex flex-col justify-center items-center p-4 sm:p-6 relative">
-      {/* Back to Home Button & Language Switcher */}
+      {/* Back to Home Button & Switchers */}
       <div className="w-full max-w-md mb-4 flex items-center justify-between">
         <Link
           href="/"
@@ -35,7 +36,10 @@ export default async function LoginPage() {
           <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
           <span>{dict.login.backToHome}</span>
         </Link>
-        <LanguageSwitcher currentLocale={locale} />
+        <div className="flex items-center gap-2">
+          <ThemeSwitcher compact />
+          <LanguageSwitcher currentLocale={locale} compact />
+        </div>
       </div>
 
       <div className="w-full max-w-md mb-6 text-center">
