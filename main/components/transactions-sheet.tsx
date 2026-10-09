@@ -36,6 +36,9 @@ import { AlertModal, ModalAlertConfig } from "@/components/ui/alert-modal";
 import { DatabaseInspectorModal } from "@/components/database-inspector-modal";
 import { getLocalTodayDateString } from "@/lib/utils";
 
+import { useRouter, useSearchParams } from "next/navigation";
+import { formatCurrencyValue, getCurrencySymbol } from "@/lib/currency";
+
 export interface TransactionRow {
   id: string;
   transactionDate: string; // YYYY-MM-DD
@@ -55,6 +58,14 @@ interface TransactionsSheetProps {
   initialTransactions: any[];
   accounts: any[];
   categories: any[];
+  totalCount: number;
+  serverPage: number;
+  serverPageSize: number;
+  serverTotalPages: number;
+  serverSearch: string;
+  serverSortField: string;
+  serverSortOrder: "asc" | "desc";
+  currency: string;
   onRefreshAll: () => Promise<void>;
 }
 
@@ -69,8 +80,18 @@ export function TransactionsSheet({
   initialTransactions,
   accounts,
   categories,
+  totalCount,
+  serverPage,
+  serverPageSize,
+  serverTotalPages,
+  serverSearch,
+  serverSortField,
+  serverSortOrder,
+  currency,
   onRefreshAll,
 }: TransactionsSheetProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { dict, locale } = useI18n();
 
   // Format initial records to editable sheet rows
@@ -98,10 +119,12 @@ export function TransactionsSheet({
   const rowStatusRef = useRef(rowStatus);
   rowStatusRef.current = rowStatus;
 
-  // Filter & Search states
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<SortField>("transactionDate");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  // Filter & Search states (initialized from server props)
+  const [searchQuery, setSearchQuery] = useState(serverSearch || "");
+  const [sortField, setSortField] = useState<SortField>(
+    (serverSortField as SortField) || "transactionDate"
+  );
+  const [sortOrder, setSortOrder] = useState<SortOrder>(serverSortOrder || "desc");
   const [isExportImportOpen, setIsExportImportOpen] = useState(false);
   const [alertModal, setAlertModal] = useState<ModalAlertConfig>({
     isOpen: false,
@@ -110,10 +133,6 @@ export function TransactionsSheet({
 
   // Selection states
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(25);
 
   // Batch delete confirmation modal state
   const [isBatchDeleteOpen, setIsBatchDeleteOpen] = useState(false);
@@ -124,11 +143,41 @@ export function TransactionsSheet({
 
   // Debounce timeout references
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Reset to first page when search query or itemsPerPage changes
+  // Helper to update URL params and trigger server refetch
+  const updateUrlParams = (newParams: Record<string, string | number | undefined>) => {
+    const params = new URLSearchParams(searchParams?.toString() || "");
+    Object.entries(newParams).forEach(([key, val]) => {
+      if (val === undefined || val === "") {
+        params.delete(key);
+      } else {
+        params.set(key, String(val));
+      }
+    });
+    router.push(`/transaction?${params.toString()}`);
+  };
+
+  // Sync searchQuery changes to URL (debounced)
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    searchDebounceRef.current = setTimeout(() => {
+      updateUrlParams({ q: val.trim() || undefined, page: 1 });
+    }, 400);
+  };
+
+  // Keep searchQuery state synced if server prop changes from external navigation
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, itemsPerPage]);
+    setSearchQuery(serverSearch || "");
+  }, [serverSearch]);
+
+  useEffect(() => {
+    setSortField((serverSortField as SortField) || "transactionDate");
+    setSortOrder(serverSortOrder || "desc");
+  }, [serverSortField, serverSortOrder]);
 
   // Sync state when initialTransactions changes without wiping unsaved or actively edited rows
   useEffect(() => {
@@ -160,12 +209,8 @@ export function TransactionsSheet({
   }, [initialTransactions]);
 
   // Helpers
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat(locale === "en" ? "en-US" : "id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(val || 0);
+  const formatCurrency = (val: number | string) => {
+    return formatCurrencyValue(val, currency, locale);
   };
 
   const defaultAccount = accounts.find((a) => a.isDefault) || accounts[0];
@@ -189,7 +234,6 @@ export function TransactionsSheet({
     };
 
     setRows((prev) => [newRow, ...prev]);
-    setCurrentPage(1); // Jump to page 1 so user immediately sees the newly added row
   }
 
   // Update cell and trigger debounced auto-save
@@ -426,84 +470,20 @@ export function TransactionsSheet({
     }
   }
 
-  // Sorting Handler
+  // Sorting Handler - pushes sort query to URL
   function toggleSort(field: SortField) {
-    if (sortField === field) {
-      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
-      setSortOrder("asc");
-    }
+    const nextOrder = sortField === field && sortOrder === "asc" ? "desc" : "asc";
+    setSortField(field);
+    setSortOrder(nextOrder);
+    updateUrlParams({ sort: field, order: nextOrder, page: 1 });
   }
 
-  // Filter & Sort computation
-  const filteredAndSortedRows = useMemo(() => {
-    let result = [...rows];
-
-    // Search filter across note, category, account, amount, and date
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      result = result.filter((r) => {
-        const cat = categories.find((c) => c.id === r.categoryId)?.name.toLowerCase() || "";
-        const acc = accounts.find((a) => a.id === r.accountId)?.name.toLowerCase() || "";
-        const toAcc = accounts.find((a) => a.id === r.toAccountId)?.name.toLowerCase() || "";
-        const note = r.note.toLowerCase();
-        const date = r.transactionDate;
-        const amountStr = r.amount.toString();
-
-        return (
-          note.includes(q) ||
-          cat.includes(q) ||
-          acc.includes(q) ||
-          toAcc.includes(q) ||
-          date.includes(q) ||
-          amountStr.includes(q)
-        );
-      });
-    }
-
-    // Sort
-    result.sort((a, b) => {
-      let valA: any = a[sortField as keyof TransactionRow];
-      let valB: any = b[sortField as keyof TransactionRow];
-
-      if (sortField === "category") {
-        valA = categories.find((c) => c.id === a.categoryId)?.name || "";
-        valB = categories.find((c) => c.id === b.categoryId)?.name || "";
-      } else if (sortField === "account") {
-        valA = accounts.find((acc) => acc.id === a.accountId)?.name || "";
-        valB = accounts.find((acc) => acc.id === b.accountId)?.name || "";
-      }
-
-      if (valA < valB) return sortOrder === "asc" ? -1 : 1;
-      if (valA > valB) return sortOrder === "asc" ? 1 : -1;
-
-      // Tie breaker: if sorting by transactionDate (or values are identical), prioritize newest created / unsaved row
-      if (sortField === "transactionDate") {
-        if (a.isNew && !b.isNew) return -1;
-        if (!a.isNew && b.isNew) return 1;
-        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        if (timeA !== timeB) {
-          return timeB - timeA; // newest createdAt first
-        }
-      }
-
-      return 0;
-    });
-
-    return result;
-  }, [rows, searchQuery, sortField, sortOrder, categories, accounts]);
-
-  // Pagination calculation
-  const totalItems = filteredAndSortedRows.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-
-  const paginatedRows = useMemo(() => {
-    const startIndex = (safeCurrentPage - 1) * itemsPerPage;
-    return filteredAndSortedRows.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredAndSortedRows, safeCurrentPage, itemsPerPage]);
+  // Rows to display:
+  // Any newly added unsaved rows (isNew) are prepended to the server page slice
+  const displayRows = rows;
+  const totalItems = totalCount;
+  const totalPages = serverTotalPages;
+  const safeCurrentPage = serverPage;
 
   return (
     <div className="space-y-4">
@@ -515,7 +495,7 @@ export function TransactionsSheet({
             type="text"
             placeholder={dict.transaksi.searchPlaceholder}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-9 h-10 text-xs bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl"
           />
         </div>
@@ -590,10 +570,10 @@ export function TransactionsSheet({
                     type="checkbox"
                     aria-label="Select all visible rows"
                     checked={
-                      paginatedRows.length > 0 &&
-                      paginatedRows.every((r) => selectedIds.has(r.id))
+                      displayRows.length > 0 &&
+                      displayRows.every((r) => selectedIds.has(r.id))
                     }
-                    onChange={() => toggleSelectAllVisible(paginatedRows)}
+                    onChange={() => toggleSelectAllVisible(displayRows)}
                     className="w-4 h-4 rounded-md border-zinc-300 dark:border-zinc-700 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer accent-emerald-600"
                   />
                 </div>
@@ -681,15 +661,15 @@ export function TransactionsSheet({
           </thead>
 
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {paginatedRows.length === 0 ? (
+            {displayRows.length === 0 ? (
               <tr>
                 <td colSpan={8} className="p-8 text-center text-zinc-400 text-xs">
                   {dict.transaksi.emptyRows}
                 </td>
               </tr>
             ) : (
-              paginatedRows.map((row, index) => {
-                const globalIndex = (safeCurrentPage - 1) * itemsPerPage + index + 1;
+              displayRows.map((row, index) => {
+                const globalIndex = (safeCurrentPage - 1) * serverPageSize + index + 1;
                 const status = rowStatus[row.id];
                 const isSaving = status === "saving";
                 const isSaved = status === "saved";
@@ -835,7 +815,7 @@ export function TransactionsSheet({
                     <td className="p-2">
                       <div className="relative flex items-center">
                         <span className="absolute left-2.5 text-xs font-semibold text-zinc-400 select-none pointer-events-none">
-                          Rp
+                          {getCurrencySymbol(currency)}
                         </span>
                         <input
                           type="text"
@@ -942,8 +922,8 @@ export function TransactionsSheet({
         <div className="flex flex-wrap items-center gap-2">
           <span>
             {dict.transaksi.paginationShowing(
-              totalItems === 0 ? 0 : (safeCurrentPage - 1) * itemsPerPage + 1,
-              Math.min(safeCurrentPage * itemsPerPage, totalItems),
+              totalItems === 0 ? 0 : (safeCurrentPage - 1) * serverPageSize + 1,
+              Math.min(safeCurrentPage * serverPageSize, totalItems),
               totalItems
             )}
           </span>
@@ -951,8 +931,8 @@ export function TransactionsSheet({
           <div className="flex items-center gap-1.5 ml-2">
             <span className="text-[11px] text-zinc-400">{dict.transaksi.perPageLabel}</span>
             <CustomSelect
-              value={String(itemsPerPage)}
-              onChange={(val) => setItemsPerPage(Number(val))}
+              value={String(serverPageSize)}
+              onChange={(val) => updateUrlParams({ limit: Number(val), page: 1 })}
               options={[
                 { value: "10", label: `10 / ${dict.transaksi.perPageOption}` },
                 { value: "25", label: `25 / ${dict.transaksi.perPageOption}` },
@@ -970,7 +950,7 @@ export function TransactionsSheet({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(1)}
+            onClick={() => updateUrlParams({ page: 1 })}
             disabled={safeCurrentPage <= 1}
             title={dict.transaksi.pageFirst}
             className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-800"
@@ -982,7 +962,7 @@ export function TransactionsSheet({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            onClick={() => updateUrlParams({ page: Math.max(1, safeCurrentPage - 1) })}
             disabled={safeCurrentPage <= 1}
             title={dict.transaksi.pagePrev}
             className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-800"
@@ -998,7 +978,7 @@ export function TransactionsSheet({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            onClick={() => updateUrlParams({ page: Math.min(totalPages, safeCurrentPage + 1) })}
             disabled={safeCurrentPage >= totalPages}
             title={dict.transaksi.pageNext}
             className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-800"
@@ -1010,7 +990,7 @@ export function TransactionsSheet({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(totalPages)}
+            onClick={() => updateUrlParams({ page: totalPages })}
             disabled={safeCurrentPage >= totalPages}
             title={dict.transaksi.pageLast}
             className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-800"

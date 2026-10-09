@@ -11,6 +11,14 @@ interface TransactionsClientProps {
   accounts: any[];
   categories: any[];
   initialTransactions: any[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
+  totalPages: number;
+  currentSearch: string;
+  currentSortField: string;
+  currentSortOrder: "asc" | "desc";
+  userSettings: any;
 }
 
 export function TransactionsClient({
@@ -19,6 +27,14 @@ export function TransactionsClient({
   accounts,
   categories,
   initialTransactions,
+  totalCount,
+  currentPage,
+  pageSize,
+  totalPages,
+  currentSearch,
+  currentSortField,
+  currentSortOrder,
+  userSettings,
 }: TransactionsClientProps) {
   const router = useRouter();
 
@@ -34,6 +50,7 @@ export function TransactionsClient({
         familyId={familyId}
         accounts={accounts}
         categories={categories}
+        currency={userSettings?.currency || "IDR"}
         onRefresh={handleRefreshAll}
       />
 
@@ -51,6 +68,14 @@ export function TransactionsClient({
         initialTransactions={initialTransactions}
         accounts={accounts}
         categories={categories}
+        totalCount={totalCount}
+        serverPage={currentPage}
+        serverPageSize={pageSize}
+        serverTotalPages={totalPages}
+        serverSearch={currentSearch}
+        serverSortField={currentSortField}
+        serverSortOrder={currentSortOrder}
+        currency={userSettings?.currency || "IDR"}
         onRefreshAll={handleRefreshAll}
       />
     </div>

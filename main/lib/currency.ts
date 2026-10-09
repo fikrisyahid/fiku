@@ -30,3 +30,8 @@ export function formatCurrencyValue(
     maximumFractionDigits: config.code === "IDR" || config.code === "JPY" ? 0 : 2,
   }).format(numeric);
 }
+
+export function getCurrencySymbol(currencyCode: string = "IDR"): string {
+  const config = SUPPORTED_CURRENCIES.find((c) => c.code === currencyCode) || SUPPORTED_CURRENCIES[0];
+  return config.symbol;
+}

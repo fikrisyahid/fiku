@@ -2,16 +2,16 @@
 
 import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
-import { Download, Upload, FileSpreadsheet, X, AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
+import { Download, Upload, FileSpreadsheet, X, AlertCircle, CheckCircle2, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { importTransactionsBatch } from "@/app/actions/transactions";
+import { importTransactionsBatch, getAllUserTransactionsForExport } from "@/app/actions/transactions";
 
 interface ExportImportModalProps {
   isOpen: boolean;
   onClose: () => void;
   userId: string;
   familyId?: string | null;
-  transactions: any[];
+  transactions?: any[];
   accounts: any[];
   categories: any[];
   onSuccess: () => Promise<void>;
@@ -22,13 +22,14 @@ export function ExportImportModal({
   onClose,
   userId,
   familyId,
-  transactions,
+  transactions = [],
   accounts,
   categories,
   onSuccess,
 }: ExportImportModalProps) {
   const [activeTab, setActiveTab] = useState<"export" | "import">("export");
   const [exportRange, setExportRange] = useState<"all" | "this_month" | "last_month" | "this_year">("this_month");
+  const [isExporting, setIsExporting] = useState(false);
   
   // Import state
   const [file, setFile] = useState<File | null>(null);
@@ -52,64 +53,76 @@ export function ExportImportModal({
   if (!isOpen) return null;
 
   // EXPORT HANDLER
-  function handleExport() {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth(); // 0-indexed
-
-    const filtered = transactions.filter((tx) => {
-      if (exportRange === "all") return true;
-      const d = new Date(tx.transactionDate);
-      if (exportRange === "this_year") {
-        return d.getFullYear() === currentYear;
+  async function handleExport() {
+    setIsExporting(true);
+    try {
+      let sourceTransactions = transactions;
+      if (!sourceTransactions || sourceTransactions.length === 0) {
+        sourceTransactions = await getAllUserTransactionsForExport(userId);
       }
-      if (exportRange === "this_month") {
-        return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
-      }
-      if (exportRange === "last_month") {
-        const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
-        return (
-          d.getFullYear() === lastMonthDate.getFullYear() &&
-          d.getMonth() === lastMonthDate.getMonth()
-        );
-      }
-      return true;
-    });
 
-    const exportRows = filtered.map((tx) => {
-      const acc = accounts.find((a) => a.id === tx.accountId)?.name || "";
-      const toAcc = tx.toAccountId
-        ? accounts.find((a) => a.id === tx.toAccountId)?.name || ""
-        : "";
-      const cat = tx.categoryId
-        ? categories.find((c) => c.id === tx.categoryId)?.name || ""
-        : "";
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth(); // 0-indexed
 
-      return {
-        Tanggal: tx.transactionDate,
-        Tipe: tx.type === "income" ? "Pemasukan" : tx.type === "expense" ? "Pengeluaran" : "Transfer",
-        Kategori: cat,
-        Kantong: acc,
-        "Kantong Tujuan": toAcc,
-        Nominal: parseFloat(tx.amount || "0"),
-        Keterangan: tx.note || "",
-      };
-    });
+      const filtered = sourceTransactions.filter((tx) => {
+        if (exportRange === "all") return true;
+        const d = new Date(tx.transactionDate);
+        if (exportRange === "this_year") {
+          return d.getFullYear() === currentYear;
+        }
+        if (exportRange === "this_month") {
+          return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+        }
+        if (exportRange === "last_month") {
+          const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
+          return (
+            d.getFullYear() === lastMonthDate.getFullYear() &&
+            d.getMonth() === lastMonthDate.getMonth()
+          );
+        }
+        return true;
+      });
 
-    const worksheet = XLSX.utils.json_to_sheet(exportRows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Transaksi");
+      const exportRows = filtered.map((tx) => {
+        const acc = accounts.find((a) => a.id === tx.accountId)?.name || "";
+        const toAcc = tx.toAccountId
+          ? accounts.find((a) => a.id === tx.toAccountId)?.name || ""
+          : "";
+        const cat = tx.categoryId
+          ? categories.find((c) => c.id === tx.categoryId)?.name || ""
+          : "";
 
-    const rangeLabel =
-      exportRange === "this_month"
-        ? "bulan_ini"
-        : exportRange === "last_month"
-        ? "bulan_lalu"
-        : exportRange === "this_year"
-        ? `tahun_${currentYear}`
-        : "semua";
+        return {
+          Tanggal: tx.transactionDate,
+          Tipe: tx.type === "income" ? "Pemasukan" : tx.type === "expense" ? "Pengeluaran" : "Transfer",
+          Kategori: cat,
+          Kantong: acc,
+          "Kantong Tujuan": toAcc,
+          Nominal: parseFloat(tx.amount || "0"),
+          Keterangan: tx.note || "",
+        };
+      });
 
-    XLSX.writeFile(workbook, `fana_transaksi_${rangeLabel}.xlsx`);
+      const worksheet = XLSX.utils.json_to_sheet(exportRows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Transaksi");
+
+      const rangeLabel =
+        exportRange === "this_month"
+          ? "bulan_ini"
+          : exportRange === "last_month"
+          ? "bulan_lalu"
+          : exportRange === "this_year"
+          ? `tahun_${currentYear}`
+          : "semua";
+
+      XLSX.writeFile(workbook, `fana_transaksi_${rangeLabel}.xlsx`);
+    } catch (err) {
+      console.error("Export error:", err);
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   // DOWNLOAD TEMPLATE
@@ -372,9 +385,18 @@ export function ExportImportModal({
               <Button
                 type="button"
                 onClick={handleExport}
+                disabled={isExporting}
                 className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs"
               >
-                <Download className="w-4 h-4 mr-1.5" /> Unduh File Excel (.xlsx)
+                {isExporting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Mengunduh...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-1.5" /> Unduh File Excel (.xlsx)
+                  </>
+                )}
               </Button>
             </div>
           ) : (

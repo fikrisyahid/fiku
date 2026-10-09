@@ -1,7 +1,8 @@
 import { getCurrentUser } from "@/app/actions/auth";
 import { getUserAccounts } from "@/app/actions/accounts";
-import { getUserTransactions } from "@/app/actions/transactions";
+import { getUserTransactionsPaginated } from "@/app/actions/transactions";
 import { getCategories } from "@/app/actions/categories";
+import { getUserSettings } from "@/app/actions/settings";
 import { redirect } from "next/navigation";
 import { AppNavbar } from "@/components/app-navbar";
 import { TransactionsClient } from "@/components/transactions-client";
@@ -15,7 +16,17 @@ export async function generateMetadata() {
   };
 }
 
-export default async function TransaksiPage() {
+interface TransaksiPageProps {
+  searchParams: Promise<{
+    page?: string;
+    limit?: string;
+    q?: string;
+    sort?: string;
+    order?: string;
+  }>;
+}
+
+export default async function TransaksiPage({ searchParams }: TransaksiPageProps) {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");
@@ -23,11 +34,25 @@ export default async function TransaksiPage() {
 
   const locale = await getServerLocale();
   const dict = await getServerDictionary();
+  const params = await searchParams;
 
-  const [accounts, categories, transactionsList] = await Promise.all([
+  const page = parseInt(params.page || "1", 10) || 1;
+  const pageSize = parseInt(params.limit || "25", 10) || 25;
+  const search = params.q || "";
+  const sortBy = (params.sort || "transactionDate") as any;
+  const sortOrder = (params.order || "desc") as any;
+
+  const [accounts, categories, settings, paginatedResult] = await Promise.all([
     getUserAccounts(user.id),
     getCategories(user.id),
-    getUserTransactions(user.id, { limit: 1000 }),
+    getUserSettings(user.id),
+    getUserTransactionsPaginated(user.id, {
+      page,
+      pageSize,
+      search,
+      sortBy,
+      sortOrder,
+    }),
   ]);
 
   return (
@@ -48,7 +73,15 @@ export default async function TransaksiPage() {
           userId={user.id}
           accounts={accounts}
           categories={categories}
-          initialTransactions={transactionsList}
+          initialTransactions={paginatedResult.transactions}
+          totalCount={paginatedResult.totalCount}
+          currentPage={paginatedResult.page}
+          pageSize={paginatedResult.pageSize}
+          totalPages={paginatedResult.totalPages}
+          currentSearch={search}
+          currentSortField={sortBy}
+          currentSortOrder={sortOrder}
+          userSettings={settings}
         />
       </main>
     </div>

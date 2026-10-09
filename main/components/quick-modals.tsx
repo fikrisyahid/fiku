@@ -29,12 +29,14 @@ import { ConfirmDeleteModal } from "@/components/confirm-delete-modal";
 import { CustomSelect } from "@/components/ui/custom-select";
 
 import { useI18n } from "@/lib/i18n/context";
+import { formatCurrencyValue } from "@/lib/currency";
 
 interface ModalProps {
   userId: string;
   familyId?: string | null;
   accounts: any[];
   categories: any[];
+  currency?: string;
   onRefresh: () => Promise<void>;
 }
 
@@ -43,6 +45,7 @@ export function QuickModals({
   familyId,
   accounts,
   categories,
+  currency = "IDR",
   onRefresh,
 }: ModalProps) {
   const { dict, locale } = useI18n();
@@ -222,11 +225,7 @@ export function QuickModals({
   }
 
   const formatCurrency = (val: number | string) => {
-    return new Intl.NumberFormat(locale === "en" ? "en-US" : "id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(Number(val) || 0);
+    return formatCurrencyValue(val, currency, locale);
   };
 
   const totalSaldo = accounts.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);

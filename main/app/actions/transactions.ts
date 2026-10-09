@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { transactions, accounts } from "@/db/schema";
+import { transactions, accounts, userSettings } from "@/db/schema";
 import { eq, and, desc, asc, count, isNull } from "drizzle-orm";
 
 import { getServerLocale } from "@/lib/i18n/server";
@@ -218,13 +218,15 @@ export async function getUserTransactionsPaginated(
   }
 
   // 5. Total count determination
-  // If no search filter is applied, we can use the O(1) cached transactionCount from userSettings!
+  // If no search filter is applied, we can use the cached transactionCount from userSettings
   let totalCount = decryptedList.length;
   if (!searchQuery && !options.type && !options.accountId) {
     const settings = await getUserSettings(userId);
-    // Sync cache if out of sync
     if (settings.transactionCount !== totalCount) {
-      totalCount = Math.max(totalCount, settings.transactionCount);
+      await db
+        .update(userSettings)
+        .set({ transactionCount: totalCount.toString(), updatedAt: new Date() })
+        .where(eq(userSettings.userId, userId));
     }
   }
 
