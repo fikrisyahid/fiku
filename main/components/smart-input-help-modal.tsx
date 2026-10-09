@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Info, X, Sparkles, ArrowRightLeft, ArrowDownRight, ArrowUpRight, HelpCircle } from "lucide-react";
+import { Info, X, Sparkles, ArrowRightLeft, ArrowDownRight, ArrowUpRight, HelpCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { useI18n } from "@/lib/i18n/context";
@@ -134,6 +134,17 @@ export function SmartInputHelpModal({
             </div>
             <p className="text-[11px] leading-relaxed">
               {dict.smartInputGuide.tipsDesc}
+            </p>
+          </div>
+
+          {/* Category Auto-detect Disclaimer Alert */}
+          <div className="p-3 bg-amber-50/70 dark:bg-amber-950/30 rounded-2xl border border-amber-200/80 dark:border-amber-900/50 space-y-1.5 text-amber-800 dark:text-amber-200/90">
+            <div className="font-semibold text-amber-900 dark:text-amber-100 flex items-center gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>{dict.smartInputGuide.categoryDisclaimerTitle}</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-300/80">
+              {dict.smartInputGuide.categoryDisclaimerDesc}
             </p>
           </div>
 

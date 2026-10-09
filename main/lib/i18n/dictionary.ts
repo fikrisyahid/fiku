@@ -320,6 +320,8 @@ export interface Dictionary {
     modalSubtitle: string;
     tipsTitle: string;
     tipsDesc: string;
+    categoryDisclaimerTitle: string;
+    categoryDisclaimerDesc: string;
     useExample: string;
     expenseTitle: string;
     expenseBadge: string;
@@ -646,6 +648,8 @@ export const idDict: Dictionary = {
     modalSubtitle: "Catat transaksi dalam 1 kalimat natural dengan auto-detect kategori & kantong",
     tipsTitle: "Tips Format Nominal",
     tipsDesc: "Mendukung singkatan nominal: k / rb (ribu), jt (juta). Contoh: 25k = 25.000, 1.5jt = 1.500.000.",
+    categoryDisclaimerTitle: "Perhatian Auto-Detect Kategori",
+    categoryDisclaimerDesc: "Smart Input berusaha menebak kategori secara cerdas dari teks yang kamu tulis, namun sewaktu-waktu tebakan bisa kurang tepat. Kamu selalu bisa mengubah kategori langsung pada tabel setelah transaksi tercatat.",
     useExample: "Gunakan ↵",
     expenseTitle: "Pengeluaran Cepat",
     expenseBadge: "Expense",
@@ -972,6 +976,8 @@ export const enDict: Dictionary = {
     modalSubtitle: "Record transactions in 1 natural sentence with auto-detected categories & wallets",
     tipsTitle: "Amount Format Shorthand",
     tipsDesc: "Supports shorthand multipliers: k (thousand), jt/m (million). Example: 25k = 25,000, 1.5m = 1,500,000.",
+    categoryDisclaimerTitle: "Category Auto-Detection Note",
+    categoryDisclaimerDesc: "Smart Input uses smart matching to guess the category from your input, but it might occasionally guess incorrectly. You can easily adjust the category anytime in the table afterwards.",
     useExample: "Use ↵",
     expenseTitle: "Quick Expense",
     expenseBadge: "Expense",
