@@ -14,6 +14,7 @@ Dokumen ini menjelaskan semua perintah yang tersedia di [`package.json`](file://
 | `bun run build` | Membuat production build Next.js yang teroptimasi. |
 | `bun run start` | Menjalankan Next.js production server. |
 | `bun run lint` | Menjalankan ESLint pada seluruh codebase. |
+| `bun run check` | Menjalankan TypeScript type check (`tsc --noEmit`). |
 
 ### Database (PostgreSQL & Drizzle ORM)
 
@@ -23,3 +24,11 @@ Dokumen ini menjelaskan semua perintah yang tersedia di [`package.json`](file://
 | `bun run db:reset` | Mengosongkan dan membersihkan seluruh isi data tabel database (`scripts/db-reset.ts`). |
 | `bun run db:push` | Mendorong perubahan skema Drizzle langsung ke database PostgreSQL. |
 | `bun run db:studio` | Membuka Drizzle Studio di browser untuk inspeksi data visual. |
+| `bun run seed:dummy` | Membuat data demo dummy terenkripsi Zero-Knowledge (`scripts/seed-dummy.ts`). |
+
+### Utilitas Tambahan
+
+| Perintah | Deskripsi |
+| :--- | :--- |
+| `bun run sync:env` | Menyinkronkan file `.env` antara root dan folder `main/`. |
+| `bun run install:main` | Menginstall seluruh dependensi Bun di folder `main/`. |

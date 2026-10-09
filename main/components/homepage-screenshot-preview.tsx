@@ -33,6 +33,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { SmartInputHelpModal } from "@/components/smart-input-help-modal";
+import { AlertModal, ModalAlertConfig } from "@/components/ui/alert-modal";
 
 export interface DemoTransaction {
   id: string;
@@ -75,30 +76,48 @@ export function HomepageScreenshotPreview() {
   const [activeQuickModal, setActiveQuickModal] = useState<"saldo" | "kantong" | "kategori" | null>(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
-  // Default standard demo accounts
+  // Base demo account balances
+  const initialAccountBalances: Record<string, number> = useMemo(() => ({
+    "acc-cash": 450000,
+    "acc-bank": 12500000,
+    "acc-ewallet": 850000,
+  }), []);
+
+  // Dynamic interactive account balances
+  const [accountBalances, setAccountBalances] = useState<Record<string, number>>(initialAccountBalances);
+
+  // Accounts with live updated balances
   const demoAccounts = useMemo<DemoAccount[]>(() => [
     {
       id: "acc-cash",
       name: dict.defaultWallets.cash,
       type: "cash",
-      balance: 450000,
+      balance: accountBalances["acc-cash"] ?? 450000,
       isDefault: true,
     },
     {
       id: "acc-bank",
       name: dict.defaultWallets.bank,
       type: "bank",
-      balance: 12500000,
+      balance: accountBalances["acc-bank"] ?? 12500000,
       isDefault: false,
     },
     {
       id: "acc-ewallet",
       name: dict.defaultWallets.ewallet,
       type: "ewallet",
-      balance: 850000,
+      balance: accountBalances["acc-ewallet"] ?? 850000,
       isDefault: false,
     },
-  ], [dict]);
+  ], [dict, accountBalances]);
+
+  // Alert modal configuration for insufficient balance and errors
+  const [alertModal, setAlertModal] = useState<ModalAlertConfig>({
+    isOpen: false,
+    title: "",
+    message: "",
+    variant: "warning",
+  });
 
   // Default standard demo categories matching full app
   const demoCategories = useMemo<DemoCategory[]>(() => [
@@ -204,6 +223,11 @@ export function HomepageScreenshotPreview() {
 
   const isDark = resolvedTheme === "dark";
 
+  // Helper function to get account display name
+  const getAccountName = (id: string) => {
+    return demoAccounts.find((a) => a.id === id)?.name || id;
+  };
+
   // Debounced row status simulator
   function markRowSaving(id: string) {
     setGlobalSync("saving");
@@ -228,49 +252,163 @@ export function HomepageScreenshotPreview() {
     }, 600);
   }
 
-  // Handle cell edit in spreadsheet
+  // Handle cell edit in spreadsheet with balance validation and adjustment
   function handleCellChange(id: string, field: keyof DemoTransaction, value: any) {
-    setRows((prev) =>
-      prev.map((r) => {
-        if (r.id !== id) return r;
-        const updated = { ...r, [field]: value };
-        // If switching to transfer, clear category
-        if (field === "type" && value === "transfer") {
-          updated.categoryId = "";
-          if (!updated.toAccountId) {
-            updated.toAccountId = demoAccounts.find((a) => a.id !== updated.accountId)?.id || demoAccounts[0].id;
-          }
-        } else if (field === "type" && value !== "transfer") {
-          // ensure valid category for income or expense
-          const validCat = demoCategories.find((c) => c.type === value);
-          updated.categoryId = validCat ? validCat.id : demoCategories[0].id;
-        }
-        return updated;
-      })
-    );
+    const currentRow = rows.find((r) => r.id === id);
+    if (!currentRow) return;
+
+    const proposedRow: DemoTransaction = { ...currentRow, [field]: value };
+
+    // Format proposed row adjustments for transfer / type changes
+    if (field === "type" && value === "transfer") {
+      proposedRow.categoryId = "";
+      if (!proposedRow.toAccountId || proposedRow.toAccountId === proposedRow.accountId) {
+        proposedRow.toAccountId = demoAccounts.find((a) => a.id !== proposedRow.accountId)?.id || demoAccounts[0].id;
+      }
+    } else if (field === "type" && value !== "transfer") {
+      const validCat = demoCategories.find((c) => c.type === value);
+      proposedRow.categoryId = validCat ? validCat.id : demoCategories[0].id;
+    }
+
+    // 1. Calculate hypothetical account balances if currentRow is replaced with proposedRow
+    const nextBalances = { ...accountBalances };
+
+    // Revert current row effect
+    if (currentRow.type === "expense") {
+      nextBalances[currentRow.accountId] = (nextBalances[currentRow.accountId] ?? 0) + currentRow.amount;
+    } else if (currentRow.type === "income") {
+      nextBalances[currentRow.accountId] = (nextBalances[currentRow.accountId] ?? 0) - currentRow.amount;
+    } else if (currentRow.type === "transfer" && currentRow.toAccountId) {
+      nextBalances[currentRow.accountId] = (nextBalances[currentRow.accountId] ?? 0) + currentRow.amount;
+      nextBalances[currentRow.toAccountId] = (nextBalances[currentRow.toAccountId] ?? 0) - currentRow.amount;
+    }
+
+    // Check if proposedRow is valid against reverted balance
+    const sourceBal = nextBalances[proposedRow.accountId] ?? 0;
+
+    if (proposedRow.type === "expense" && sourceBal < proposedRow.amount) {
+      const fmtCurrent = formatCurrency(sourceBal);
+      const fmtAmount = formatCurrency(proposedRow.amount);
+      const accName = getAccountName(proposedRow.accountId);
+
+      setAlertModal({
+        isOpen: true,
+        title: dict.transaksi.insufficientBalanceTitle,
+        message:
+          locale === "en"
+            ? `Insufficient balance! Wallet "${accName}" currently has ${fmtCurrent}, not enough for expense of ${fmtAmount}.`
+            : `Saldo tidak mencukupi! Saldo "${accName}" saat ini ${fmtCurrent}, tidak cukup untuk pengeluaran sebesar ${fmtAmount}.`,
+        variant: "warning",
+      });
+      return;
+    }
+
+    if (proposedRow.type === "transfer") {
+      if (proposedRow.toAccountId === proposedRow.accountId) {
+        setAlertModal({
+          isOpen: true,
+          title: dict.transaksi.errSaveTitle,
+          message: dict.transaksi.errTransferSameWallet,
+          variant: "warning",
+        });
+        return;
+      }
+
+      if (sourceBal < proposedRow.amount) {
+        const fmtFrom = formatCurrency(sourceBal);
+        const fmtAmount = formatCurrency(proposedRow.amount);
+        const accName = getAccountName(proposedRow.accountId);
+
+        setAlertModal({
+          isOpen: true,
+          title: dict.transaksi.insufficientBalanceTitle,
+          message:
+            locale === "en"
+              ? `Insufficient balance! Wallet "${accName}" currently has ${fmtFrom}, not enough for transfer of ${fmtAmount}.`
+              : `Saldo tidak mencukupi! Saldo "${accName}" saat ini ${fmtFrom}, tidak cukup untuk transfer sebesar ${fmtAmount}.`,
+          variant: "warning",
+        });
+        return;
+      }
+    }
+
+    // Apply proposed effect to account balances
+    if (proposedRow.type === "expense") {
+      nextBalances[proposedRow.accountId] = sourceBal - proposedRow.amount;
+    } else if (proposedRow.type === "income") {
+      nextBalances[proposedRow.accountId] = sourceBal + proposedRow.amount;
+    } else if (proposedRow.type === "transfer" && proposedRow.toAccountId) {
+      nextBalances[proposedRow.accountId] = sourceBal - proposedRow.amount;
+      nextBalances[proposedRow.toAccountId] = (nextBalances[proposedRow.toAccountId] ?? 0) + proposedRow.amount;
+    }
+
+    setAccountBalances(nextBalances);
+    setRows((prev) => prev.map((r) => (r.id === id ? proposedRow : r)));
     markRowSaving(id);
   }
 
-  // Add new row at top
+  // Add new row at top with balance validation
   function handleAddNewRow() {
     const today = getRelativeDateStr(0);
     const newId = `demo-${Date.now()}`;
+    const defaultAccId = demoAccounts[0].id;
+    const defaultAmount = 25000;
+    const currentBal = accountBalances[defaultAccId] ?? 0;
+
+    if (currentBal < defaultAmount) {
+      const fmtCurrent = formatCurrency(currentBal);
+      const fmtAmount = formatCurrency(defaultAmount);
+      const accName = getAccountName(defaultAccId);
+
+      setAlertModal({
+        isOpen: true,
+        title: dict.transaksi.insufficientBalanceTitle,
+        message:
+          locale === "en"
+            ? `Insufficient balance! Wallet "${accName}" currently has ${fmtCurrent}, not enough for expense of ${fmtAmount}.`
+            : `Saldo tidak mencukupi! Saldo "${accName}" saat ini ${fmtCurrent}, tidak cukup untuk pengeluaran sebesar ${fmtAmount}.`,
+        variant: "warning",
+      });
+      return;
+    }
+
     const newRow: DemoTransaction = {
       id: newId,
       transactionDate: today,
       type: "expense",
       categoryId: "cat-food",
-      accountId: demoAccounts[0].id,
-      amount: 25000,
+      accountId: defaultAccId,
+      amount: defaultAmount,
       note: locale === "en" ? "Coffee & snack" : "Kopi & camilan",
       isNew: true,
     };
+
+    setAccountBalances((prev) => ({
+      ...prev,
+      [defaultAccId]: (prev[defaultAccId] ?? 0) - defaultAmount,
+    }));
     setRows((prev) => [newRow, ...prev]);
     markRowSaving(newId);
   }
 
-  // Delete row
+  // Delete row and revert its wallet mutation
   function handleDeleteRow(id: string) {
+    const rowToDelete = rows.find((r) => r.id === id);
+    if (rowToDelete) {
+      setAccountBalances((prev) => {
+        const next = { ...prev };
+        if (rowToDelete.type === "expense") {
+          next[rowToDelete.accountId] = (next[rowToDelete.accountId] ?? 0) + rowToDelete.amount;
+        } else if (rowToDelete.type === "income") {
+          next[rowToDelete.accountId] = (next[rowToDelete.accountId] ?? 0) - rowToDelete.amount;
+        } else if (rowToDelete.type === "transfer" && rowToDelete.toAccountId) {
+          next[rowToDelete.accountId] = (next[rowToDelete.accountId] ?? 0) + rowToDelete.amount;
+          next[rowToDelete.toAccountId] = (next[rowToDelete.toAccountId] ?? 0) - rowToDelete.amount;
+        }
+        return next;
+      });
+    }
+
     setRows((prev) => prev.filter((r) => r.id !== id));
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -279,8 +417,24 @@ export function HomepageScreenshotPreview() {
     });
   }
 
-  // Batch delete selected
+  // Batch delete selected with reverting all wallet mutations
   function handleBatchDelete() {
+    const rowsToDelete = rows.filter((r) => selectedIds.has(r.id));
+    setAccountBalances((prev) => {
+      const next = { ...prev };
+      for (const r of rowsToDelete) {
+        if (r.type === "expense") {
+          next[r.accountId] = (next[r.accountId] ?? 0) + r.amount;
+        } else if (r.type === "income") {
+          next[r.accountId] = (next[r.accountId] ?? 0) - r.amount;
+        } else if (r.type === "transfer" && r.toAccountId) {
+          next[r.accountId] = (next[r.accountId] ?? 0) + r.amount;
+          next[r.toAccountId] = (next[r.toAccountId] ?? 0) - r.amount;
+        }
+      }
+      return next;
+    });
+
     setRows((prev) => prev.filter((r) => !selectedIds.has(r.id)));
     setSelectedIds(new Set());
   }
@@ -288,6 +442,7 @@ export function HomepageScreenshotPreview() {
   // Reset to initial demo state
   function handleReset() {
     setRows(initialData);
+    setAccountBalances(initialAccountBalances);
     setSelectedIds(new Set());
     setRowStatus({});
     setGlobalSync("synced");
@@ -394,6 +549,53 @@ export function HomepageScreenshotPreview() {
       categoryId = "cat-investment";
     }
 
+    // Balance check for expense & transfer
+    const currentSourceBal = accountBalances[accountId] ?? 0;
+    if (type === "expense" && currentSourceBal < amount) {
+      const fmtCurrent = formatCurrency(currentSourceBal);
+      const fmtAmount = formatCurrency(amount);
+      const accName = getAccountName(accountId);
+
+      setAlertModal({
+        isOpen: true,
+        title: dict.transaksi.insufficientBalanceTitle,
+        message:
+          locale === "en"
+            ? `Insufficient balance! Wallet "${accName}" currently has ${fmtCurrent}, not enough for expense of ${fmtAmount}.`
+            : `Saldo tidak mencukupi! Saldo "${accName}" saat ini ${fmtCurrent}, tidak cukup untuk pengeluaran sebesar ${fmtAmount}.`,
+        variant: "warning",
+      });
+      return;
+    }
+
+    if (type === "transfer") {
+      if (toAccountId === accountId) {
+        setAlertModal({
+          isOpen: true,
+          title: dict.transaksi.errSaveTitle,
+          message: dict.transaksi.errTransferSameWallet,
+          variant: "warning",
+        });
+        return;
+      }
+      if (currentSourceBal < amount) {
+        const fmtFrom = formatCurrency(currentSourceBal);
+        const fmtAmount = formatCurrency(amount);
+        const accName = getAccountName(accountId);
+
+        setAlertModal({
+          isOpen: true,
+          title: dict.transaksi.insufficientBalanceTitle,
+          message:
+            locale === "en"
+              ? `Insufficient balance! Wallet "${accName}" currently has ${fmtFrom}, not enough for transfer of ${fmtAmount}.`
+              : `Saldo tidak mencukupi! Saldo "${accName}" saat ini ${fmtFrom}, tidak cukup untuk transfer sebesar ${fmtAmount}.`,
+          variant: "warning",
+        });
+        return;
+      }
+    }
+
     const newId = `demo-${Date.now()}`;
     const newRow: DemoTransaction = {
       id: newId,
@@ -405,6 +607,19 @@ export function HomepageScreenshotPreview() {
       amount,
       note: smartInputText.trim(),
     };
+
+    setAccountBalances((prev) => {
+      const next = { ...prev };
+      if (type === "expense") {
+        next[accountId] = (next[accountId] ?? 0) - amount;
+      } else if (type === "income") {
+        next[accountId] = (next[accountId] ?? 0) + amount;
+      } else if (type === "transfer" && toAccountId) {
+        next[accountId] = (next[accountId] ?? 0) - amount;
+        next[toAccountId] = (next[toAccountId] ?? 0) + amount;
+      }
+      return next;
+    });
 
     setRows((prev) => [newRow, ...prev]);
     setSmartInputText("");
@@ -1233,6 +1448,12 @@ export function HomepageScreenshotPreview() {
           setSmartInputText(example);
           setIsHelpOpen(false);
         }}
+      />
+
+      {/* Alert Modal for insufficient balance or errors */}
+      <AlertModal
+        config={alertModal}
+        onClose={() => setAlertModal((prev) => ({ ...prev, isOpen: false }))}
       />
     </section>
   );
