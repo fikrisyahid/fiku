@@ -108,7 +108,6 @@ async function main() {
       amount: "15000000.00",
       type: "income",
       note: "Gaji Bulanan PT Teknologi Maju",
-      source: "web",
       transactionDate: fmtDate(1),
     },
     {
@@ -118,7 +117,6 @@ async function main() {
       amount: "3500000.00",
       type: "income",
       note: "Project UI/UX Redesign Web",
-      source: "web",
       transactionDate: fmtDate(3),
     },
     {
@@ -129,7 +127,6 @@ async function main() {
       amount: "1000000.00",
       type: "transfer",
       note: "Top up e-Wallet Gopay operasional",
-      source: "web",
       transactionDate: fmtDate(3),
     },
     {
@@ -139,7 +136,6 @@ async function main() {
       amount: "450000.00",
       type: "expense",
       note: "Tagihan Listrik PLN & Air PAM",
-      source: "web",
       transactionDate: fmtDate(4),
     },
     {
@@ -149,7 +145,6 @@ async function main() {
       amount: "350000.00",
       type: "expense",
       note: "Internet WiFi Indihome 50 Mbps",
-      source: "web",
       transactionDate: fmtDate(4),
     },
     {
@@ -159,7 +154,6 @@ async function main() {
       amount: "34000.00",
       type: "expense",
       note: "Gojek ke kantor",
-      source: "web",
       transactionDate: fmtDate(5),
     },
     {
@@ -169,7 +163,6 @@ async function main() {
       amount: "28000.00",
       type: "expense",
       note: "Makan siang Nasi Padang + Es Teh",
-      source: "web",
       transactionDate: fmtDate(5),
     },
     {
@@ -179,7 +172,6 @@ async function main() {
       amount: "42000.00",
       type: "expense",
       note: "Kopi Kenangan Mantan Large",
-      source: "web",
       transactionDate: fmtDate(6),
     },
     {
@@ -189,7 +181,6 @@ async function main() {
       amount: "320000.00",
       type: "expense",
       note: "Belanja mingguan supermarket & buah",
-      source: "web",
       transactionDate: fmtDate(7),
     },
     {
@@ -200,7 +191,6 @@ async function main() {
       amount: "500000.00",
       type: "transfer",
       note: "Tarik tunai ATM untuk uang pegangan",
-      source: "web",
       transactionDate: fmtDate(7),
     },
     {
@@ -210,7 +200,6 @@ async function main() {
       amount: "186000.00",
       type: "expense",
       note: "Langganan Netflix Premium & Spotify Family",
-      source: "web",
       transactionDate: fmtDate(8),
     },
     {
@@ -220,7 +209,6 @@ async function main() {
       amount: "35000.00",
       type: "expense",
       note: "Makan malam sate ayam madura",
-      source: "web",
       transactionDate: fmtDate(8),
     },
     {
@@ -230,7 +218,6 @@ async function main() {
       amount: "55000.00",
       type: "expense",
       note: "Pesan Gofood Hokben paket hemar",
-      source: "web",
       transactionDate: fmtDate(9),
     },
   ];

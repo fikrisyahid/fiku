@@ -60,7 +60,6 @@ export async function createTransaction(data: {
   amount: number;
   type: "income" | "expense" | "transfer";
   note?: string;
-  source?: "telegram" | "web";
   transactionDate?: string; // YYYY-MM-DD
   familyId?: string | null;
 }) {
@@ -72,7 +71,6 @@ export async function createTransaction(data: {
     amount,
     type,
     note,
-    source = "telegram",
     transactionDate = new Date().toISOString().split("T")[0],
     familyId = null,
   } = data;
@@ -147,7 +145,6 @@ export async function createTransaction(data: {
           amount: amount.toString(),
           type: "transfer",
           note: note?.trim() || `Transfer ke ${toAccount.name}`,
-          source,
           transactionDate,
         })
         .returning();
@@ -207,7 +204,6 @@ export async function createTransaction(data: {
       amount: amount.toString(),
       type,
       note: note?.trim() || null,
-      source,
       transactionDate,
     })
     .returning();
@@ -565,7 +561,6 @@ export async function importTransactionsBatch(
           amount: item.amount.toString(),
           type: "transfer",
           note: item.note ? item.note.trim() : null,
-          source: "web",
           transactionDate: item.transactionDate,
         });
         imported++;
@@ -592,7 +587,6 @@ export async function importTransactionsBatch(
           amount: item.amount.toString(),
           type: item.type,
           note: item.note ? item.note.trim() : null,
-          source: "web",
           transactionDate: item.transactionDate,
         });
         imported++;

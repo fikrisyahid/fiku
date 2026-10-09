@@ -80,7 +80,6 @@ export const transactions = pgTable("transactions", {
   amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
   type: text("type").notNull(), // 'income' | 'expense' | 'transfer'
   note: text("note"),
-  source: text("source").default("web").notNull(), // 'web'
   transactionDate: date("transaction_date").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

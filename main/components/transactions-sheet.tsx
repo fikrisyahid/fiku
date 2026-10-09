@@ -240,7 +240,6 @@ export function TransactionsSheet({
           amount: row.amount,
           type: row.type,
           note: row.note,
-          source: "web",
           transactionDate: row.transactionDate,
         });
         // Replace temp new ID with real database ID and preserve createdAt

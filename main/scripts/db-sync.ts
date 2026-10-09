@@ -14,9 +14,6 @@ async function main() {
   await sql`
     ALTER TABLE users 
     ALTER COLUMN id SET DEFAULT gen_random_uuid(),
-    ALTER COLUMN expired_at DROP NOT NULL,
-    ADD COLUMN IF NOT EXISTS telegram_id text UNIQUE,
-    ADD COLUMN IF NOT EXISTS telegram_username text,
     ADD COLUMN IF NOT EXISTS password_hash text,
     ADD COLUMN IF NOT EXISTS pin_hash text,
     ADD COLUMN IF NOT EXISTS pin_salt text,
@@ -36,23 +33,29 @@ async function main() {
   `;
   console.log("✅ Table sessions ready");
 
-  // 3. Drop deprecated unused tables (families, debts, budgets, etc.)
+  // 3. Drop deprecated unused tables (license_history, notifications, families, debts, budgets, etc.)
+  await sql`DROP TABLE IF EXISTS license_history CASCADE;`;
+  await sql`DROP TABLE IF EXISTS notifications CASCADE;`;
   await sql`DROP TABLE IF EXISTS debts CASCADE;`;
   await sql`DROP TABLE IF EXISTS budgets CASCADE;`;
   await sql`DROP TABLE IF EXISTS family_members CASCADE;`;
   await sql`DROP TABLE IF EXISTS families CASCADE;`;
   await sql`DROP TABLE IF EXISTS auth_otp_codes CASCADE;`;
-  console.log("✅ Deprecated tables (debts, budgets, family_members, families, auth_otp_codes) dropped if existed");
+  console.log("✅ Deprecated tables (license_history, notifications, debts, budgets, family_members, families, auth_otp_codes) dropped if existed");
 
   // 4. Drop deprecated foreign key columns in remaining tables
   await sql`ALTER TABLE users DROP COLUMN IF EXISTS active_family_id CASCADE;`;
+  await sql`ALTER TABLE users DROP COLUMN IF EXISTS telegram_id CASCADE;`;
+  await sql`ALTER TABLE users DROP COLUMN IF EXISTS telegram_username CASCADE;`;
+  await sql`ALTER TABLE users DROP COLUMN IF EXISTS expired_at CASCADE;`;
   await sql`ALTER TABLE accounts DROP COLUMN IF EXISTS family_id CASCADE;`;
   await sql`ALTER TABLE categories DROP COLUMN IF EXISTS family_id CASCADE;`;
   await sql`ALTER TABLE transactions DROP COLUMN IF EXISTS family_id CASCADE;`;
   await sql`ALTER TABLE transactions DROP COLUMN IF EXISTS budget_id CASCADE;`;
-  console.log("✅ Deprecated columns (family_id, budget_id, active_family_id) removed");
+  await sql`ALTER TABLE transactions DROP COLUMN IF EXISTS source CASCADE;`;
+  console.log("✅ Deprecated columns (family_id, budget_id, active_family_id, source, telegram_id, telegram_username, expired_at) removed");
 
-  // 5. Update transactions source & type check constraints
+  // 5. Update transactions type check constraint
   await sql`
     ALTER TABLE transactions 
     DROP CONSTRAINT IF EXISTS transactions_source_check,
@@ -60,12 +63,10 @@ async function main() {
   `;
   await sql`
     ALTER TABLE transactions 
-    ADD CONSTRAINT transactions_source_check 
-    CHECK (source IN ('web', 'whatsapp', 'telegram')),
     ADD CONSTRAINT transactions_type_check 
     CHECK (type IN ('income', 'expense', 'transfer'));
   `;
-  console.log("✅ Constraints source and type ('income', 'expense', 'transfer') updated");
+  console.log("✅ Constraint type ('income', 'expense', 'transfer') updated and source check removed");
 
   // 6. Add to_account_id to transactions if not exists and allow null category_id (for transfer)
   await sql`

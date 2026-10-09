@@ -327,7 +327,6 @@ export async function processSmartTextInput(data: {
         amount: parsed.amount,
         type: "transfer",
         note: parsed.note || `Transfer ke ${parsed.toAccount.name}`,
-        source: "web",
         transactionDate,
       });
 
@@ -398,7 +397,6 @@ export async function processSmartTextInput(data: {
         amount,
         type: "transfer",
         note,
-        source: "web",
         transactionDate,
       });
 
@@ -497,7 +495,6 @@ export async function processSmartTextInput(data: {
       amount,
       type,
       note: description,
-      source: "web",
       transactionDate,
     });
 

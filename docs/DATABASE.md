@@ -49,7 +49,6 @@ Catatan transaksi keuangan harian maupun transfer antar kantong.
 - `amount`: Numeric(15, 2).
 - `type`: Text (`income` | `expense` | `transfer`).
 - `note`: Text (Keterangan transaksi).
-- `source`: Text (`web`).
 - `transactionDate`: Date.
 
 ---

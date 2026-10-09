@@ -181,7 +181,6 @@ export async function transferBetweenAccounts(data: {
   toAccountId: string;
   amount: number;
   note?: string;
-  source?: "telegram" | "web";
   transactionDate?: string;
   familyId?: string | null;
 }) {
@@ -191,7 +190,6 @@ export async function transferBetweenAccounts(data: {
     toAccountId,
     amount,
     note,
-    source = "web",
     transactionDate = new Date().toISOString().split("T")[0],
   } = data;
 
@@ -282,7 +280,6 @@ export async function transferBetweenAccounts(data: {
       amount: amount.toString(),
       type: "expense",
       note: transferNoteOut,
-      source,
       transactionDate,
     });
 
@@ -294,7 +291,6 @@ export async function transferBetweenAccounts(data: {
       amount: amount.toString(),
       type: "income",
       note: transferNoteIn,
-      source,
       transactionDate,
     });
   });
