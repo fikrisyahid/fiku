@@ -808,7 +808,7 @@ export function HomepageScreenshotPreview() {
           </div>
 
           <div className="flex items-center gap-2 font-mono text-[11px] px-3 py-0.5 rounded-lg bg-zinc-200/70 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 border border-zinc-300/40 dark:border-zinc-800">
-            <span>https://fiku.app/{activeTab === "transactions" ? "transaction" : "summary"}</span>
+            <span>https://fiku.my.id/{activeTab === "transactions" ? "transaction" : "summary"}</span>
           </div>
 
           <div className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
