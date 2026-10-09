@@ -41,6 +41,7 @@ export interface Dictionary {
   nav: {
     transactions: string;
     summary: string;
+    security: string;
     signIn: string;
     signOut: string;
     home: string;
@@ -397,6 +398,7 @@ export const idDict: Dictionary = {
   nav: {
     transactions: "Transaksi",
     summary: "Ringkasan",
+    security: "Keamanan & Privasi",
     signIn: "Masuk",
     signOut: "Keluar",
     home: "Beranda",
@@ -737,6 +739,7 @@ export const enDict: Dictionary = {
   nav: {
     transactions: "Transactions",
     summary: "Summary",
+    security: "Security & Privacy",
     signIn: "Sign In",
     signOut: "Sign Out",
     home: "Home",

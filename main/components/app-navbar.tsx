@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoutButton } from "@/components/logout-button";
-import { ArrowLeftRight, BarChart3, Menu, X, User } from "lucide-react";
+import { ArrowLeftRight, BarChart3, Menu, X, User, ShieldCheck } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Locale, getDictionary } from "@/lib/i18n/dictionary";
@@ -63,6 +63,12 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
       href: "/summary",
       icon: BarChart3,
       active: pathname.startsWith("/summary"),
+    },
+    {
+      label: dict.nav.security,
+      href: "/security",
+      icon: ShieldCheck,
+      active: pathname.startsWith("/security"),
     },
   ];
 

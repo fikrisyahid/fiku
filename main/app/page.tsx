@@ -227,6 +227,10 @@ export default async function HomePage() {
           <Link href="/summary" className="hover:text-zinc-900 dark:hover:text-zinc-100">
             {dict.nav.summary}
           </Link>
+          <Link href="/security" className="hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center gap-1">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            {dict.nav.security}
+          </Link>
           <a
             href="https://github.com/fikrisyahid/fiku"
             target="_blank"
