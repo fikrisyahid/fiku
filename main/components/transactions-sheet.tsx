@@ -43,6 +43,7 @@ export interface TransactionRow {
   amount: number;
   note: string;
   isNew?: boolean;
+  createdAt?: string;
 }
 
 interface TransactionsSheetProps {
@@ -75,6 +76,7 @@ export function TransactionsSheet({
     toAccountId: tx.toAccountId || undefined,
     amount: parseFloat(tx.amount || "0"),
     note: tx.note || "",
+    createdAt: tx.createdAt ? new Date(tx.createdAt).toISOString() : undefined,
   });
 
   const [rows, setRows] = useState<TransactionRow[]>(() =>
@@ -130,13 +132,13 @@ export function TransactionsSheet({
         return serverMap.get(localRow.id) || localRow;
       });
 
-      // Append any server rows that are not in prev (e.g. added from another device/source)
+      // Prepend any server rows that are not in prev (e.g. added from Smart Input or another device)
       const prevIds = new Set(prev.map((p) => p.id));
       const newlyArrivedFromServer = initialTransactions
         .filter((tx) => !prevIds.has(tx.id))
         .map(mapTxToRow);
 
-      return [...updatedPrev, ...newlyArrivedFromServer];
+      return [...newlyArrivedFromServer, ...updatedPrev];
     });
   }, [initialTransactions]);
 
@@ -229,10 +231,19 @@ export function TransactionsSheet({
           source: "web",
           transactionDate: row.transactionDate,
         });
-        // Replace temp new ID with real database ID
+        // Replace temp new ID with real database ID and preserve createdAt
         setRows((prev) =>
           prev.map((r) =>
-            r.id === id ? { ...r, id: res.transaction.id, isNew: false } : r
+            r.id === id
+              ? {
+                  ...r,
+                  id: res.transaction.id,
+                  isNew: false,
+                  createdAt: res.transaction.createdAt
+                    ? new Date(res.transaction.createdAt).toISOString()
+                    : new Date().toISOString(),
+                }
+              : r
           )
         );
       } else {
@@ -379,6 +390,18 @@ export function TransactionsSheet({
 
       if (valA < valB) return sortOrder === "asc" ? -1 : 1;
       if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+
+      // Tie breaker: if sorting by transactionDate (or values are identical), prioritize newest created / unsaved row
+      if (sortField === "transactionDate") {
+        if (a.isNew && !b.isNew) return -1;
+        if (!a.isNew && b.isNew) return 1;
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (timeA !== timeB) {
+          return timeB - timeA; // newest createdAt first
+        }
+      }
+
       return 0;
     });
 
