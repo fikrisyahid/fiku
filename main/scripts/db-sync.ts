@@ -10,19 +10,27 @@ const sql = postgres(connectionString);
 async function main() {
   console.log("🔄 Synchronizing and updating database schema in Postgres/Supabase...");
 
-  // 1. Ensure users table columns
-  await sql`
-    ALTER TABLE users 
-    ALTER COLUMN id SET DEFAULT gen_random_uuid(),
-    ADD COLUMN IF NOT EXISTS password_hash text,
-    ADD COLUMN IF NOT EXISTS pin_hash text,
-    ADD COLUMN IF NOT EXISTS pin_salt text,
-    ADD COLUMN IF NOT EXISTS public_key text,
-    ADD COLUMN IF NOT EXISTS encrypted_private_key text;
-  `;
-  console.log("✅ Users table columns verified");
+  // 0. Ensure uuid extension is available
+  await sql`CREATE EXTENSION IF NOT EXISTS "pgcrypto";`;
 
-  // 2. Ensure sessions table exists
+  // 1. Ensure core tables exist (supports brand new empty databases)
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      email text NOT NULL UNIQUE,
+      full_name text NOT NULL,
+      phone text,
+      password_hash text,
+      pin_hash text,
+      pin_salt text,
+      public_key text,
+      encrypted_private_key text,
+      created_at timestamp with time zone DEFAULT now() NOT NULL,
+      updated_at timestamp with time zone DEFAULT now() NOT NULL
+    );
+  `;
+  console.log("✅ Table users ready");
+
   await sql`
     CREATE TABLE IF NOT EXISTS sessions (
       id text PRIMARY KEY,
@@ -33,30 +41,50 @@ async function main() {
   `;
   console.log("✅ Table sessions ready");
 
-  // 3. Drop deprecated unused tables (license_history, notifications, families, debts, budgets, etc.)
-  await sql`DROP TABLE IF EXISTS license_history CASCADE;`;
-  await sql`DROP TABLE IF EXISTS notifications CASCADE;`;
-  await sql`DROP TABLE IF EXISTS debts CASCADE;`;
-  await sql`DROP TABLE IF EXISTS budgets CASCADE;`;
-  await sql`DROP TABLE IF EXISTS family_members CASCADE;`;
-  await sql`DROP TABLE IF EXISTS families CASCADE;`;
-  await sql`DROP TABLE IF EXISTS auth_otp_codes CASCADE;`;
-  console.log("✅ Deprecated tables (license_history, notifications, debts, budgets, family_members, families, auth_otp_codes) dropped if existed");
+  await sql`
+    CREATE TABLE IF NOT EXISTS accounts (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name text NOT NULL,
+      type text NOT NULL,
+      balance text DEFAULT '0' NOT NULL,
+      is_default boolean DEFAULT false NOT NULL,
+      created_at timestamp with time zone DEFAULT now() NOT NULL,
+      updated_at timestamp with time zone DEFAULT now() NOT NULL
+    );
+  `;
+  console.log("✅ Table accounts ready");
 
-  // 4. Drop deprecated foreign key columns in remaining tables and drop currency from accounts
-  await sql`ALTER TABLE users DROP COLUMN IF EXISTS active_family_id CASCADE;`;
-  await sql`ALTER TABLE users DROP COLUMN IF EXISTS telegram_id CASCADE;`;
-  await sql`ALTER TABLE users DROP COLUMN IF EXISTS telegram_username CASCADE;`;
-  await sql`ALTER TABLE users DROP COLUMN IF EXISTS expired_at CASCADE;`;
-  await sql`ALTER TABLE accounts DROP COLUMN IF EXISTS family_id CASCADE;`;
-  await sql`ALTER TABLE accounts DROP COLUMN IF EXISTS currency CASCADE;`;
-  await sql`ALTER TABLE categories DROP COLUMN IF EXISTS family_id CASCADE;`;
-  await sql`ALTER TABLE transactions DROP COLUMN IF EXISTS family_id CASCADE;`;
-  await sql`ALTER TABLE transactions DROP COLUMN IF EXISTS budget_id CASCADE;`;
-  await sql`ALTER TABLE transactions DROP COLUMN IF EXISTS source CASCADE;`;
-  console.log("✅ Deprecated columns (currency, family_id, budget_id, active_family_id, source, telegram_id, telegram_username, expired_at) removed");
+  await sql`
+    CREATE TABLE IF NOT EXISTS categories (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+      name text NOT NULL,
+      type text NOT NULL,
+      icon text,
+      is_default boolean DEFAULT false NOT NULL,
+      created_at timestamp with time zone DEFAULT now() NOT NULL
+    );
+  `;
+  console.log("✅ Table categories ready");
 
-  // 4b. Ensure user_settings table exists
+  await sql`
+    CREATE TABLE IF NOT EXISTS transactions (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      account_id uuid NOT NULL REFERENCES accounts(id) ON DELETE RESTRICT,
+      to_account_id uuid REFERENCES accounts(id) ON DELETE RESTRICT,
+      category_id uuid REFERENCES categories(id) ON DELETE SET NULL,
+      amount text NOT NULL,
+      type text NOT NULL CHECK (type IN ('income', 'expense', 'transfer')),
+      note text,
+      transaction_date date NOT NULL,
+      created_at timestamp with time zone DEFAULT now() NOT NULL,
+      updated_at timestamp with time zone DEFAULT now() NOT NULL
+    );
+  `;
+  console.log("✅ Table transactions ready");
+
   await sql`
     CREATE TABLE IF NOT EXISTS user_settings (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -70,7 +98,39 @@ async function main() {
   `;
   console.log("✅ Table user_settings ready");
 
-  // 5. Update transactions type check constraint and drop amount check constraint
+  // 2. Backward compatibility & column verifications for existing databases
+  await sql`
+    ALTER TABLE users 
+    ALTER COLUMN id SET DEFAULT gen_random_uuid(),
+    ADD COLUMN IF NOT EXISTS password_hash text,
+    ADD COLUMN IF NOT EXISTS pin_hash text,
+    ADD COLUMN IF NOT EXISTS pin_salt text,
+    ADD COLUMN IF NOT EXISTS public_key text,
+    ADD COLUMN IF NOT EXISTS encrypted_private_key text;
+  `;
+
+  // 3. Drop deprecated unused tables if any existed from earlier versions
+  await sql`DROP TABLE IF EXISTS license_history CASCADE;`;
+  await sql`DROP TABLE IF EXISTS notifications CASCADE;`;
+  await sql`DROP TABLE IF EXISTS debts CASCADE;`;
+  await sql`DROP TABLE IF EXISTS budgets CASCADE;`;
+  await sql`DROP TABLE IF EXISTS family_members CASCADE;`;
+  await sql`DROP TABLE IF EXISTS families CASCADE;`;
+  await sql`DROP TABLE IF EXISTS auth_otp_codes CASCADE;`;
+
+  // 4. Drop deprecated columns in remaining tables
+  await sql`ALTER TABLE users DROP COLUMN IF EXISTS active_family_id CASCADE;`;
+  await sql`ALTER TABLE users DROP COLUMN IF EXISTS telegram_id CASCADE;`;
+  await sql`ALTER TABLE users DROP COLUMN IF EXISTS telegram_username CASCADE;`;
+  await sql`ALTER TABLE users DROP COLUMN IF EXISTS expired_at CASCADE;`;
+  await sql`ALTER TABLE accounts DROP COLUMN IF EXISTS family_id CASCADE;`;
+  await sql`ALTER TABLE accounts DROP COLUMN IF EXISTS currency CASCADE;`;
+  await sql`ALTER TABLE categories DROP COLUMN IF EXISTS family_id CASCADE;`;
+  await sql`ALTER TABLE transactions DROP COLUMN IF EXISTS family_id CASCADE;`;
+  await sql`ALTER TABLE transactions DROP COLUMN IF EXISTS budget_id CASCADE;`;
+  await sql`ALTER TABLE transactions DROP COLUMN IF EXISTS source CASCADE;`;
+
+  // 5. Update transactions constraints and ensure columns
   await sql`
     ALTER TABLE transactions 
     DROP CONSTRAINT IF EXISTS transactions_source_check,
@@ -82,21 +142,19 @@ async function main() {
     ADD CONSTRAINT transactions_type_check 
     CHECK (type IN ('income', 'expense', 'transfer'));
   `;
-  console.log("✅ Constraint type ('income', 'expense', 'transfer') updated and old amount/source checks removed");
 
-  // 6. Alter balance and amount columns to text for Zero-Knowledge Encryption
+  // 6. Ensure Zero-Knowledge text columns
   await sql`ALTER TABLE accounts ALTER COLUMN balance TYPE text;`;
   await sql`ALTER TABLE transactions ALTER COLUMN amount TYPE text;`;
-  console.log("✅ Accounts balance and transactions amount columns migrated to text for Zero-Knowledge encryption");
 
-  // 7. Add to_account_id to transactions if not exists and allow null category_id (for transfer)
+  // 7. Ensure to_account_id exists and allow null category_id (for transfers)
   await sql`
     ALTER TABLE transactions 
     ADD COLUMN IF NOT EXISTS to_account_id uuid REFERENCES accounts(id) ON DELETE RESTRICT,
     ALTER COLUMN category_id DROP NOT NULL;
   `;
 
-  // 8. Ensure default categories exist
+  // 8. Seed default categories if empty
   const existingCats = await sql`SELECT count(*) FROM categories WHERE is_default = true;`;
   if (parseInt(existingCats[0].count) === 0) {
     const defaultCats = [
@@ -119,7 +177,7 @@ async function main() {
     console.log("✅ Default categories seeded");
   }
 
-  // 7. Trigger protection preventing default categories (is_default = true) from being deleted
+  // 9. Trigger protection preventing default categories from being deleted
   await sql`
     CREATE OR REPLACE FUNCTION prevent_delete_default_category()
     RETURNS TRIGGER AS $$
@@ -144,7 +202,7 @@ async function main() {
   `;
   console.log("✅ Default category protection trigger activated");
 
-  console.log("🎉 Database schema synchronization completed!");
+  console.log("🎉 Database schema synchronization completed successfully!");
   process.exit(0);
 }
 
