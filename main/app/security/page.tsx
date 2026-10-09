@@ -156,7 +156,7 @@ export default async function SecurityPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
             <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-2">
               <div className="text-emerald-400 font-bold flex items-center gap-2">
-                <span>01. Input Pengguna</span>
+                <span>{isId ? "01. Input Pengguna" : "01. User Input"}</span>
               </div>
               <p className="text-zinc-400 text-[11px] leading-relaxed">
                 {isId
@@ -167,7 +167,7 @@ export default async function SecurityPage() {
 
             <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-2">
               <div className="text-amber-400 font-bold flex items-center gap-2">
-                <span>02. Enkripsi AES-256</span>
+                <span>{isId ? "02. Enkripsi AES-256" : "02. AES-256 Encryption"}</span>
               </div>
               <p className="text-zinc-400 text-[11px] leading-relaxed">
                 {isId
@@ -178,7 +178,7 @@ export default async function SecurityPage() {
 
             <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-2">
               <div className="text-rose-400 font-bold flex items-center gap-2">
-                <span>03. Database Server</span>
+                <span>{isId ? "03. Database Server" : "03. Database Server"}</span>
               </div>
               <p className="text-zinc-400 text-[11px] leading-relaxed">
                 {isId
