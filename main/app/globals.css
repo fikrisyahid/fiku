@@ -130,4 +130,31 @@
   html {
     @apply font-sans;
   }
+
+  /* Date picker icon styling for cross-browser & dark mode support */
+  input[type="date"] {
+    color-scheme: light;
+  }
+  .dark input[type="date"] {
+    color-scheme: dark;
+  }
+
+  /* Ensure calendar picker indicator icon is crisp and clearly visible */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    padding: 2px;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  .dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.2);
+    opacity: 0.75;
+  }
+  .dark input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
 }

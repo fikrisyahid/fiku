@@ -1018,12 +1018,14 @@ export function HomepageScreenshotPreview() {
 
                           {/* Tanggal */}
                           <td className="p-2">
-                            <input
-                              type="date"
-                              value={row.transactionDate}
-                              onChange={(e) => handleCellChange(row.id, "transactionDate", e.target.value)}
-                              className="w-full h-8 px-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono outline-hidden"
-                            />
+                            <div className="relative flex items-center">
+                              <input
+                                type="date"
+                                value={row.transactionDate}
+                                onChange={(e) => handleCellChange(row.id, "transactionDate", e.target.value)}
+                                className="w-full h-8 px-2.5 rounded-lg bg-zinc-50/60 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono font-medium text-zinc-800 dark:text-zinc-200 outline-hidden transition-all shadow-2xs"
+                              />
+                            </div>
                           </td>
 
                           {/* Tipe with CustomSelect */}
