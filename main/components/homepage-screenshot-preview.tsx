@@ -970,7 +970,7 @@ export function HomepageScreenshotPreview() {
                       <th className="p-3 w-32">{dict.transaksi.colType}</th>
                       <th className="p-3 w-52">{dict.transaksi.colCategory}</th>
                       <th className="p-3 w-52">{dict.transaksi.colWallet}</th>
-                      <th className="p-3 w-36">{dict.transaksi.colAmount}</th>
+                      <th className="p-3 w-36">{dict.transaksi.colAmount()}</th>
                       <th className="p-3 min-w-[180px]">{dict.transaksi.colNote}</th>
                       <th className="p-3 w-28 text-center">{dict.transaksi.colActions}</th>
                     </tr>

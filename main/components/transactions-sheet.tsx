@@ -616,7 +616,7 @@ export function TransactionsSheet({
                 className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-36"
               >
                 <div className="flex items-center gap-1">
-                  <span>{dict.transaksi.colAmount}</span>
+                  <span>{dict.transaksi.colAmount(currency)}</span>
                   {sortField === "amount" ? (
                     sortOrder === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-emerald-600" /> : <ArrowDown className="w-3.5 h-3.5 text-emerald-600" />
                   ) : (

@@ -152,7 +152,7 @@ export interface Dictionary {
     colType: string;
     colCategory: string;
     colWallet: string;
-    colAmount: string;
+    colAmount: (currencyCode?: string) => string;
     colNote: string;
     colActions: string;
     internalTransfer: string;
@@ -523,7 +523,7 @@ export const idDict: Dictionary = {
     colType: "Tipe",
     colCategory: "Kategori",
     colWallet: "Kantong / Dompet",
-    colAmount: "Nominal (Rp)",
+    colAmount: (currencyCode: string = "IDR") => `Nominal (${currencyCode})`,
     colNote: "Keterangan",
     colActions: "Status / Aksi",
     internalTransfer: "Mutasi Internal",
@@ -886,7 +886,7 @@ export const enDict: Dictionary = {
     colType: "Type",
     colCategory: "Category",
     colWallet: "Wallet / Account",
-    colAmount: "Amount (IDR)",
+    colAmount: (currencyCode: string = "IDR") => `Amount (${currencyCode})`,
     colNote: "Note",
     colActions: "Status / Actions",
     internalTransfer: "Internal Transfer",
