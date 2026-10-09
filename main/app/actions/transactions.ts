@@ -28,6 +28,7 @@ function mapAndDecryptTransaction(tx: any, privKey: string | null, locale: any) 
         plainAmount = decryptWithPrivateKey(tx.amount, privKey);
       } catch (e) {
         console.error("Failed to decrypt amount for tx", tx.id, e);
+        plainAmount = "0";
       }
     }
     if (tx.note && tx.note.startsWith("enc:v1:")) {
@@ -35,7 +36,16 @@ function mapAndDecryptTransaction(tx: any, privKey: string | null, locale: any) 
         plainNote = decryptWithPrivateKey(tx.note, privKey);
       } catch (e) {
         console.error("Failed to decrypt note for tx", tx.id, e);
+        plainNote = "";
       }
+    }
+  } else {
+    // If private key is not present in RAM, fallback safely to avoid NaN in computations
+    if (tx.amount && tx.amount.startsWith("enc:v1:")) {
+      plainAmount = "0";
+    }
+    if (tx.note && tx.note.startsWith("enc:v1:")) {
+      plainNote = "";
     }
   }
 
@@ -290,6 +300,9 @@ export async function createTransaction(data: {
   }
 
   const privKey = getActiveUserPrivateKey(userId);
+  if (!privKey) {
+    throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk mencatat transaksi.");
+  }
   const publicKey = await getUserPublicKey(userId);
 
   // Helper to decrypt balance if encrypted
@@ -494,6 +507,9 @@ export async function deleteTransaction(
   }
 
   const privKey = getActiveUserPrivateKey(userId);
+  if (!privKey) {
+    throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk menghapus transaksi.");
+  }
   const publicKey = await getUserPublicKey(userId);
 
   const getPlain = (val: string) => {
@@ -583,6 +599,9 @@ export async function deleteTransactionsBatch(
   }
 
   const privKey = getActiveUserPrivateKey(userId);
+  if (!privKey) {
+    throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk menghapus transaksi.");
+  }
   const publicKey = await getUserPublicKey(userId);
 
   const getPlain = (val: string) => {
@@ -691,6 +710,9 @@ export async function updateTransaction(
   }
 
   const privKey = getActiveUserPrivateKey(userId);
+  if (!privKey) {
+    throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk memperbarui transaksi.");
+  }
   const publicKey = await getUserPublicKey(userId);
 
   const getPlain = (val: string) => {
@@ -838,6 +860,9 @@ export async function importTransactionsBatch(
   }
 
   const privKey = getActiveUserPrivateKey(userId);
+  if (!privKey) {
+    throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk mengimpor transaksi.");
+  }
   const publicKey = await getUserPublicKey(userId);
 
   const getPlain = (val: string) => {

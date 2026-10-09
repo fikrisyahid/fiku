@@ -1,4 +1,18 @@
-# Fiku - Zero-Knowledge Personal Finance Platform
+<p align="center">
+  <img src="main/public/brand/fiku-icon-512.png" alt="Fiku Logo" width="120" height="120" />
+</p>
+
+<h1 align="center">Fiku</h1>
+<p align="center"><strong>Zero-Knowledge Personal Finance Platform</strong></p>
+<p align="center">Catat Cepat, Kendalikan Keuangan Pribadi dengan Enkripsi End-to-End</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js" alt="Next.js 16" />
+  <img src="https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/TailwindCSS-v4-38bdf8?style=flat-square&logo=tailwindcss" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/PostgreSQL-Drizzle-336791?style=flat-square&logo=postgresql" alt="PostgreSQL Drizzle" />
+  <img src="https://img.shields.io/badge/Security-Zero--Knowledge-059669?style=flat-square" alt="Zero-Knowledge" />
+</p>
 
 Fiku is a modern web-based personal finance management platform built with **Next.js 16**, **TypeScript**, **Tailwind CSS v4**, and **PostgreSQL (Drizzle ORM)**. All monetary amounts, wallet balances, and financial notes are secured using an end-to-end **Zero-Knowledge Encryption** architecture (ECIES Asymmetric Encryption with X25519 + AES-256-GCM).
 

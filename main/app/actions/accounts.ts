@@ -29,7 +29,10 @@ export async function getUserAccounts(userId: string, _familyId?: string | null)
         plainBalance = decryptWithPrivateKey(a.balance, privKey);
       } catch (e) {
         console.error("Failed to decrypt account balance for account", a.id, e);
+        plainBalance = "0";
       }
+    } else if (!privKey && a.balance.startsWith("enc:v1:")) {
+      plainBalance = "0";
     }
 
     return {
@@ -53,14 +56,17 @@ export async function getAccountById(
   if (!acc) return null;
 
   const privKey = getActiveUserPrivateKey(userId);
-  let plainBalance = acc.balance;
-  if (privKey && acc.balance.startsWith("enc:v1:")) {
-    try {
-      plainBalance = decryptWithPrivateKey(acc.balance, privKey);
-    } catch (e) {
-      console.error("Failed to decrypt account balance for account", acc.id, e);
+    let plainBalance = acc.balance;
+    if (privKey && acc.balance.startsWith("enc:v1:")) {
+      try {
+        plainBalance = decryptWithPrivateKey(acc.balance, privKey);
+      } catch (e) {
+        console.error("Failed to decrypt account balance for account", acc.id, e);
+        plainBalance = "0";
+      }
+    } else if (!privKey && acc.balance.startsWith("enc:v1:")) {
+      plainBalance = "0";
     }
-  }
 
   return {
     ...acc,
@@ -251,6 +257,11 @@ export async function transferBetweenAccounts(data: {
 
   if (fromAccountId === toAccountId) {
     throw new Error("Dompet asal dan dompet tujuan tidak boleh sama!");
+  }
+
+  const privKey = getActiveUserPrivateKey(userId);
+  if (!privKey) {
+    throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk melakukan transfer.");
   }
 
   const fromAccount = await getAccountById(fromAccountId, userId);

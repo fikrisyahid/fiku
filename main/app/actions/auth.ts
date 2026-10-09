@@ -12,6 +12,7 @@ import {
   encryptPrivateKeyWithSecret,
   unlockUserSessionWithPassword,
   lockUserSession,
+  getActiveUserPrivateKey,
 } from "@/lib/crypto";
 
 const SESSION_COOKIE_NAME = "fana_session";
@@ -244,6 +245,20 @@ export async function getCurrentUser() {
   });
 
   if (!session || !session.user) {
+    return null;
+  }
+
+  // If server was restarted or redeployed, the RAM session vault key is lost.
+  // In this case, invalidate session to force a clean re-login rather than showing
+  // scrambled/encrypted ciphertext or NaN balances in the UI.
+  const privKey = getActiveUserPrivateKey(session.user.id);
+  if (!privKey) {
+    try {
+      await db.delete(sessions).where(eq(sessions.id, token));
+      cookieStore.delete(SESSION_COOKIE_NAME);
+    } catch {
+      // Ignore DB errors during cleanup
+    }
     return null;
   }
 
