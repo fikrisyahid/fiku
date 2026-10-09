@@ -591,25 +591,28 @@ export function HomepageScreenshotPreview() {
               <div className="space-y-2">
                 <form
                   onSubmit={handleSmartInputSubmit}
-                  className="relative flex items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-1.5 shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all"
+                  className="relative flex items-center shadow-sm rounded-2xl group"
                 >
-                  <div className="pl-3 pr-2 text-zinc-400">
-                    <Sparkles className="w-4 h-4 text-emerald-600" />
+                  <div className="absolute left-3.5 flex items-center pointer-events-none text-emerald-600 dark:text-emerald-400 z-10">
+                    <Sparkles className="w-4 h-4 animate-pulse" />
                   </div>
                   <input
                     type="text"
                     value={smartInputText}
                     onChange={(e) => setSmartInputText(e.target.value)}
                     placeholder={dict.transaksi.smartInputPlaceholder}
-                    className="flex-1 bg-transparent border-none text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none"
+                    className="w-full h-12 pl-10 pr-32 sm:pr-36 rounded-2xl text-xs sm:text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium placeholder:text-zinc-400 placeholder:truncate outline-none transition-all shadow-xs"
                   />
-                  <Button
-                    type="submit"
-                    size="sm"
-                    className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm transition-all"
-                  >
-                    {dict.transaksi.smartInputSubmitBtn}
-                  </Button>
+                  <div className="absolute right-1.5 flex items-center pl-6 bg-gradient-to-l from-white via-white dark:from-zinc-900 dark:via-zinc-900 to-transparent rounded-r-2xl">
+                    <Button
+                      type="submit"
+                      disabled={!smartInputText.trim()}
+                      size="sm"
+                      className="h-9 px-3.5 sm:px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm transition-all"
+                    >
+                      {dict.transaksi.smartInputSubmitBtn}
+                    </Button>
+                  </div>
                 </form>
 
                 {smartFeedback && (
@@ -633,14 +636,14 @@ export function HomepageScreenshotPreview() {
                   />
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                   {selectedIds.size > 0 && (
                     <Button
                       type="button"
                       variant="destructive"
                       size="sm"
                       onClick={handleBatchDelete}
-                      className="h-10 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-sm transition-all"
+                      className="w-full sm:w-auto h-10 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-sm transition-all"
                     >
                       <Trash2 className="w-4 h-4 mr-1.5" />
                       {dict.transaksi.btnDeleteSelected(selectedIds.size)}
@@ -651,7 +654,7 @@ export function HomepageScreenshotPreview() {
                     type="button"
                     onClick={handleAddNewRow}
                     size="sm"
-                    className="h-10 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm"
+                    className="w-full sm:w-auto h-10 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm"
                   >
                     <Plus className="w-4 h-4 mr-1.5" />
                     {dict.transaksi.btnNewRow}

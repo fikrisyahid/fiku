@@ -59,10 +59,14 @@ export function CustomSelect({
     const estimatedHeight = Math.min(options.length * 38 + 16, 240);
     const placeAbove = spaceBelow < estimatedHeight && rect.top > estimatedHeight;
 
+    const dropdownWidth = Math.max(rect.width, 160);
+    const maxLeft = Math.max(8, window.innerWidth - dropdownWidth - 8);
+    const clampedLeft = Math.min(Math.max(8, rect.left), maxLeft);
+
     setCoords({
       top: placeAbove ? rect.top - 4 : rect.bottom + 4,
-      left: rect.left,
-      width: Math.max(rect.width, 160),
+      left: clampedLeft,
+      width: Math.min(dropdownWidth, window.innerWidth - 16),
       placeAbove,
     });
   };
