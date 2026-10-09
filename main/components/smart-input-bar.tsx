@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, ArrowRight, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
+import { Sparkles, ArrowRight, RefreshCw, CheckCircle2, AlertCircle, Info } from "lucide-react";
 import { processSmartTextInput } from "@/lib/smart-input";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AlertModal, ModalAlertConfig } from "@/components/ui/alert-modal";
+import { SmartInputHelpModal } from "@/components/smart-input-help-modal";
 import { getLocalTodayDateString } from "@/lib/utils";
 
 interface SmartInputBarProps {
@@ -17,6 +18,7 @@ interface SmartInputBarProps {
 export function SmartInputBar({ userId, familyId, onSuccess }: SmartInputBarProps) {
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [alertModal, setAlertModal] = useState<ModalAlertConfig>({
     isOpen: false,
     message: "",
@@ -95,9 +97,18 @@ export function SmartInputBar({ userId, familyId, onSuccess }: SmartInputBarProp
           onChange={(e) => setInputText(e.target.value)}
           disabled={loading}
           placeholder='Smart input, misal: "-25k sayur cash" atau "tf 100k bca ke gopay"'
-          className="h-12 pl-10 pr-24 sm:pr-28 rounded-2xl text-xs sm:text-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:border-emerald-500 focus:ring-emerald-500/20 font-medium placeholder:text-zinc-400 placeholder:truncate"
+          className="h-12 pl-10 pr-32 sm:pr-36 rounded-2xl text-xs sm:text-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:border-emerald-500 focus:ring-emerald-500/20 font-medium placeholder:text-zinc-400 placeholder:truncate"
         />
-        <div className="absolute right-1.5 flex items-center">
+        <div className="absolute right-1.5 flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setIsHelpOpen(true)}
+            title="Cara penggunaan Smart Input & contoh"
+            aria-label="Petunjuk Smart Input"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <Info className="w-4 h-4" />
+          </button>
           <Button
             type="submit"
             disabled={loading || !inputText.trim()}
@@ -145,6 +156,16 @@ export function SmartInputBar({ userId, familyId, onSuccess }: SmartInputBarProp
       <AlertModal
         config={alertModal}
         onClose={() => setAlertModal((prev) => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* Smart Input Help & Examples Modal */}
+      <SmartInputHelpModal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        onSelectExample={(example) => {
+          setInputText(example);
+          setIsHelpOpen(false);
+        }}
       />
     </div>
   );
