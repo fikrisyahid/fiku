@@ -39,7 +39,6 @@ export const accounts = pgTable("accounts", {
   name: text("name").notNull(),
   type: text("type").notNull(), // 'bank', 'ewallet', 'cash'
   balance: text("balance").default("0").notNull(),
-  currency: text("currency").default("IDR").notNull(),
   isDefault: boolean("is_default").default(false).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -96,13 +95,41 @@ export const sessions = pgTable("sessions", {
 });
 
 /**
+ * 6. USER SETTINGS & METRICS
+ * Stores global user preferences (currency, notification flags) and denormalized counter caches.
+ */
+export const userSettings = pgTable("user_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+  transactionCount: text("transaction_count").default("0").notNull(), // Counter cache stored as integer/number string
+  currency: text("currency").default("IDR").notNull(), // 'IDR', 'USD', 'SGD', 'EUR', etc.
+  emailNotifications: boolean("email_notifications").default(false).notNull(), // reserved for future notifications
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
  * DRIZZLE ORM RELATIONS
  */
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   accounts: many(accounts),
   categories: many(categories),
   transactions: many(transactions),
   sessions: many(sessions),
+  settings: one(userSettings, {
+    fields: [users.id],
+    references: [userSettings.userId],
+  }),
+}));
+
+export const userSettingsRelations = relations(userSettings, ({ one }) => ({
+  user: one(users, {
+    fields: [userSettings.userId],
+    references: [users.id],
+  }),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({

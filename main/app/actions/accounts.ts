@@ -73,7 +73,6 @@ export async function createAccount(data: {
   name: string;
   type: string; // 'cash' | 'bank' | 'ewallet'
   balance?: number;
-  currency?: string;
   isDefault?: boolean;
   familyId?: string | null;
 }) {
@@ -82,7 +81,6 @@ export async function createAccount(data: {
     name,
     type,
     balance = 0,
-    currency = "IDR",
     isDefault = false,
   } = data;
 
@@ -106,7 +104,6 @@ export async function createAccount(data: {
       name: name.trim(),
       type: type.toLowerCase(),
       balance: storedBalance,
-      currency,
       isDefault,
     })
     .returning();

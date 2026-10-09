@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { users, accounts } from "@/db/schema";
+import { users, accounts, userSettings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 import { Locale, getDictionary, DEFAULT_LOCALE } from "@/lib/i18n/dictionary";
@@ -104,7 +104,6 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
           name: dict.defaultWallets.cash,
           type: "cash",
           balance: "0",
-          currency: "IDR",
           isDefault: true,
         },
         {
@@ -112,7 +111,6 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
           name: dict.defaultWallets.bank,
           type: "bank",
           balance: "0",
-          currency: "IDR",
           isDefault: false,
         },
         {
@@ -120,12 +118,25 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
           name: dict.defaultWallets.ewallet,
           type: "ewallet",
           balance: "0",
-          currency: "IDR",
           isDefault: false,
         },
       ];
 
       userAccounts = await db.insert(accounts).values(defaultWallets).returning();
+    }
+
+    // Initialize userSettings if not already present
+    const existingSettings = await db.query.userSettings.findFirst({
+      where: eq(userSettings.userId, currentUser.id),
+    });
+
+    if (!existingSettings) {
+      await db.insert(userSettings).values({
+        userId: currentUser.id,
+        transactionCount: "0",
+        currency: "IDR",
+        emailNotifications: false,
+      });
     }
 
     return {

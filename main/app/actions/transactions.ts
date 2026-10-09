@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { transactions, accounts } from "@/db/schema";
-import { eq, and, desc, isNull } from "drizzle-orm";
+import { eq, and, desc, asc, count, isNull } from "drizzle-orm";
 
 import { getServerLocale } from "@/lib/i18n/server";
 import { translateCategoryName, translateAccountName } from "@/lib/i18n/dictionary";
@@ -12,6 +12,80 @@ import {
   getActiveUserPrivateKey,
   getUserPublicKey,
 } from "@/lib/crypto";
+import {
+  getUserSettings,
+  incrementUserTransactionCount,
+  decrementUserTransactionCount,
+} from "@/app/actions/settings";
+
+function mapAndDecryptTransaction(tx: any, privKey: string | null, locale: any) {
+  let plainAmount = tx.amount;
+  let plainNote = tx.note;
+
+  if (privKey) {
+    if (tx.amount && tx.amount.startsWith("enc:v1:")) {
+      try {
+        plainAmount = decryptWithPrivateKey(tx.amount, privKey);
+      } catch (e) {
+        console.error("Failed to decrypt amount for tx", tx.id, e);
+      }
+    }
+    if (tx.note && tx.note.startsWith("enc:v1:")) {
+      try {
+        plainNote = decryptWithPrivateKey(tx.note, privKey);
+      } catch (e) {
+        console.error("Failed to decrypt note for tx", tx.id, e);
+      }
+    }
+  }
+
+  let accPlainBalance = tx.account?.balance;
+  if (privKey && tx.account?.balance?.startsWith("enc:v1:")) {
+    try {
+      accPlainBalance = decryptWithPrivateKey(tx.account.balance, privKey);
+    } catch (e) {
+      console.error("Failed to decrypt account balance for tx", tx.id, e);
+    }
+  }
+
+  let toAccPlainBalance = tx.toAccount?.balance;
+  if (privKey && tx.toAccount?.balance?.startsWith("enc:v1:")) {
+    try {
+      toAccPlainBalance = decryptWithPrivateKey(tx.toAccount.balance, privKey);
+    } catch (e) {
+      console.error("Failed to decrypt toAccount balance for tx", tx.id, e);
+    }
+  }
+
+  return {
+    ...tx,
+    amount: plainAmount,
+    note: plainNote,
+    rawAmount: tx.amount,
+    rawNote: tx.note,
+    account: tx.account
+      ? {
+          ...tx.account,
+          balance: accPlainBalance ?? tx.account.balance,
+          rawBalance: tx.account.balance,
+          name: translateAccountName(tx.account.name, locale),
+          rawName: tx.account.name,
+        }
+      : tx.account,
+    toAccount: tx.toAccount
+      ? {
+          ...tx.toAccount,
+          balance: toAccPlainBalance ?? tx.toAccount.balance,
+          rawBalance: tx.toAccount.balance,
+          name: translateAccountName(tx.toAccount.name, locale),
+          rawName: tx.toAccount.name,
+        }
+      : tx.toAccount,
+    category: tx.category
+      ? { ...tx.category, name: translateCategoryName(tx.category.name, locale), rawName: tx.category.name }
+      : tx.category,
+  };
+}
 
 export async function getUserTransactions(
   userId: string,
@@ -46,74 +120,144 @@ export async function getUserTransactions(
 
   const privKey = getActiveUserPrivateKey(userId);
 
-  return txs.map((tx) => {
-    let plainAmount = tx.amount;
-    let plainNote = tx.note;
+  return txs.map((tx) => mapAndDecryptTransaction(tx, privKey, locale));
+}
 
-    if (privKey) {
-      if (tx.amount && tx.amount.startsWith("enc:v1:")) {
-        try {
-          plainAmount = decryptWithPrivateKey(tx.amount, privKey);
-        } catch (e) {
-          console.error("Failed to decrypt amount for tx", tx.id, e);
-        }
-      }
-      if (tx.note && tx.note.startsWith("enc:v1:")) {
-        try {
-          plainNote = decryptWithPrivateKey(tx.note, privKey);
-        } catch (e) {
-          console.error("Failed to decrypt note for tx", tx.id, e);
-        }
-      }
-    }
+export interface PaginatedTransactionsOptions {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  sortBy?: "transactionDate" | "type" | "category" | "account" | "amount" | "note";
+  sortOrder?: "asc" | "desc";
+  type?: "income" | "expense" | "transfer";
+  accountId?: string;
+}
 
-    let accPlainBalance = tx.account?.balance;
-    if (privKey && tx.account?.balance?.startsWith("enc:v1:")) {
-      try {
-        accPlainBalance = decryptWithPrivateKey(tx.account.balance, privKey);
-      } catch (e) {
-        console.error("Failed to decrypt account balance for tx", tx.id, e);
-      }
-    }
+export async function getUserTransactionsPaginated(
+  userId: string,
+  options: PaginatedTransactionsOptions = {}
+) {
+  const page = Math.max(1, options.page || 1);
+  const pageSize = Math.min(100, Math.max(5, options.pageSize || 25));
+  const sortBy = options.sortBy || "transactionDate";
+  const sortOrder = options.sortOrder || "desc";
+  const searchQuery = (options.search || "").trim().toLowerCase();
+  const locale = await getServerLocale();
+  const privKey = getActiveUserPrivateKey(userId);
 
-    let toAccPlainBalance = tx.toAccount?.balance;
-    if (privKey && tx.toAccount?.balance?.startsWith("enc:v1:")) {
-      try {
-        toAccPlainBalance = decryptWithPrivateKey(tx.toAccount.balance, privKey);
-      } catch (e) {
-        console.error("Failed to decrypt toAccount balance for tx", tx.id, e);
-      }
-    }
+  // 1. Fetch matching transactions
+  // If sorting is by native date or there is no query, we can optimize or fetch with appropriate order
+  const orderClause =
+    sortBy === "transactionDate"
+      ? sortOrder === "asc"
+        ? [asc(transactions.transactionDate), asc(transactions.createdAt)]
+        : [desc(transactions.transactionDate), desc(transactions.createdAt)]
+      : [desc(transactions.transactionDate), desc(transactions.createdAt)];
 
-    return {
-      ...tx,
-      amount: plainAmount,
-      note: plainNote,
-      rawAmount: tx.amount,
-      rawNote: tx.note,
-      account: tx.account
-        ? {
-            ...tx.account,
-            balance: accPlainBalance ?? tx.account.balance,
-            rawBalance: tx.account.balance,
-            name: translateAccountName(tx.account.name, locale),
-            rawName: tx.account.name,
-          }
-        : tx.account,
-      toAccount: tx.toAccount
-        ? {
-            ...tx.toAccount,
-            balance: toAccPlainBalance ?? tx.toAccount.balance,
-            rawBalance: tx.toAccount.balance,
-            name: translateAccountName(tx.toAccount.name, locale),
-            rawName: tx.toAccount.name,
-          }
-        : tx.toAccount,
-      category: tx.category
-        ? { ...tx.category, name: translateCategoryName(tx.category.name, locale), rawName: tx.category.name }
-        : tx.category,
-    };
+  // For full search across decrypted fields (amount, note) or in-memory sort,
+  // we fetch records, decrypt, filter & sort, then return paginated slice
+  const txs = await db.query.transactions.findMany({
+    where: (tx, { eq: eqField, and: andFields }) => {
+      const conditions = [eqField(tx.userId, userId)];
+      if (options.type) conditions.push(eqField(tx.type, options.type));
+      if (options.accountId) conditions.push(eqField(tx.accountId, options.accountId));
+      return andFields(...conditions);
+    },
+    with: {
+      account: true,
+      toAccount: true,
+      category: true,
+      user: true,
+    },
+    orderBy: orderClause,
   });
+
+  // 2. Decrypt all matching records for this user
+  let decryptedList = txs.map((tx) => mapAndDecryptTransaction(tx, privKey, locale));
+
+  // 3. In-Memory Search (handles decrypted amount, note, wallet names, category names, dates)
+  if (searchQuery) {
+    decryptedList = decryptedList.filter((item) => {
+      const noteMatch = (item.note || "").toLowerCase().includes(searchQuery);
+      const amountMatch = (item.amount?.toString() || "").includes(searchQuery);
+      const dateMatch = (item.transactionDate || "").includes(searchQuery);
+      const accMatch = (item.account?.name || "").toLowerCase().includes(searchQuery);
+      const toAccMatch = (item.toAccount?.name || "").toLowerCase().includes(searchQuery);
+      const catMatch = (item.category?.name || "").toLowerCase().includes(searchQuery);
+      return noteMatch || amountMatch || dateMatch || accMatch || toAccMatch || catMatch;
+    });
+  }
+
+  // 4. In-Memory Sorting (for decrypted fields like amount, note, category, account)
+  if (sortBy !== "transactionDate") {
+    decryptedList.sort((a, b) => {
+      let valA: any = "";
+      let valB: any = "";
+
+      if (sortBy === "amount") {
+        const numA = parseFloat(a.amount) || 0;
+        const numB = parseFloat(b.amount) || 0;
+        return sortOrder === "asc" ? numA - numB : numB - numA;
+      } else if (sortBy === "type") {
+        valA = a.type || "";
+        valB = b.type || "";
+      } else if (sortBy === "note") {
+        valA = (a.note || "").toLowerCase();
+        valB = (b.note || "").toLowerCase();
+      } else if (sortBy === "category") {
+        valA = (a.category?.name || "").toLowerCase();
+        valB = (b.category?.name || "").toLowerCase();
+      } else if (sortBy === "account") {
+        valA = (a.account?.name || "").toLowerCase();
+        valB = (b.account?.name || "").toLowerCase();
+      }
+
+      const cmp = String(valA).localeCompare(String(valB));
+      return sortOrder === "asc" ? cmp : -cmp;
+    });
+  }
+
+  // 5. Total count determination
+  // If no search filter is applied, we can use the O(1) cached transactionCount from userSettings!
+  let totalCount = decryptedList.length;
+  if (!searchQuery && !options.type && !options.accountId) {
+    const settings = await getUserSettings(userId);
+    // Sync cache if out of sync
+    if (settings.transactionCount !== totalCount) {
+      totalCount = Math.max(totalCount, settings.transactionCount);
+    }
+  }
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const paginatedTransactions = decryptedList.slice(startIndex, startIndex + pageSize);
+
+  return {
+    transactions: paginatedTransactions,
+    totalCount,
+    page: safePage,
+    pageSize,
+    totalPages,
+  };
+}
+
+export async function getAllUserTransactionsForExport(userId: string) {
+  const locale = await getServerLocale();
+  const privKey = getActiveUserPrivateKey(userId);
+
+  const txs = await db.query.transactions.findMany({
+    where: eq(transactions.userId, userId),
+    with: {
+      account: true,
+      toAccount: true,
+      category: true,
+      user: true,
+    },
+    orderBy: [desc(transactions.transactionDate), desc(transactions.createdAt)],
+  });
+
+  return txs.map((tx) => mapAndDecryptTransaction(tx, privKey, locale));
 }
 
 export async function createTransaction(data: {
@@ -242,6 +386,8 @@ export async function createTransaction(data: {
       createdTx = newTx;
     });
 
+    await incrementUserTransactionCount(userId, 1);
+
     return {
       transaction: {
         ...createdTx,
@@ -315,6 +461,8 @@ export async function createTransaction(data: {
       updatedAt: new Date(),
     })
     .where(eq(accounts.id, accountId));
+
+  await incrementUserTransactionCount(userId, 1);
 
   return {
     transaction: {
@@ -408,6 +556,8 @@ export async function deleteTransaction(
       .where(eq(transactions.id, transactionId));
   });
 
+  await decrementUserTransactionCount(userId, 1);
+
   return { success: true };
 }
 
@@ -497,6 +647,8 @@ export async function deleteTransactionsBatch(
       await trx.delete(transactions).where(eq(transactions.id, id));
     }
   });
+
+  await decrementUserTransactionCount(userId, txList.length);
 
   return { success: true, count: txList.length };
 }
@@ -701,7 +853,7 @@ export async function importTransactionsBatch(
     return publicKey ? encryptWithPublicKey(val, publicKey) : val;
   };
 
-  return await db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     let imported = 0;
     for (const item of records) {
       if (item.amount <= 0) continue;
@@ -770,6 +922,12 @@ export async function importTransactionsBatch(
 
     return { success: true, count: imported };
   });
+
+  if (result.count > 0) {
+    await incrementUserTransactionCount(userId, result.count);
+  }
+
+  return result;
 }
 
 

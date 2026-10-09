@@ -43,17 +43,32 @@ async function main() {
   await sql`DROP TABLE IF EXISTS auth_otp_codes CASCADE;`;
   console.log("✅ Deprecated tables (license_history, notifications, debts, budgets, family_members, families, auth_otp_codes) dropped if existed");
 
-  // 4. Drop deprecated foreign key columns in remaining tables
+  // 4. Drop deprecated foreign key columns in remaining tables and drop currency from accounts
   await sql`ALTER TABLE users DROP COLUMN IF EXISTS active_family_id CASCADE;`;
   await sql`ALTER TABLE users DROP COLUMN IF EXISTS telegram_id CASCADE;`;
   await sql`ALTER TABLE users DROP COLUMN IF EXISTS telegram_username CASCADE;`;
   await sql`ALTER TABLE users DROP COLUMN IF EXISTS expired_at CASCADE;`;
   await sql`ALTER TABLE accounts DROP COLUMN IF EXISTS family_id CASCADE;`;
+  await sql`ALTER TABLE accounts DROP COLUMN IF EXISTS currency CASCADE;`;
   await sql`ALTER TABLE categories DROP COLUMN IF EXISTS family_id CASCADE;`;
   await sql`ALTER TABLE transactions DROP COLUMN IF EXISTS family_id CASCADE;`;
   await sql`ALTER TABLE transactions DROP COLUMN IF EXISTS budget_id CASCADE;`;
   await sql`ALTER TABLE transactions DROP COLUMN IF EXISTS source CASCADE;`;
-  console.log("✅ Deprecated columns (family_id, budget_id, active_family_id, source, telegram_id, telegram_username, expired_at) removed");
+  console.log("✅ Deprecated columns (currency, family_id, budget_id, active_family_id, source, telegram_id, telegram_username, expired_at) removed");
+
+  // 4b. Ensure user_settings table exists
+  await sql`
+    CREATE TABLE IF NOT EXISTS user_settings (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id uuid NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+      transaction_count text DEFAULT '0' NOT NULL,
+      currency text DEFAULT 'IDR' NOT NULL,
+      email_notifications boolean DEFAULT false NOT NULL,
+      created_at timestamp with time zone DEFAULT now() NOT NULL,
+      updated_at timestamp with time zone DEFAULT now() NOT NULL
+    );
+  `;
+  console.log("✅ Table user_settings ready");
 
   // 5. Update transactions type check constraint and drop amount check constraint
   await sql`
