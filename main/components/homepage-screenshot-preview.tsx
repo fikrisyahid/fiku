@@ -28,9 +28,11 @@ import {
   X,
   Search,
   Layers,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { SmartInputHelpModal } from "@/components/smart-input-help-modal";
 
 export interface DemoTransaction {
   id: string;
@@ -71,6 +73,7 @@ export function HomepageScreenshotPreview() {
 
   const [activeTab, setActiveTab] = useState<"transactions" | "summary">("transactions");
   const [activeQuickModal, setActiveQuickModal] = useState<"saldo" | "kantong" | "kategori" | null>(null);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   // Default standard demo accounts
   const demoAccounts = useMemo<DemoAccount[]>(() => [
@@ -601,9 +604,18 @@ export function HomepageScreenshotPreview() {
                     value={smartInputText}
                     onChange={(e) => setSmartInputText(e.target.value)}
                     placeholder={dict.transaksi.smartInputPlaceholder}
-                    className="w-full h-12 pl-10 pr-32 sm:pr-36 rounded-2xl text-xs sm:text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium placeholder:text-zinc-400 placeholder:truncate outline-none transition-all shadow-xs"
+                    className="w-full h-12 pl-10 pr-44 sm:pr-48 rounded-2xl text-xs sm:text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium placeholder:text-zinc-400 placeholder:truncate outline-none transition-all shadow-xs"
                   />
-                  <div className="absolute right-1.5 flex items-center pl-6 bg-gradient-to-l from-white via-white dark:from-zinc-900 dark:via-zinc-900 to-transparent rounded-r-2xl">
+                  <div className="absolute right-1.5 flex items-center gap-1.5 pl-6 bg-gradient-to-l from-white via-white dark:from-zinc-900 dark:via-zinc-900 to-transparent rounded-r-2xl">
+                    <button
+                      type="button"
+                      onClick={() => setIsHelpOpen(true)}
+                      title={dict.transaksi.smartInputGuideBtn}
+                      className="h-9 px-2.5 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 border border-emerald-200/80 dark:border-emerald-800/60 transition-colors shadow-2xs"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span className="hidden xs:inline sm:inline">{dict.transaksi.smartInputGuideBtn}</span>
+                    </button>
                     <Button
                       type="submit"
                       disabled={!smartInputText.trim()}
@@ -1162,6 +1174,16 @@ export function HomepageScreenshotPreview() {
           </div>
         </div>
       )}
+
+      {/* Smart Input Help / Guide Modal */}
+      <SmartInputHelpModal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        onSelectExample={(example) => {
+          setSmartInputText(example);
+          setIsHelpOpen(false);
+        }}
+      />
     </section>
   );
 }
