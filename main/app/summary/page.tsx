@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/app/actions/auth";
 import { getUserAccounts } from "@/app/actions/accounts";
 import { getUserTransactions } from "@/app/actions/transactions";
+import { getUserSettings } from "@/app/actions/settings";
 import { redirect } from "next/navigation";
 import { AppNavbar } from "@/components/app-navbar";
 import { RingkasanClient } from "@/components/ringkasan-client";
@@ -23,9 +24,10 @@ export default async function RingkasanPage() {
   const locale = await getServerLocale();
   const dict = await getServerDictionary();
 
-  const [accounts, transactionsList] = await Promise.all([
+  const [accounts, transactionsList, settings] = await Promise.all([
     getUserAccounts(user.id),
     getUserTransactions(user.id, { limit: 500 }),
+    getUserSettings(user.id),
   ]);
 
   return (
@@ -45,6 +47,7 @@ export default async function RingkasanPage() {
         <RingkasanClient
           transactions={transactionsList}
           accounts={accounts}
+          currency={settings.currency || "IDR"}
         />
       </main>
     </div>

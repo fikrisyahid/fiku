@@ -16,10 +16,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FinancialChart } from "@/components/financial-chart";
 
 import { useI18n } from "@/lib/i18n/context";
+import { formatCurrencyValue } from "@/lib/currency";
 
 interface RingkasanClientProps {
   transactions: any[];
   accounts: any[];
+  currency?: string;
 }
 
 type PeriodMode = "harian" | "mingguan" | "bulanan" | "tahunan";
@@ -27,17 +29,14 @@ type PeriodMode = "harian" | "mingguan" | "bulanan" | "tahunan";
 export function RingkasanClient({
   transactions,
   accounts,
+  currency = "IDR",
 }: RingkasanClientProps) {
   const { dict, locale } = useI18n();
   const [period, setPeriod] = useState<PeriodMode>("bulanan");
   const [offset, setOffset] = useState<number>(0); // 0 = current, -1 = previous, etc.
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(locale === "en" ? "en-US" : "id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(amount || 0);
+    return formatCurrencyValue(amount, currency, locale);
   };
 
   const dateLocale = locale === "en" ? "en-US" : "id-ID";
@@ -310,6 +309,7 @@ export function RingkasanClient({
         period={period}
         periodLabel={periodLabel}
         transactions={filteredTransactions}
+        currency={currency}
       />
 
       {/* Detail Breakdown by Category & Wallets */}

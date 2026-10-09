@@ -5,26 +5,25 @@ import { BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { useI18n } from "@/lib/i18n/context";
+import { formatCurrencyValue } from "@/lib/currency";
 
 interface FinancialChartProps {
   period: "harian" | "mingguan" | "bulanan" | "tahunan";
   periodLabel: string;
   transactions: any[];
+  currency?: string;
 }
 
 export function FinancialChart({
   period,
   periodLabel,
   transactions,
+  currency = "IDR",
 }: FinancialChartProps) {
   const { dict, locale } = useI18n();
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(locale === "en" ? "en-US" : "id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(amount || 0);
+    return formatCurrencyValue(amount, currency, locale);
   };
 
   const formatShortNumber = (val: number) => {
