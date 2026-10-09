@@ -42,6 +42,7 @@ export interface Dictionary {
     transactions: string;
     summary: string;
     security: string;
+    settings: string;
     signIn: string;
     signOut: string;
     home: string;
@@ -362,6 +363,28 @@ export interface Dictionary {
     atm2Text: string;
     atm2Note: string;
   };
+
+  // Settings
+  settings: {
+    metaTitle: string;
+    metaDesc: string;
+    heading: string;
+    subheading: string;
+    currencySectionTitle: string;
+    currencySectionDesc: string;
+    currencyLabel: string;
+    currencyHelp: string;
+    previewTitle: string;
+    previewDesc: string;
+    saveSuccess: string;
+    saveError: string;
+    accountSectionTitle: string;
+    accountSectionDesc: string;
+    userEmailLabel: string;
+    userNameLabel: string;
+    securityNoticeTitle: string;
+    securityNoticeDesc: string;
+  };
 }
 
 export const idDict: Dictionary = {
@@ -400,6 +423,7 @@ export const idDict: Dictionary = {
     transactions: "Transaksi",
     summary: "Ringkasan",
     security: "Keamanan & Privasi",
+    settings: "Pengaturan",
     signIn: "Masuk",
     signOut: "Keluar",
     home: "Beranda",
@@ -704,6 +728,26 @@ export const idDict: Dictionary = {
     atm2Text: "tarik 200rb bca",
     atm2Note: "Tarik Rp 200.000 dari BCA ke dompet Cash",
   },
+  settings: {
+    metaTitle: "Pengaturan Akun • Fiku",
+    metaDesc: "Atur preferensi mata uang dan preferensi akun kamu.",
+    heading: "Pengaturan",
+    subheading: "Kelola preferensi akun dan tampilan mata uang keuangan kamu.",
+    currencySectionTitle: "Preferensi Mata Uang",
+    currencySectionDesc: "Pilih mata uang utama yang digunakan untuk menampilkan seluruh saldo dan nominal transaksi di aplikasi.",
+    currencyLabel: "Mata Uang Utama",
+    currencyHelp: "Perubahan mata uang akan langsung mempengaruhi format tampilan di halaman transaksi, ringkasan, dan saldo.",
+    previewTitle: "Pratinjau Tampilan Format",
+    previewDesc: "Contoh format tampilan angka dengan mata uang yang dipilih:",
+    saveSuccess: "Pengaturan mata uang berhasil disimpan!",
+    saveError: "Gagal menyimpan pengaturan mata uang.",
+    accountSectionTitle: "Informasi Profil",
+    accountSectionDesc: "Data akun yang terdaftar pada sistem Fiku.",
+    userEmailLabel: "Alamat Email",
+    userNameLabel: "Nama Lengkap",
+    securityNoticeTitle: "Privasi Enkripsi Nol-Pengetahuan",
+    securityNoticeDesc: "Semua nominal dan catatan transaksi kamu dienkripsi dengan kunci kriptografi end-to-end. Server hanya menyimpan preferensi tampilan mata uang secara publik.",
+  },
 };
 
 export const enDict: Dictionary = {
@@ -742,6 +786,7 @@ export const enDict: Dictionary = {
     transactions: "Transactions",
     summary: "Summary",
     security: "Security & Privacy",
+    settings: "Settings",
     signIn: "Sign In",
     signOut: "Sign Out",
     home: "Home",
@@ -1045,6 +1090,26 @@ export const enDict: Dictionary = {
     atm1Note: "Withdraw Rp 500,000 from Mandiri to Cash wallet",
     atm2Text: "withdraw 200k bca",
     atm2Note: "Withdraw Rp 200,000 from BCA to Cash wallet",
+  },
+  settings: {
+    metaTitle: "Account Settings • Fiku",
+    metaDesc: "Configure your currency preferences and account settings.",
+    heading: "Settings",
+    subheading: "Manage your account preferences and financial display currency.",
+    currencySectionTitle: "Currency Preference",
+    currencySectionDesc: "Select the primary currency used to display all balances and transaction figures across the application.",
+    currencyLabel: "Primary Currency",
+    currencyHelp: "Changes will immediately reflect across your transactions, summary charts, and balance cards.",
+    previewTitle: "Display Format Preview",
+    previewDesc: "Sample formatting with the selected currency:",
+    saveSuccess: "Currency preference saved successfully!",
+    saveError: "Failed to update currency preference.",
+    accountSectionTitle: "Profile Details",
+    accountSectionDesc: "Your registered account information in Fiku.",
+    userEmailLabel: "Email Address",
+    userNameLabel: "Full Name",
+    securityNoticeTitle: "Zero-Knowledge Encryption Privacy",
+    securityNoticeDesc: "All transaction amounts and notes are protected by end-to-end cryptographic keys. The server only stores your display currency preference publicly.",
   },
 };
 
