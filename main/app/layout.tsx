@@ -20,6 +20,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { getServerTheme } from "@/lib/theme/server";
 import { THEME_COOKIE_NAME } from "@/lib/theme/types";
 import { ThemeProvider } from "@/lib/theme/context";
+import { InstallPwaBanner } from "@/components/install-pwa-banner";
 
 export const metadata: Metadata = {
   title: "Fiku - Catat Keuangan Cerdas Tanpa Ribet",
@@ -73,8 +74,14 @@ export default async function RootLayout({
         <ThemeProvider initialTheme={theme}>
           <I18nProvider locale={locale}>
             {children}
+            <InstallPwaBanner />
           </I18nProvider>
         </ThemeProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}`,
+          }}
+        />
       </body>
     </html>
   );

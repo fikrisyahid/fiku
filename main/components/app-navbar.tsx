@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoutButton } from "@/components/logout-button";
-import { ArrowLeftRight, BarChart3, Menu, X, User, ShieldCheck, Settings } from "lucide-react";
+import { ArrowLeftRight, BarChart3, Menu, X, User, ShieldCheck, Settings, Download, Smartphone, Share, PlusSquare, Check } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Locale, getDictionary } from "@/lib/i18n/dictionary";
@@ -24,6 +24,15 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
   const pathname = usePathname();
   const dict = getDictionary(locale);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(true);
+  const [isIosModalOpen, setIsIosModalOpen] = useState(false);
+
+  useEffect(() => {
+    const standaloneActive =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+    setIsStandalone(standaloneActive);
+  }, []);
 
   // Close sidebar on path change
   useEffect(() => {
@@ -213,6 +222,28 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
                   <ThemeSwitcher fullWidth />
                 </div>
               </div>
+
+              {/* Install PWA Button (Hidden when running as standalone PWA) */}
+              {!isStandalone && (
+                <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSidebarOpen(false);
+                      setIsIosModalOpen(true);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 text-xs font-semibold hover:bg-emerald-100/70 dark:hover:bg-emerald-900/60 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>{dict.nav.installApp}</span>
+                    </div>
+                    <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                      PWA
+                    </span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Bottom: User Profile Info & Logout OR Sign In */}
@@ -247,6 +278,72 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
                 </Link>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* iOS Safari / Fallback Guidance Modal for Drawer trigger */}
+      {isIosModalOpen && (
+        <div
+          onClick={() => setIsIosModalOpen(false)}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-2xl space-y-5 animate-in slide-in-from-bottom-6 duration-200"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
+                  <Smartphone className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                  {dict.pwa.iosTitle}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsIosModalOpen(false)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+              {dict.pwa.iosDesc}
+            </p>
+
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-700/60">
+                <div className="w-6 h-6 rounded-lg bg-sky-100 dark:bg-sky-950/60 text-sky-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <Share className="w-3.5 h-3.5" />
+                </div>
+                <div className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">1. </span>
+                  {dict.pwa.iosStep1}
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-700/60">
+                <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <PlusSquare className="w-3.5 h-3.5" />
+                </div>
+                <div className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">2. </span>
+                  {dict.pwa.iosStep2}
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsIosModalOpen(false)}
+              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+            >
+              <Check className="w-4 h-4" />
+              <span>{dict.pwa.iosGotIt}</span>
+            </button>
           </div>
         </div>
       )}

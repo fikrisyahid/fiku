@@ -53,6 +53,20 @@ export interface Dictionary {
     themeDark: string;
     themeSystem: string;
     themeToggle: string;
+    installApp: string;
+  };
+
+  // PWA
+  pwa: {
+    bannerTitle: string;
+    bannerDesc: string;
+    installBtn: string;
+    dismissBtn: string;
+    iosTitle: string;
+    iosDesc: string;
+    iosStep1: string;
+    iosStep2: string;
+    iosGotIt: string;
   };
 
   // Transaction Types
@@ -434,6 +448,18 @@ export const idDict: Dictionary = {
     themeDark: "Gelap",
     themeSystem: "Sistem",
     themeToggle: "Ganti Tema",
+    installApp: "Pasang Aplikasi",
+  },
+  pwa: {
+    bannerTitle: "Pasang Fiku di Layar Utama HP",
+    bannerDesc: "Buka lebih cepat tanpa peramban, serasa aplikasi bawaan yang ringan.",
+    installBtn: "Pasang Sekarang",
+    dismissBtn: "Nanti Saja",
+    iosTitle: "Pasang Fiku di iPhone / iPad",
+    iosDesc: "Safari di iOS membutuhkan langkah cepat berikut untuk menambahkan Fiku ke layar utama:",
+    iosStep1: "Ketuk tombol 'Bagikan' (ikon kotak panah ke atas) di bilah bawah peramban Safari.",
+    iosStep2: "Gulir menu ke bawah lalu pilih 'Tambahkan ke Layar Utama' (Add to Home Screen).",
+    iosGotIt: "Mengerti",
   },
   txTypes: {
     expense: "Pengeluaran",
@@ -797,6 +823,18 @@ export const enDict: Dictionary = {
     themeDark: "Dark",
     themeSystem: "System",
     themeToggle: "Toggle Theme",
+    installApp: "Install App",
+  },
+  pwa: {
+    bannerTitle: "Install Fiku on Your Home Screen",
+    bannerDesc: "Launch faster without opening browser tabs, with a smooth native feel.",
+    installBtn: "Install Now",
+    dismissBtn: "Not Now",
+    iosTitle: "Install Fiku on iPhone / iPad",
+    iosDesc: "Safari on iOS requires these quick steps to add Fiku to your home screen:",
+    iosStep1: "Tap the 'Share' button (square icon with an arrow pointing up) in Safari's bottom toolbar.",
+    iosStep2: "Scroll down the menu and choose 'Add to Home Screen'.",
+    iosGotIt: "Got It",
   },
   txTypes: {
     expense: "Expense",
