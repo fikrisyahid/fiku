@@ -28,8 +28,10 @@ export async function generateMetadata() {
 }
 
 export default async function SecurityPage() {
-  const user = await getCurrentUser();
-  const locale = await getServerLocale();
+  const [user, locale] = await Promise.all([
+    getCurrentUser(),
+    getServerLocale(),
+  ]);
   const isId = locale === "id";
 
   const securityPillars = [
@@ -78,8 +80,8 @@ export default async function SecurityPage() {
         ? "Di mana kunci dekripsi disimpan saat saya login?"
         : "Where is the decryption key stored when I sign in?",
       a: isId
-        ? "Kunci privat Anda didekripsi hanya di memori sementara (RAM) selama sesi Anda aktif, dan otomatis hangus saat Anda logout atau sesi berakhir. Kunci tersebut tidak pernah disimpan ke disk/database dalam bentuk telanjang."
-        : "Your private key is unlocked strictly in volatile RAM memory during your active session, and immediately wiped upon logout or expiry. It is never persisted in plaintext to disk or database.",
+        ? "Kunci privat Anda disegel dengan enkripsi AES-256-GCM menggunakan Master Secret Key server dan disimpan dalam HTTP-Only Cookie yang aman. Kunci tidak dapat diakses oleh script browser (kebal serangan XSS) dan otomatis hangus saat Anda logout. Kunci tersebut tidak pernah tersimpan telanjang di database."
+        : "Your private key is sealed with AES-256-GCM using the server's Master Secret Key and stored in a secure, encrypted HTTP-Only Cookie. It is completely inaccessible to browser scripts (XSS-immune) and instantly wiped upon logout. It is never stored unencrypted in the database.",
     },
     {
       q: isId

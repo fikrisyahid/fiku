@@ -63,7 +63,7 @@ fana/
 3. **Zero-Knowledge Encryption**:
    - Wallet balances (`balance`), transaction amounts (`amount`), and notes (`note`) are encrypted client/server-side using the user's unique public key (`X25519`).
    - Stored in PostgreSQL as ciphertext payloads (`enc:v1:...`). Database administrators or unauthorized third parties cannot read users' monetary figures or financial descriptions.
-   - Private keys are protected using a combination of the user's password + per-user salt + server pepper + master application secret key, and are only held in an in-memory RAM session vault for the duration of an active authenticated session.
+   - Private keys are protected using a combination of the user's password + per-user salt + server pepper + master application secret key, and are stored in a stateless, sealed HTTP-only cookie vault for serverless resilience throughout active sessions.
 
 4. **Realtime Visual Financial Summary (`/summary`)**:
    - Flexible time period filtering: Daily, Weekly, Monthly, and Yearly.

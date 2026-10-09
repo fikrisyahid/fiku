@@ -73,4 +73,4 @@ Fiku is built as a modern **Next.js (App Router)** web-first application designe
 1. **Password Hashing**: Bcrypt with 10 salt rounds.
 2. **Asymmetric Key Pairs**: Each user has a unique X25519 (Curve25519) key pair. The public key is stored in the database to encrypt incoming data.
 3. **Double Protection of Private Keys**: The user's private key is encrypted with a combination of the user's password, a per-user salt, a server pepper, and a master application secret key (`APP_SECRET_KEY`).
-4. **RAM Session Vault**: The decrypted private key exists strictly within ephemeral server memory during an active session (`getActiveUserPrivateKey`), ensuring plaintext private keys and decrypted financial values are never written to disk or the database.
+4. **Stateless Sealed Cookie Vault**: The active session decryption key is sealed with AES-256-GCM using the server's master secret key (`APP_SECRET_KEY`) and stored in an HTTP-only secure cookie (`fana_key_vault`). This provides seamless serverless resilience across cold starts and lambda instances while ensuring plaintext private keys and decrypted financial values are never written to disk or the database.
