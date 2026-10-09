@@ -117,7 +117,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `bun run build` | Creates an optimized production build |
 | `bun run db:sync` | Synchronizes database schema columns & constraints |
 | `bun run db:reset` | Clears all data from database tables |
-| `bun run db:push` | Pushes Drizzle schema changes directly to the DB |
 | `bun run db:studio` | Opens Drizzle Studio visual editor in browser |
 | `bun run seed:dummy` | Generates a full demo account with dummy data |
 

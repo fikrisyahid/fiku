@@ -163,13 +163,6 @@ def db_group() -> None:
     pass
 
 
-@db_group.command("push")
-def db_push() -> None:
-    """Push Drizzle schema directly to PostgreSQL database."""
-    code = run_command(["bun", "run", "db:push"])
-    sys.exit(code)
-
-
 @db_group.command("reset")
 def db_reset() -> None:
     """Empty and wipe all application data in database."""

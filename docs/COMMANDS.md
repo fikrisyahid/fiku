@@ -22,7 +22,6 @@ This document describes all available commands configured in the root [`package.
 | :--- | :--- |
 | `bun run db:sync` | Synchronizes schema columns and constraints with PostgreSQL Supabase (`scripts/db-sync.ts`). |
 | `bun run db:reset` | Truncates and resets all database table rows (`scripts/db-reset.ts`). |
-| `bun run db:push` | Pushes Drizzle schema changes directly to the PostgreSQL database. |
 | `bun run db:studio` | Launches Drizzle Studio in the browser for visual data inspection. |
 | `bun run seed:dummy` | Generates dummy demo data encrypted with Zero-Knowledge (`scripts/seed-dummy.ts`). |
 

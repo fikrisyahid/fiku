@@ -85,6 +85,5 @@ Run these commands from the project root or the `main/` directory:
 ```bash
 bun run db:sync       # Synchronizes schema and column types to PostgreSQL Supabase
 bun run db:reset      # Resets and clears all rows across database tables
-bun run db:push       # Pushes Drizzle schema directly to PostgreSQL
 bun run db:studio     # Opens the visual Drizzle Studio web interface
 ```
