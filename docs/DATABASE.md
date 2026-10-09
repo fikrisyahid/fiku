@@ -59,8 +59,7 @@ Jalankan perintah ini dari folder `main/`:
 
 ```bash
 bun run db:sync       # Sinkronisasi kolom terbaru langsung ke Supabase
+bun run db:reset      # Kosongkan seluruh data tabel database
 bun run db:push       # Push schema langsung ke PostgreSQL
-bun run db:generate   # Generate file migrasi SQL baru
-bun run db:migrate    # Terapkan migrasi tertunda
 bun run db:studio     # Buka antarmuka Drizzle Studio di browser
 ```

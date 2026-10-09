@@ -12,10 +12,9 @@
     "install:main": "uv run ops/workflow.py install",
     "sync:env": "uv run ops/workflow.py sync-env",
     "db:push": "uv run ops/workflow.py db push",
-    "db:generate": "uv run ops/workflow.py db generate",
-    "db:migrate": "uv run ops/workflow.py db migrate",
     "db:studio": "uv run ops/workflow.py db studio",
     "db:sync": "uv run ops/workflow.py db sync",
+    "db:reset": "uv run ops/workflow.py db reset",
     "fiku": "uv run ops/workflow.py"
   },
   "packageManager": "bun@1.4.2"

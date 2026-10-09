@@ -170,17 +170,10 @@ def db_push() -> None:
     sys.exit(code)
 
 
-@db_group.command("generate")
-def db_generate() -> None:
-    """Generate new SQL migrations from schema.ts."""
-    code = run_command(["bun", "run", "db:generate"])
-    sys.exit(code)
-
-
-@db_group.command("migrate")
-def db_migrate() -> None:
-    """Apply pending database migrations."""
-    code = run_command(["bun", "run", "db:migrate"])
+@db_group.command("reset")
+def db_reset() -> None:
+    """Empty and wipe all application data in database."""
+    code = run_command(["bun", "run", "db:reset"])
     sys.exit(code)
 
 

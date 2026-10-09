@@ -5,9 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "db:sync": "bun scripts/db-sync.ts",
-    "db:generate": "drizzle-kit generate",
+    "db:reset": "bun scripts/db-reset.ts",
     "db:push": "drizzle-kit push",
-    "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "build": "next build",
     "start": "next start",
