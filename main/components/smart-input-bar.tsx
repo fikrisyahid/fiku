@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, ArrowRight, RefreshCw, CheckCircle2, AlertCircle, Info } from "lucide-react";
+import { Sparkles, ArrowRight, RefreshCw, CheckCircle2, AlertCircle, HelpCircle } from "lucide-react";
 import { processSmartTextInput } from "@/lib/smart-input";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -97,17 +97,17 @@ export function SmartInputBar({ userId, familyId, onSuccess }: SmartInputBarProp
           onChange={(e) => setInputText(e.target.value)}
           disabled={loading}
           placeholder='Smart input, misal: "-25k sayur cash" atau "tf 100k bca ke gopay"'
-          className="h-12 pl-10 pr-32 sm:pr-36 rounded-2xl text-xs sm:text-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:border-emerald-500 focus:ring-emerald-500/20 font-medium placeholder:text-zinc-400 placeholder:truncate"
+          className="h-12 pl-10 pr-44 sm:pr-48 rounded-2xl text-xs sm:text-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:border-emerald-500 focus:ring-emerald-500/20 font-medium placeholder:text-zinc-400 placeholder:truncate"
         />
-        <div className="absolute right-1.5 flex items-center gap-1">
+        <div className="absolute right-1.5 flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setIsHelpOpen(true)}
-            title="Cara penggunaan Smart Input & contoh"
-            aria-label="Petunjuk Smart Input"
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            title="Lihat petunjuk dan format penulisan Smart Input"
+            className="h-9 px-2.5 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 border border-emerald-200/80 dark:border-emerald-800/60 transition-colors shadow-2xs"
           >
-            <Info className="w-4 h-4" />
+            <HelpCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="hidden xs:inline sm:inline">Panduan</span>
           </button>
           <Button
             type="submit"
