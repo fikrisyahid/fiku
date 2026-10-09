@@ -41,10 +41,10 @@ export function SmartInputHelpModal({
       iconColor: "text-rose-500",
       desc: dict.smartInputGuide.expenseDesc,
       examples: [
-        { text: "-25k kopi susu bca", note: dict.smartInputGuide.ex1Note },
-        { text: "50rb bensin spbu mandiri", note: dict.smartInputGuide.ex2Note },
-        { text: "-150.000 belanja mingguan cash", note: dict.smartInputGuide.ex3Note },
-        { text: "1.5jt sewa kos bca", note: dict.smartInputGuide.ex4Note },
+        { text: dict.smartInputGuide.ex1Text, note: dict.smartInputGuide.ex1Note },
+        { text: dict.smartInputGuide.ex2Text, note: dict.smartInputGuide.ex2Note },
+        { text: dict.smartInputGuide.ex3Text, note: dict.smartInputGuide.ex3Note },
+        { text: dict.smartInputGuide.ex4Text, note: dict.smartInputGuide.ex4Note },
       ],
     },
     {
@@ -55,9 +55,9 @@ export function SmartInputHelpModal({
       iconColor: "text-emerald-500",
       desc: dict.smartInputGuide.incomeDesc,
       examples: [
-        { text: "+5jt gaji bulanan bca", note: dict.smartInputGuide.in1Note },
-        { text: "+350k freelance desain mandiri", note: dict.smartInputGuide.in2Note },
-        { text: "+100rb angpao lebaran cash", note: dict.smartInputGuide.in3Note },
+        { text: dict.smartInputGuide.in1Text, note: dict.smartInputGuide.in1Note },
+        { text: dict.smartInputGuide.in2Text, note: dict.smartInputGuide.in2Note },
+        { text: dict.smartInputGuide.in3Text, note: dict.smartInputGuide.in3Note },
       ],
     },
     {
@@ -68,9 +68,9 @@ export function SmartInputHelpModal({
       iconColor: "text-sky-500",
       desc: dict.smartInputGuide.transferDesc,
       examples: [
-        { text: "tf 100k bca ke gopay topup", note: dict.smartInputGuide.tf1Note },
-        { text: "transfer 500rb mandiri ke cash", note: dict.smartInputGuide.tf2Note },
-        { text: "pindah 50k gopay ke ovo", note: dict.smartInputGuide.tf3Note },
+        { text: dict.smartInputGuide.tf1Text, note: dict.smartInputGuide.tf1Note },
+        { text: dict.smartInputGuide.tf2Text, note: dict.smartInputGuide.tf2Note },
+        { text: dict.smartInputGuide.tf3Text, note: dict.smartInputGuide.tf3Note },
       ],
     },
     {
@@ -81,8 +81,8 @@ export function SmartInputHelpModal({
       iconColor: "text-amber-500",
       desc: dict.smartInputGuide.atmDesc,
       examples: [
-        { text: "tarik tunai 500k mandiri", note: dict.smartInputGuide.atm1Note },
-        { text: "tarik 200rb bca", note: dict.smartInputGuide.atm2Note },
+        { text: dict.smartInputGuide.atm1Text, note: dict.smartInputGuide.atm1Note },
+        { text: dict.smartInputGuide.atm2Text, note: dict.smartInputGuide.atm2Note },
       ],
     },
   ];

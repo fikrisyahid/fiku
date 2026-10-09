@@ -326,26 +326,38 @@ export interface Dictionary {
     expenseTitle: string;
     expenseBadge: string;
     expenseDesc: string;
+    ex1Text: string;
     ex1Note: string;
+    ex2Text: string;
     ex2Note: string;
+    ex3Text: string;
     ex3Note: string;
+    ex4Text: string;
     ex4Note: string;
     incomeTitle: string;
     incomeBadge: string;
     incomeDesc: string;
+    in1Text: string;
     in1Note: string;
+    in2Text: string;
     in2Note: string;
+    in3Text: string;
     in3Note: string;
     transferTitle: string;
     transferBadge: string;
     transferDesc: string;
+    tf1Text: string;
     tf1Note: string;
+    tf2Text: string;
     tf2Note: string;
+    tf3Text: string;
     tf3Note: string;
     atmTitle: string;
     atmBadge: string;
     atmDesc: string;
+    atm1Text: string;
     atm1Note: string;
+    atm2Text: string;
     atm2Note: string;
   };
 }
@@ -654,26 +666,38 @@ export const idDict: Dictionary = {
     expenseTitle: "Pengeluaran Cepat",
     expenseBadge: "Expense",
     expenseDesc: "Ketik nominal (pakai tanda - atau langsung angka), keterangan, lalu nama kantong di akhir.",
+    ex1Text: "-25k kopi susu bca",
     ex1Note: "Keluar Rp 25.000 kategori Makan & Minum dari BCA",
+    ex2Text: "50rb bensin spbu mandiri",
     ex2Note: "Keluar Rp 50.000 kategori Transport dari Mandiri",
+    ex3Text: "-150.000 belanja mingguan cash",
     ex3Note: "Keluar Rp 150.000 dari dompet Cash/Tunai",
+    ex4Text: "1.5jt sewa kos bca",
     ex4Note: "Keluar Rp 1.500.000 kategori Tagihan dari BCA",
     incomeTitle: "Pemasukan Cepat",
     incomeBadge: "Income",
     incomeDesc: "Awali dengan tanda + atau gunakan kata kunci pemasukan (gaji, bonus, thr, dll).",
+    in1Text: "+5jt gaji bulanan bca",
     in1Note: "Masuk Rp 5.000.000 kategori Gaji ke BCA",
+    in2Text: "+350k freelance desain mandiri",
     in2Note: "Masuk Rp 350.000 kategori Freelance ke Mandiri",
+    in3Text: "+100rb angpao lebaran cash",
     in3Note: "Masuk Rp 100.000 kategori Hadiah ke dompet Cash",
     transferTitle: "Transfer Antar Kantong",
     transferBadge: "Transfer",
     transferDesc: "Gunakan awalan 'tf', 'transfer', atau 'pindah' dengan format asal 'ke' tujuan.",
+    tf1Text: "tf 100k bca ke gopay topup",
     tf1Note: "Pindah Rp 100.000 dari BCA ke Gopay catatan 'topup'",
+    tf2Text: "transfer 500rb mandiri ke cash",
     tf2Note: "Pindah Rp 500.000 dari Mandiri ke Cash",
+    tf3Text: "pindah 50k gopay ke ovo",
     tf3Note: "Pindah saldo Rp 50.000 dari Gopay ke OVO",
     atmTitle: "Tarik Tunai ATM",
     atmBadge: "Tarik Tunai",
     atmDesc: "Otomatis memindahkan saldo dari rekening bank pilihan ke kantong tunai/cash.",
+    atm1Text: "tarik tunai 500k mandiri",
     atm1Note: "Tarik Rp 500.000 dari Mandiri ke dompet Cash",
+    atm2Text: "tarik 200rb bca",
     atm2Note: "Tarik Rp 200.000 dari BCA ke dompet Cash",
   },
 };
@@ -982,26 +1006,38 @@ export const enDict: Dictionary = {
     expenseTitle: "Quick Expense",
     expenseBadge: "Expense",
     expenseDesc: "Type amount (use - or number), note description, and wallet name at the end.",
-    ex1Note: "Expense Rp 25,000 category Food & Dining from BCA",
-    ex2Note: "Expense Rp 50,000 category Transport from Mandiri",
+    ex1Text: "-25k coffee bca",
+    ex1Note: "Expense Rp 25,000 Food & Dining category from BCA",
+    ex2Text: "50k gas fuel mandiri",
+    ex2Note: "Expense Rp 50,000 Transportation category from Mandiri",
+    ex3Text: "-150,000 groceries cash",
     ex3Note: "Expense Rp 150,000 from Cash wallet",
-    ex4Note: "Expense Rp 1,500,000 category Bills from BCA",
+    ex4Text: "1.5m apartment rent bca",
+    ex4Note: "Expense Rp 1,500,000 Bills category from BCA",
     incomeTitle: "Quick Income",
     incomeBadge: "Income",
     incomeDesc: "Start with + or income keywords (salary, bonus, grant, etc).",
-    in1Note: "Income Rp 5,000,000 category Salary into BCA",
-    in2Note: "Income Rp 350,000 category Freelance into Mandiri",
-    in3Note: "Income Rp 100,000 category Gift into Cash wallet",
+    in1Text: "+5m monthly salary bca",
+    in1Note: "Income Rp 5,000,000 Salary category into BCA",
+    in2Text: "+350k freelance design mandiri",
+    in2Note: "Income Rp 350,000 Freelance category into Mandiri",
+    in3Text: "+100k birthday gift cash",
+    in3Note: "Income Rp 100,000 Gift category into Cash wallet",
     transferTitle: "Wallet Transfer",
     transferBadge: "Transfer",
     transferDesc: "Use prefix 'tf', 'transfer', or 'move' with source 'to' destination format.",
+    tf1Text: "tf 100k bca to gopay topup",
     tf1Note: "Move Rp 100,000 from BCA to Gopay with note 'topup'",
+    tf2Text: "transfer 500k mandiri to cash",
     tf2Note: "Move Rp 500,000 from Mandiri to Cash",
+    tf3Text: "move 50k gopay to ovo",
     tf3Note: "Move balance Rp 50,000 from Gopay to OVO",
     atmTitle: "ATM Cash Withdrawal",
     atmBadge: "Cash Withdrawal",
     atmDesc: "Automatically moves funds from selected bank account into cash wallet.",
+    atm1Text: "withdraw 500k mandiri",
     atm1Note: "Withdraw Rp 500,000 from Mandiri to Cash wallet",
+    atm2Text: "withdraw 200k bca",
     atm2Note: "Withdraw Rp 200,000 from BCA to Cash wallet",
   },
 };

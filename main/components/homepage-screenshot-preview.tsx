@@ -304,13 +304,30 @@ export function HomepageScreenshotPreview() {
     let amount = 25000;
     let type: "expense" | "income" | "transfer" = "expense";
 
-    if (raw.startsWith("+") || raw.includes("gaji") || raw.includes("bonus") || raw.includes("income") || raw.includes("salary")) {
+    if (
+      raw.startsWith("+") ||
+      raw.includes("gaji") ||
+      raw.includes("bonus") ||
+      raw.includes("income") ||
+      raw.includes("salary") ||
+      raw.includes("freelance") ||
+      raw.includes("gift") ||
+      raw.includes("angpao")
+    ) {
       type = "income";
-    } else if (raw.startsWith("tf") || raw.includes("transfer") || raw.includes("ke")) {
+    } else if (
+      raw.startsWith("tf") ||
+      raw.includes("transfer") ||
+      raw.includes("ke") ||
+      raw.startsWith("move") ||
+      raw.includes(" to ") ||
+      raw.startsWith("tarik") ||
+      raw.startsWith("withdraw")
+    ) {
       type = "transfer";
     }
 
-    // Number matching (25k, 25rb, 100000, 1.5jt, etc.)
+    // Number matching (25k, 25rb, 100000, 1.5jt, 1.5m, etc.)
     const numMatch = raw.match(/(\d+(?:[.,]\d+)?)\s*(k|rb|ribu|jt|juta|m|million)?/i);
     if (numMatch) {
       let num = parseFloat(numMatch[1].replace(",", "."));
@@ -324,24 +341,57 @@ export function HomepageScreenshotPreview() {
     let accountId = demoAccounts[0].id;
     let toAccountId: string | undefined = undefined;
 
-    if (raw.includes("cash") || raw.includes("tunai")) accountId = "acc-cash";
+    if (raw.includes("cash") || raw.includes("tunai") || raw.includes("wallet")) accountId = "acc-cash";
     else if (raw.includes("bank") || raw.includes("bca") || raw.includes("mandiri")) accountId = "acc-bank";
     else if (raw.includes("gopay") || raw.includes("ewallet") || raw.includes("ovo")) accountId = "acc-ewallet";
 
     if (type === "transfer") {
-      toAccountId = accountId === "acc-bank" ? "acc-ewallet" : "acc-bank";
+      toAccountId = accountId === "acc-bank" ? "acc-cash" : "acc-bank";
     }
 
     // Category matching
     let categoryId = type === "income" ? "cat-salary" : "cat-food";
-    if (raw.includes("makan") || raw.includes("ayam") || raw.includes("kopi") || raw.includes("food") || raw.includes("lunch")) {
+    if (
+      raw.includes("makan") ||
+      raw.includes("ayam") ||
+      raw.includes("kopi") ||
+      raw.includes("coffee") ||
+      raw.includes("food") ||
+      raw.includes("lunch") ||
+      raw.includes("dining")
+    ) {
       categoryId = "cat-food";
-    } else if (raw.includes("ojek") || raw.includes("bensin") || raw.includes("transport") || raw.includes("ride")) {
+    } else if (
+      raw.includes("ojek") ||
+      raw.includes("bensin") ||
+      raw.includes("gas") ||
+      raw.includes("fuel") ||
+      raw.includes("transport") ||
+      raw.includes("ride")
+    ) {
       categoryId = "cat-transport";
-    } else if (raw.includes("belanja") || raw.includes("sayur") || raw.includes("grocery")) {
+    } else if (
+      raw.includes("belanja") ||
+      raw.includes("sayur") ||
+      raw.includes("grocery") ||
+      raw.includes("groceries") ||
+      raw.includes("shopping")
+    ) {
       categoryId = "cat-groceries";
-    } else if (raw.includes("wifi") || raw.includes("listrik") || raw.includes("tagihan") || raw.includes("bill")) {
+    } else if (
+      raw.includes("wifi") ||
+      raw.includes("listrik") ||
+      raw.includes("tagihan") ||
+      raw.includes("bill") ||
+      raw.includes("rent") ||
+      raw.includes("kos") ||
+      raw.includes("apartment")
+    ) {
       categoryId = "cat-bills";
+    } else if (raw.includes("freelance") || raw.includes("design") || raw.includes("gig")) {
+      categoryId = "cat-freelance";
+    } else if (raw.includes("invest") || raw.includes("saham") || raw.includes("stock")) {
+      categoryId = "cat-investment";
     }
 
     const newId = `demo-${Date.now()}`;

@@ -50,50 +50,50 @@ function normalizeText(s: string): string {
 }
 
 const TYPE_ALIASES: Record<string, string[]> = {
-  cash: ["cash", "tunai", "dompet", "fisik"],
-  bank: ["bank", "bca", "mandiri", "bri", "bni", "cimb", "jago", "jenius", "seabank", "rekening"],
+  cash: ["cash", "tunai", "dompet", "fisik", "wallet"],
+  bank: ["bank", "bca", "mandiri", "bri", "bni", "cimb", "jago", "jenius", "seabank", "rekening", "account"],
   ewallet: ["ewallet", "e-wallet", "gopay", "ovo", "dana", "shopeepay", "spay", "linkaja"],
 };
 
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
   "Makan & Minum": [
-    "makan", "minum", "kopi", "coffee", "cafe", "kafe", "resto", "bakso",
-    "mie", "nasi", "sarapan", "lunch", "dinner", "jajan", "snack", "teh", "boba", "ayam", "padang"
+    "makan", "minum", "kopi", "coffee", "cafe", "kafe", "resto", "restaurant", "bakso",
+    "mie", "nasi", "sarapan", "breakfast", "lunch", "dinner", "jajan", "snack", "teh", "tea", "boba", "ayam", "chicken", "padang", "food", "drink", "meal", "dining"
   ],
   "Transport": [
-    "bensin", "bbm", "pertalite", "pertamax", "solar", "vario", "beat", "nmax", "pcx", "motor", "mobil",
-    "ojek", "gojek", "goride", "gocar", "grab", "grabfood", "maxim", "parkir", "tol", "kereta", "krl", "mrt", "busway"
+    "bensin", "bbm", "pertalite", "pertamax", "solar", "fuel", "gas", "petrol", "vario", "beat", "nmax", "pcx", "motor", "mobil", "car", "bike",
+    "ojek", "gojek", "goride", "gocar", "grab", "grabfood", "maxim", "parkir", "parking", "tol", "toll", "kereta", "train", "krl", "mrt", "busway", "bus", "taxi", "transport", "transportation", "flight", "plane", "ride"
   ],
   "Belanja": [
-    "belanja", "beli", "shopee", "tokped", "tokopedia", "tiktok", "lazada", "indomaret", "alfamart",
-    "supermarket", "baju", "celana", "sepatu", "skincare", "pasar"
+    "belanja", "beli", "buy", "shopping", "groceries", "grocery", "shopee", "tokped", "tokopedia", "tiktok", "lazada", "indomaret", "alfamart",
+    "supermarket", "baju", "clothes", "shirt", "celana", "pants", "sepatu", "shoes", "skincare", "pasar", "market"
   ],
   "Tagihan & Utilitas": [
-    "listrik", "pln", "air", "pdam", "wifi", "indihome", "biznet", "pulsa", "kuota", "telkomsel", "xl", "indosat", "sewa", "kontrakan", "kos", "iuran"
+    "listrik", "electricity", "pln", "air", "water", "pdam", "wifi", "internet", "indihome", "biznet", "pulsa", "kuota", "data", "telkomsel", "xl", "indosat", "sewa", "rent", "kontrakan", "kos", "apartment", "iuran", "bill", "bills", "utility", "utilities"
   ],
   "Kesehatan": [
-    "obat", "apotek", "dokter", "klinik", "rs", "rumah sakit", "vitamin", "bpjs"
+    "obat", "medicine", "meds", "apotek", "pharmacy", "dokter", "doctor", "klinik", "clinic", "rs", "rumah sakit", "hospital", "vitamin", "bpjs", "health", "healthcare", "medical", "dental"
   ],
   "Hiburan": [
-    "nonton", "bioskop", "cinema", "game", "steam", "topup", "ml", "ff", "netflix", "spotify", "youtube", "liburan", "hotel"
+    "nonton", "bioskop", "cinema", "movie", "game", "steam", "topup", "ml", "ff", "netflix", "spotify", "youtube", "liburan", "vacation", "holiday", "trip", "hotel", "entertainment"
   ],
   "Pendidikan": [
-    "buku", "kursus", "les", "sekolah", "kuliah", "spp", "seminar"
+    "buku", "book", "kursus", "course", "les", "tuition", "sekolah", "school", "kuliah", "college", "university", "spp", "seminar", "education"
   ],
   "Cicilan": [
-    "cicilan", "kredit", "paylater", "spaylater", "kredivo", "angsuran"
+    "cicilan", "kredit", "credit", "paylater", "spaylater", "kredivo", "angsuran", "installment", "debt", "loan"
   ],
   "Gaji": [
-    "gaji", "salary", "payroll", "upah"
+    "gaji", "salary", "payroll", "upah", "wage", "wages", "paycheck"
   ],
   "Freelance": [
-    "freelance", "proyek", "project", "sidejob", "jasa", "klien"
+    "freelance", "proyek", "project", "sidejob", "jasa", "service", "klien", "client", "gig", "contract"
   ],
   "Investasi": [
-    "investasi", "saham", "reksadana", "crypto", "bibit", "ajaib", "emas"
+    "investasi", "investment", "invest", "saham", "stock", "stocks", "reksadana", "mutual fund", "crypto", "bitcoin", "bibit", "ajaib", "emas", "gold", "dividend", "interest"
   ],
   "Hadiah": [
-    "hadiah", "gift", "giveaway", "angpao", "thr"
+    "hadiah", "gift", "giveaway", "angpao", "thr", "bonus", "reward", "grant"
   ],
 };
 
@@ -137,7 +137,14 @@ function extractWalletAndDescription<T extends { name: string; type: string; isD
 
     for (const acc of accounts) {
       if (matchesAccount(candidateStr, acc)) {
-        const remainingWords = words.slice(0, words.length - len);
+        let remainingWords = words.slice(0, words.length - len);
+        // Strip trailing preposition like "from", "dari", "pake", "pakai", "via"
+        if (remainingWords.length > 0) {
+          const lastWord = remainingWords[remainingWords.length - 1].toLowerCase();
+          if (["dari", "from", "pake", "pakai", "via", "ke", "to"].includes(lastWord)) {
+            remainingWords = remainingWords.slice(0, remainingWords.length - 1);
+          }
+        }
         const description = remainingWords.join(" ").trim();
         return {
           wallet: acc,
@@ -182,6 +189,7 @@ function findMatchingCategory(
   // 3. Fallback: kategori Lainnya atau kategori pertama yang tipenya sesuai
   const fallback =
     allCategories.find((c) => c.type === type && c.name.toLowerCase().includes("lainnya")) ||
+    allCategories.find((c) => c.type === type && c.name.toLowerCase().includes("other")) ||
     allCategories.find((c) => c.type === type) ||
     allCategories[0];
 
@@ -192,7 +200,7 @@ function parseTransferParams<T extends { id: string; name: string; type: string 
   match: string,
   accounts: T[]
 ): { amount: number; fromAccount: T; toAccount: T; note: string } | { error: string } | null {
-  const text = match.replace(/^dari\s+/i, "").trim();
+  const text = match.replace(/^(dari|from)\s+/i, "").trim();
   const parts = text.split(/\s+/);
   if (parts.length < 3) return null;
 
@@ -202,13 +210,13 @@ function parseTransferParams<T extends { id: string; name: string; type: string 
 
   const rest = parts.slice(1).join(" ");
 
-  // Cek apakah ada pemisah 'ke' atau '->'
-  const keMatch = rest.match(/^(.*?)\s+(?:ke|->)\s+(.*)$/i);
+  // Cek apakah ada pemisah 'ke', 'to', atau '->'
+  const keMatch = rest.match(/^(.*?)\s+(?:ke|to|->)\s+(.*)$/i);
   let fromCandidate = "";
   let toAndNote = "";
 
   if (keMatch) {
-    fromCandidate = keMatch[1].replace(/^dari\s+/i, "").trim();
+    fromCandidate = keMatch[1].replace(/^(dari|from)\s+/i, "").trim();
     toAndNote = keMatch[2].trim();
   } else {
     const words = rest.split(/\s+/);
@@ -285,14 +293,19 @@ export async function processSmartTextInput(data: {
     };
   }
 
-  // 2. Intent: Transfer Antar Dompet (e.g. "tf 500k mandiri ke cash", "transfer 100k bca ke gopay")
-  if (lower.startsWith("tf ") || lower.startsWith("transfer ") || lower.startsWith("pindah ")) {
-    const stripped = rawText.replace(/^(tf|transfer|pindah)\s+/i, "").trim();
+  // 2. Intent: Transfer Antar Dompet (e.g. "tf 500k mandiri ke cash", "transfer 100k bca ke gopay", "move 50k gopay to ovo")
+  if (
+    lower.startsWith("tf ") ||
+    lower.startsWith("transfer ") ||
+    lower.startsWith("pindah ") ||
+    lower.startsWith("move ")
+  ) {
+    const stripped = rawText.replace(/^(tf|transfer|pindah|move)\s+/i, "").trim();
     const parsed = parseTransferParams(stripped, accountsList);
     if (!parsed) {
       return {
         success: false,
-        message: "Format transfer tidak valid. Gunakan format: 'tf <nominal> <kantong_asal> ke <kantong_tujuan> [catatan]'. Contoh: 'tf 50k bca ke gopay topup'",
+        message: "Format transfer tidak valid. Gunakan format: 'tf <nominal> <kantong_asal> ke <kantong_tujuan> [catatan]'. Contoh: 'tf 50k bca ke gopay topup' atau 'tf 50k bca to gopay'",
         type: "transfer",
       };
     }
@@ -336,9 +349,14 @@ export async function processSmartTextInput(data: {
     }
   }
 
-  // 3. Intent: Tarik Tunai (e.g. "tarik tunai 500k mandiri", "tarik 200k bca")
-  if (lower.startsWith("tarik") || lower.startsWith("tarik tunai")) {
-    const stripped = rawText.replace(/^(tarik\s+tunai|tarik)\s+/i, "").trim();
+  // 3. Intent: Tarik Tunai / Withdraw (e.g. "tarik tunai 500k mandiri", "withdraw 200k bca")
+  if (
+    lower.startsWith("tarik") ||
+    lower.startsWith("tarik tunai") ||
+    lower.startsWith("withdraw") ||
+    lower.startsWith("wd ")
+  ) {
+    const stripped = rawText.replace(/^(tarik\s+tunai|tarik|withdraw|wd)\s+/i, "").trim();
     const cashAccount = accountsList.find((a) => a.type === "cash") || accountsList[0];
     const nonCashAccounts = accountsList.filter((a) => a.id !== cashAccount.id);
 
@@ -449,9 +467,13 @@ export async function processSmartTextInput(data: {
   const isIncome =
     sign === "+" ||
     lower.includes("gaji") ||
+    lower.includes("salary") ||
+    lower.includes("payroll") ||
     lower.includes("bonus") ||
     lower.includes("transfer masuk") ||
-    lower.includes("income");
+    lower.includes("income") ||
+    lower.includes("dividend") ||
+    lower.includes("grant");
 
   const type: "income" | "expense" = isIncome ? "income" : "expense";
 
