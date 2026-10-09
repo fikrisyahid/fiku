@@ -128,7 +128,7 @@ export async function getUserTransactions(
     limit,
   });
 
-  const privKey = getActiveUserPrivateKey(userId);
+  const privKey = await getActiveUserPrivateKey(userId);
 
   return txs.map((tx) => mapAndDecryptTransaction(tx, privKey, locale));
 }
@@ -153,7 +153,7 @@ export async function getUserTransactionsPaginated(
   const sortOrder = options.sortOrder || "desc";
   const searchQuery = (options.search || "").trim().toLowerCase();
   const locale = await getServerLocale();
-  const privKey = getActiveUserPrivateKey(userId);
+  const privKey = await getActiveUserPrivateKey(userId);
 
   // 1. Fetch matching transactions
   // If sorting is by native date or there is no query, we can optimize or fetch with appropriate order
@@ -256,7 +256,7 @@ export async function getUserTransactionsPaginated(
 
 export async function getAllUserTransactionsForExport(userId: string) {
   const locale = await getServerLocale();
-  const privKey = getActiveUserPrivateKey(userId);
+  const privKey = await getActiveUserPrivateKey(userId);
 
   const txs = await db.query.transactions.findMany({
     where: eq(transactions.userId, userId),
@@ -299,7 +299,7 @@ export async function createTransaction(data: {
     throw new Error("Nominal transaksi harus lebih dari 0.");
   }
 
-  const privKey = getActiveUserPrivateKey(userId);
+  const privKey = await getActiveUserPrivateKey(userId);
   if (!privKey) {
     throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk mencatat transaksi.");
   }
@@ -506,7 +506,7 @@ export async function deleteTransaction(
     throw new Error("Transaksi tidak ditemukan.");
   }
 
-  const privKey = getActiveUserPrivateKey(userId);
+  const privKey = await getActiveUserPrivateKey(userId);
   if (!privKey) {
     throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk menghapus transaksi.");
   }
@@ -598,7 +598,7 @@ export async function deleteTransactionsBatch(
     return { success: true, count: 0 };
   }
 
-  const privKey = getActiveUserPrivateKey(userId);
+  const privKey = await getActiveUserPrivateKey(userId);
   if (!privKey) {
     throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk menghapus transaksi.");
   }
@@ -709,7 +709,7 @@ export async function updateTransaction(
     throw new Error("Transaksi tidak ditemukan.");
   }
 
-  const privKey = getActiveUserPrivateKey(userId);
+  const privKey = await getActiveUserPrivateKey(userId);
   if (!privKey) {
     throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk memperbarui transaksi.");
   }
@@ -859,7 +859,7 @@ export async function importTransactionsBatch(
     return { success: true, count: 0 };
   }
 
-  const privKey = getActiveUserPrivateKey(userId);
+  const privKey = await getActiveUserPrivateKey(userId);
   if (!privKey) {
     throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk mengimpor transaksi.");
   }

@@ -20,7 +20,7 @@ export async function getUserAccounts(userId: string, _familyId?: string | null)
     orderBy: (acc, { desc, asc }) => [desc(acc.isDefault), asc(acc.createdAt)],
   });
 
-  const privKey = getActiveUserPrivateKey(userId);
+  const privKey = await getActiveUserPrivateKey(userId);
 
   return accs.map((a) => {
     let plainBalance = a.balance;
@@ -55,7 +55,7 @@ export async function getAccountById(
 
   if (!acc) return null;
 
-  const privKey = getActiveUserPrivateKey(userId);
+  const privKey = await getActiveUserPrivateKey(userId);
     let plainBalance = acc.balance;
     if (privKey && acc.balance.startsWith("enc:v1:")) {
       try {
@@ -259,7 +259,7 @@ export async function transferBetweenAccounts(data: {
     throw new Error("Dompet asal dan dompet tujuan tidak boleh sama!");
   }
 
-  const privKey = getActiveUserPrivateKey(userId);
+  const privKey = await getActiveUserPrivateKey(userId);
   if (!privKey) {
     throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk melakukan transfer.");
   }

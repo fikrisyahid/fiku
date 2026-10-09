@@ -194,11 +194,55 @@ export function decryptWithPrivateKey(ciphertextPayload: string, privateKeyPem: 
 }
 
 // -------------------------------------------------------------
-// IN-MEMORY SESSION VAULT MANAGEMENT (RAM)
+// STATELESS COOKIE SESSION VAULT & IN-MEMORY CACHE
 // -------------------------------------------------------------
 
+export const KEY_COOKIE_NAME = "fana_key_vault";
+
 /**
- * Unlock user key session in RAM after PIN verification
+ * Encrypt user's raw privateKeyPem for storing in an HTTP-only cookie.
+ * Encrypted using APP_SECRET_KEY + SERVER_PEPPER with AES-256-GCM.
+ */
+export function sealPrivateKeyForCookie(privateKeyPem: string): string {
+  const masterKey = crypto
+    .createHash("sha256")
+    .update(`${APP_SECRET_KEY}:${SERVER_PEPPER}:fiku_cookie_vault`)
+    .digest();
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", masterKey, iv);
+  let encrypted = cipher.update(privateKeyPem, "utf8", "base64");
+  encrypted += cipher.final("base64");
+  const authTag = cipher.getAuthTag().toString("base64");
+  return `${iv.toString("base64")}.${authTag}.${encrypted}`;
+}
+
+/**
+ * Decrypt user's raw privateKeyPem from sealed cookie payload.
+ */
+export function unsealPrivateKeyFromCookie(sealedCookie: string): string | null {
+  try {
+    const parts = sealedCookie.split(".");
+    if (parts.length !== 3) return null;
+    const [ivB64, authTagB64, ciphertextB64] = parts;
+    const masterKey = crypto
+      .createHash("sha256")
+      .update(`${APP_SECRET_KEY}:${SERVER_PEPPER}:fiku_cookie_vault`)
+      .digest();
+    const iv = Buffer.from(ivB64, "base64");
+    const authTag = Buffer.from(authTagB64, "base64");
+    const decipher = crypto.createDecipheriv("aes-256-gcm", masterKey, iv);
+    decipher.setAuthTag(authTag);
+    let decrypted = decipher.update(ciphertextB64, "base64", "utf8");
+    decrypted += decipher.final("utf8");
+    return decrypted;
+  } catch (err) {
+    console.error("Failed to unseal private key from cookie:", err);
+    return null;
+  }
+}
+
+/**
+ * Unlock user key session in RAM after PIN/Password verification
  */
 export function unlockUserSession(userId: string, privateKeyPem: string) {
   ramSessionVault.set(userId, {
@@ -208,20 +252,38 @@ export function unlockUserSession(userId: string, privateKeyPem: string) {
 }
 
 /**
- * Retrieve user Private Key from RAM if session is active
+ * Retrieve user Private Key from RAM cache or fallback to sealed cookie
  */
-export function getActiveUserPrivateKey(userId: string): string | null {
-  const session = ramSessionVault.get(userId);
-  if (!session) return null;
-
-  if (Date.now() > session.expiresAt) {
-    ramSessionVault.delete(userId);
-    return null;
+export async function getActiveUserPrivateKey(userId?: string): Promise<string | null> {
+  // 1. Check in-memory RAM cache first if userId provided
+  if (userId) {
+    const session = ramSessionVault.get(userId);
+    if (session && Date.now() <= session.expiresAt) {
+      session.expiresAt = Date.now() + SESSION_TTL_MS;
+      return session.privateKey.toString("utf8");
+    }
   }
 
-  // Refresh TTL on active interaction
-  session.expiresAt = Date.now() + SESSION_TTL_MS;
-  return session.privateKey.toString("utf8");
+  // 2. Stateless Fallback: Read sealed cookie (works across any serverless lambda container)
+  try {
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    const sealed = cookieStore.get(KEY_COOKIE_NAME)?.value;
+    if (sealed) {
+      const unsealedKey = unsealPrivateKeyFromCookie(sealed);
+      if (unsealedKey) {
+        if (userId) {
+          // Warm the memory cache for this container
+          unlockUserSession(userId, unsealedKey);
+        }
+        return unsealedKey;
+      }
+    }
+  } catch {
+    // If called outside of request context, ignore
+  }
+
+  return null;
 }
 
 /**
@@ -233,22 +295,23 @@ export function unlockUserSessionWithPassword(
   password: string,
   salt: string,
   encryptedPrivateKey: string
-): boolean {
+): string | null {
   try {
     const privKey = decryptPrivateKeyWithSecret(encryptedPrivateKey, password, salt);
     unlockUserSession(userId, privKey);
-    return true;
+    return privKey;
   } catch (err) {
     console.error("Failed to unlock user session with password:", err);
-    return false;
+    return null;
   }
 }
 
 /**
- * Check whether user session is currently active in RAM
+ * Check whether user session is currently active in RAM or sealed cookie
  */
-export function isUserSessionActive(userId: string): boolean {
-  return getActiveUserPrivateKey(userId) !== null;
+export async function isUserSessionActive(userId: string): Promise<boolean> {
+  const key = await getActiveUserPrivateKey(userId);
+  return key !== null;
 }
 
 /**

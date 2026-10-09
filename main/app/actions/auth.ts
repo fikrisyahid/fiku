@@ -13,6 +13,8 @@ import {
   unlockUserSessionWithPassword,
   lockUserSession,
   getActiveUserPrivateKey,
+  sealPrivateKeyForCookie,
+  KEY_COOKIE_NAME,
 } from "@/lib/crypto";
 
 const SESSION_COOKIE_NAME = "fana_session";
@@ -62,8 +64,9 @@ export async function loginWithEmailPassword(
   }
 
   // Double Protection: Unlock user session vault using Password + Server Secret Key (.env)
+  let rawPrivKey: string | null = null;
   if (user.encryptedPrivateKey && user.pinSalt) {
-    unlockUserSessionWithPassword(
+    rawPrivKey = unlockUserSessionWithPassword(
       user.id,
       password,
       user.pinSalt,
@@ -88,7 +91,7 @@ export async function loginWithEmailPassword(
       })
       .where(eq(users.id, user.id));
 
-    unlockUserSessionWithPassword(
+    rawPrivKey = unlockUserSessionWithPassword(
       user.id,
       password,
       keyPair.salt,
@@ -114,6 +117,18 @@ export async function loginWithEmailPassword(
     path: "/",
     expires: sessionExpiresAt,
   });
+
+  // Seal private key into HTTP-only cookie for serverless persistence across lambda containers
+  if (rawPrivKey) {
+    const sealedKey = sealPrivateKeyForCookie(rawPrivKey);
+    cookieStore.set(KEY_COOKIE_NAME, sealedKey, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      expires: sessionExpiresAt,
+    });
+  }
 
   return {
     success: true,
@@ -194,8 +209,8 @@ export async function registerWithEmailPassword(
     .where(eq(users.id, onboard.user.id))
     .returning();
 
-  // Unlock RAM session vault
-  unlockUserSessionWithPassword(
+  // Unlock RAM session vault and get raw key
+  const rawPrivKey = unlockUserSessionWithPassword(
     onboard.user.id,
     password,
     keyPair.salt,
@@ -220,6 +235,18 @@ export async function registerWithEmailPassword(
     path: "/",
     expires: sessionExpiresAt,
   });
+
+  // Seal private key into HTTP-only cookie for serverless persistence across lambda containers
+  if (rawPrivKey) {
+    const sealedKey = sealPrivateKeyForCookie(rawPrivKey);
+    cookieStore.set(KEY_COOKIE_NAME, sealedKey, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      expires: sessionExpiresAt,
+    });
+  }
 
   return {
     success: true,
@@ -248,14 +275,13 @@ export async function getCurrentUser() {
     return null;
   }
 
-  // If server was restarted or redeployed, the RAM session vault key is lost.
-  // In this case, invalidate session to force a clean re-login rather than showing
-  // scrambled/encrypted ciphertext or NaN balances in the UI.
-  const privKey = getActiveUserPrivateKey(session.user.id);
+  // Stateless session key retrieval (checks in-memory RAM cache first, falls back to sealed cookie)
+  const privKey = await getActiveUserPrivateKey(session.user.id);
   if (!privKey) {
     try {
       await db.delete(sessions).where(eq(sessions.id, token));
       cookieStore.delete(SESSION_COOKIE_NAME);
+      cookieStore.delete(KEY_COOKIE_NAME);
     } catch {
       // Ignore DB errors during cleanup
     }
@@ -277,6 +303,7 @@ export async function logoutUser() {
     }
     await db.delete(sessions).where(eq(sessions.id, token));
     cookieStore.delete(SESSION_COOKIE_NAME);
+    cookieStore.delete(KEY_COOKIE_NAME);
   }
   return { success: true };
 }
