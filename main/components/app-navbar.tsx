@@ -9,11 +9,11 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { Locale, getDictionary } from "@/lib/i18n/dictionary";
 
 interface AppNavbarProps {
-  user: {
+  user?: {
     fullName: string;
     email: string;
     activeMode?: string;
-  };
+  } | null;
   locale?: Locale;
 }
 
@@ -53,15 +53,15 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
   const navItems = [
     {
       label: dict.nav.transactions,
-      href: "/transaksi",
+      href: "/transaction",
       icon: ArrowLeftRight,
-      active: pathname.startsWith("/transaksi") || pathname === "/",
+      active: pathname.startsWith("/transaction"),
     },
     {
       label: dict.nav.summary,
-      href: "/ringkasan",
+      href: "/summary",
       icon: BarChart3,
-      active: pathname.startsWith("/ringkasan"),
+      active: pathname.startsWith("/summary"),
     },
   ];
 
@@ -106,15 +106,26 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
           {/* Desktop Right User & Logout & Language Switcher */}
           <div className="hidden md:flex items-center gap-3">
             <LanguageSwitcher currentLocale={locale} />
-            <div className="flex flex-col text-right">
-              <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                {user.fullName}
-              </span>
-              <span className="text-[11px] text-zinc-400 truncate max-w-[150px]">
-                {user.email}
-              </span>
-            </div>
-            <LogoutButton />
+            {user ? (
+              <>
+                <div className="flex flex-col text-right">
+                  <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                    {user.fullName}
+                  </span>
+                  <span className="text-[11px] text-zinc-400 truncate max-w-[150px]">
+                    {user.email}
+                  </span>
+                </div>
+                <LogoutButton />
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all"
+              >
+                {dict.nav.signInRegister}
+              </Link>
+            )}
           </div>
 
           {/* Mobile Sidebar Hamburger & Compact Lang Switcher */}
@@ -166,7 +177,7 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
               {/* Navigation Links */}
               <div className="space-y-1.5">
                 <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider px-2 mb-2">
-                  Navigasi
+                  {dict.nav.navigation}
                 </p>
                 {navItems.map((item) => {
                   const Icon = item.icon;
@@ -189,25 +200,37 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
               </div>
             </div>
 
-            {/* Bottom: User Profile Info & Logout */}
+            {/* Bottom: User Profile Info & Logout OR Sign In */}
             <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 space-y-3">
-              <div className="flex items-center gap-3 px-2">
-                <div className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-300">
-                  <User className="w-4 h-4" />
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">
-                    {user.fullName}
-                  </span>
-                  <span className="text-[11px] text-zinc-400 truncate">
-                    {user.email}
-                  </span>
-                </div>
-              </div>
+              {user ? (
+                <>
+                  <div className="flex items-center gap-3 px-2">
+                    <div className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-300">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">
+                        {user.fullName}
+                      </span>
+                      <span className="text-[11px] text-zinc-400 truncate">
+                        {user.email}
+                      </span>
+                    </div>
+                  </div>
 
-              <div className="w-full pt-1">
-                <LogoutButton />
-              </div>
+                  <div className="w-full pt-1">
+                    <LogoutButton />
+                  </div>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="w-full h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center shadow-xs transition-all"
+                >
+                  {dict.nav.signInRegister}
+                </Link>
+              )}
             </div>
           </div>
         </div>

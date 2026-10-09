@@ -68,7 +68,7 @@ export function LoginForm() {
         if (res.success) {
           setSuccessMessage(dict.login.registerSuccess);
           setTimeout(() => {
-            router.push("/transaksi");
+            router.push("/transaction");
             router.refresh();
           }, 600);
         } else {
@@ -79,7 +79,7 @@ export function LoginForm() {
         if (res.success) {
           setSuccessMessage(dict.login.loginSuccess);
           setTimeout(() => {
-            router.push("/transaksi");
+            router.push("/transaction");
             router.refresh();
           }, 600);
         } else {
