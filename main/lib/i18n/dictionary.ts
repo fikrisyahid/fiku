@@ -145,6 +145,7 @@ export interface Dictionary {
     searchPlaceholder: string;
     btnNewRow: string;
     btnExportImport: string;
+    btnInspectDatabase: string;
     btnDeleteSelected: (count: number) => string;
     colDate: string;
     colType: string;
@@ -492,6 +493,7 @@ export const idDict: Dictionary = {
     searchPlaceholder: "Cari transaksi (keterangan, nominal, tanggal, kategori, dompet)...",
     btnNewRow: "Baris Baru (Row)",
     btnExportImport: "Ekspor / Impor",
+    btnInspectDatabase: "Inspeksi Database (Encrypted)",
     btnDeleteSelected: (count: number) => `Hapus (${count}) Terpilih`,
     colDate: "Tanggal",
     colType: "Tipe",
@@ -833,6 +835,7 @@ export const enDict: Dictionary = {
     searchPlaceholder: "Search transactions (note, amount, date, category, wallet)...",
     btnNewRow: "New Row",
     btnExportImport: "Export / Import",
+    btnInspectDatabase: "Inspect DB (Encrypted)",
     btnDeleteSelected: (count: number) => `Delete (${count}) Selected`,
     colDate: "Date",
     colType: "Type",

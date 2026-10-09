@@ -18,6 +18,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  ShieldCheck,
 } from "lucide-react";
 import {
   createTransaction,
@@ -32,6 +33,7 @@ import { ConfirmDeleteModal } from "@/components/confirm-delete-modal";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { ExportImportModal } from "@/components/export-import-modal";
 import { AlertModal, ModalAlertConfig } from "@/components/ui/alert-modal";
+import { DatabaseInspectorModal } from "@/components/database-inspector-modal";
 import { getLocalTodayDateString } from "@/lib/utils";
 
 export interface TransactionRow {
@@ -116,6 +118,9 @@ export function TransactionsSheet({
   // Batch delete confirmation modal state
   const [isBatchDeleteOpen, setIsBatchDeleteOpen] = useState(false);
   const [batchDeleteLoading, setBatchDeleteLoading] = useState(false);
+
+  // Raw Database Inspector Modal state
+  const [isDatabaseInspectorOpen, setIsDatabaseInspectorOpen] = useState(false);
 
   // Debounce timeout references
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
@@ -539,6 +544,18 @@ export function TransactionsSheet({
               </Button>
             </div>
           )}
+
+          <Button
+            type="button"
+            onClick={() => setIsDatabaseInspectorOpen(true)}
+            variant="outline"
+            size="sm"
+            title={dict.transaksi.btnInspectDatabase}
+            className="flex-1 sm:flex-initial h-10 text-xs font-semibold border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+          >
+            <ShieldCheck className="w-4 h-4 mr-1.5 text-emerald-600" />
+            <span className="hidden xs:inline sm:inline">{dict.transaksi.btnInspectDatabase}</span>
+          </Button>
 
           <Button
             type="button"
@@ -1041,6 +1058,13 @@ export function TransactionsSheet({
       <AlertModal
         config={alertModal}
         onClose={() => setAlertModal((prev) => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* Raw Database Inspector Modal (Zero-Knowledge Live Proof) */}
+      <DatabaseInspectorModal
+        isOpen={isDatabaseInspectorOpen}
+        onClose={() => setIsDatabaseInspectorOpen(false)}
+        rows={rows}
       />
     </div>
   );

@@ -89,10 +89,13 @@ export async function getUserTransactions(
       ...tx,
       amount: plainAmount,
       note: plainNote,
+      rawAmount: tx.amount,
+      rawNote: tx.note,
       account: tx.account
         ? {
             ...tx.account,
             balance: accPlainBalance ?? tx.account.balance,
+            rawBalance: tx.account.balance,
             name: translateAccountName(tx.account.name, locale),
             rawName: tx.account.name,
           }
@@ -101,6 +104,7 @@ export async function getUserTransactions(
         ? {
             ...tx.toAccount,
             balance: toAccPlainBalance ?? tx.toAccount.balance,
+            rawBalance: tx.toAccount.balance,
             name: translateAccountName(tx.toAccount.name, locale),
             rawName: tx.toAccount.name,
           }
