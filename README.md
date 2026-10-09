@@ -12,6 +12,7 @@
   <img src="https://img.shields.io/badge/TailwindCSS-v4-38bdf8?style=flat-square&logo=tailwindcss" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/PostgreSQL-Drizzle-336791?style=flat-square&logo=postgresql" alt="PostgreSQL Drizzle" />
   <img src="https://img.shields.io/badge/Security-Zero--Knowledge-059669?style=flat-square" alt="Zero-Knowledge" />
+  <img src="https://img.shields.io/badge/License-MIT-amber?style=flat-square" alt="MIT License" />
 </p>
 
 Fiku is a modern web-based personal finance management platform built with **Next.js 16**, **TypeScript**, **Tailwind CSS v4**, and **PostgreSQL (Drizzle ORM)**. All monetary amounts, wallet balances, and financial notes are secured using an end-to-end **Zero-Knowledge Encryption** architecture (ECIES Asymmetric Encryption with X25519 + AES-256-GCM).
