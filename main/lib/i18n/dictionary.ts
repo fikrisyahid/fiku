@@ -115,9 +115,17 @@ export interface Dictionary {
     mockupSaved: string;
     previewTitle: string;
     previewSub: string;
+    previewBadge: string;
     previewTabTransactions: string;
     previewTabSummary: string;
-    previewPlaceholderNotice: string;
+    previewResetBtn: string;
+    previewResetSuccess: string;
+    previewAddRowBtn: string;
+    previewSmartHint: string;
+    previewSyncing: string;
+    previewSynced: string;
+    previewDeleteConfirm: string;
+    previewSandboxNotice: string;
   };
 
   // Transaksi Page
@@ -439,11 +447,19 @@ export const idDict: Dictionary = {
     footerDesc: "Zero-Knowledge Personal Finance Platform",
     mockupAutoParsed: "Terbaca Otomatis",
     mockupSaved: "Tersimpan",
-    previewTitle: "Intip Tampilan Antarmuka Fiku",
-    previewSub: "Desain minimalis, bersih, dan responsif. Mendukung mode Terang & Gelap secara otomatis.",
-    previewTabTransactions: "Lembar Transaksi",
-    previewTabSummary: "Ringkasan Finansial",
-    previewPlaceholderNotice: "Screenshot belum diunggah. Menampilkan ilustrasi placeholder sesuai tema aktif.",
+    previewTitle: "Coba Langsung Pengalaman Mengatur Keuangan di Fiku",
+    previewSub: "Eksplorasi tabel transaksi live spreadsheet dan ringkasan finansial di bawah ini. Coba ketik Smart Input atau edit sel data secara instan.",
+    previewBadge: "Live Interactive Sandbox",
+    previewTabTransactions: "Lembar Transaksi (Live)",
+    previewTabSummary: "Ringkasan Finansial (Realtime)",
+    previewResetBtn: "Reset Data Simulasi",
+    previewResetSuccess: "Data simulasi dikembalikan ke awal",
+    previewAddRowBtn: "+ Tambah Baris",
+    previewSmartHint: 'Coba ketik cepat: "-35k ayam bakar bca" atau "+1jt bonus transfer"',
+    previewSyncing: "Menyimpan...",
+    previewSynced: "Tersinkron",
+    previewDeleteConfirm: "Hapus baris ini?",
+    previewSandboxNotice: "Simulasi interaktif langsung di browsermu — tanpa perlu login atau instalasi.",
   },
   transaksi: {
     metaTitle: "Transaksi • Fiku",
@@ -757,11 +773,19 @@ export const enDict: Dictionary = {
     footerDesc: "Zero-Knowledge Personal Finance Platform",
     mockupAutoParsed: "Auto Parsed",
     mockupSaved: "Saved",
-    previewTitle: "Preview the Fiku Experience",
-    previewSub: "Minimal, ultra-clean, and responsive. Naturally adapts to your preferred light or dark theme.",
-    previewTabTransactions: "Transactions Sheet",
-    previewTabSummary: "Financial Summary",
-    previewPlaceholderNotice: "Screenshot not yet uploaded. Displaying theme-aware interactive placeholder illustration.",
+    previewTitle: "Experience Fiku Live in Your Browser",
+    previewSub: "Interact directly with the live spreadsheet and visual summary below. Try typing with Smart Input or editing cells on the fly.",
+    previewBadge: "Interactive Live Sandbox",
+    previewTabTransactions: "Transactions Sheet (Live)",
+    previewTabSummary: "Financial Summary (Realtime)",
+    previewResetBtn: "Reset Demo Data",
+    previewResetSuccess: "Demo data restored to initial state",
+    previewAddRowBtn: "+ Add Row",
+    previewSmartHint: 'Try natural shorthand: "-35k chicken dinner bca" or "+1m quarterly bonus"',
+    previewSyncing: "Syncing...",
+    previewSynced: "Synced",
+    previewDeleteConfirm: "Delete this row?",
+    previewSandboxNotice: "Fully functional sandbox right here in your browser — no account required.",
   },
   transaksi: {
     metaTitle: "Transactions • Fiku",

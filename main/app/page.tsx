@@ -106,49 +106,6 @@ export default async function HomePage() {
             {dict.landing.starGitHub}
           </a>
         </div>
-
-        {/* Mockup Preview Card */}
-        <div className="pt-8 max-w-3xl mx-auto">
-          <div className="p-4 sm:p-6 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xl space-y-4 text-left">
-            <div className="flex items-center justify-between text-xs text-zinc-400 border-b border-zinc-100 dark:border-zinc-800 pb-3">
-              <span className="flex items-center gap-2 font-mono">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
-                smart-input-preview
-              </span>
-              <span className="text-[11px] font-semibold text-emerald-600">{dict.landing.mockupAutoParsed}</span>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 font-mono text-xs sm:text-sm text-zinc-800 dark:text-zinc-200 truncate">
-                <span className="text-rose-500 font-bold">-25k</span>
-                <span>{locale === "en" ? "spinach & tofu lunch" : "sayur bayam & tempe"}</span>
-                <span className="text-zinc-400">cash</span>
-              </div>
-              <span className="shrink-0 text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded font-bold uppercase">
-                {dict.landing.mockupSaved}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 pt-1 text-center">
-              <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800">
-                <div className="text-[10px] text-zinc-400">{dict.txTypes.expense}</div>
-                <div className="text-xs sm:text-sm font-bold text-rose-600">Rp 25.000</div>
-              </div>
-              <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800">
-                <div className="text-[10px] text-zinc-400">{dict.common.category}</div>
-                <div className="text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-300">
-                  🥬 {dict.defaultCategories.food}
-                </div>
-              </div>
-              <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800">
-                <div className="text-[10px] text-zinc-400">{dict.common.wallet}</div>
-                <div className="text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-300">
-                  💵 {dict.defaultWallets.cash}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* Interactive UI Showcase & Screenshot Placeholder (Adapts to Light/Dark mode) */}
