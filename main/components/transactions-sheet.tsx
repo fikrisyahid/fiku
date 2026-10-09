@@ -23,6 +23,7 @@ import {
   createTransaction,
   updateTransaction,
   deleteTransaction,
+  deleteTransactionsBatch,
 } from "@/app/actions/transactions";
 import { transferBetweenAccounts } from "@/app/actions/accounts";
 import { Button } from "@/components/ui/button";
@@ -101,9 +102,16 @@ export function TransactionsSheet({
     message: "",
   });
 
+  // Selection states
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(25);
+
+  // Batch delete confirmation modal state
+  const [isBatchDeleteOpen, setIsBatchDeleteOpen] = useState(false);
+  const [batchDeleteLoading, setBatchDeleteLoading] = useState(false);
 
   // Debounce timeout references
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
@@ -322,6 +330,11 @@ export function TransactionsSheet({
     try {
       await deleteTransaction(row.id, userId, familyId);
       setRows((prev) => prev.filter((r) => r.id !== row.id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(row.id);
+        return next;
+      });
       setDeleteConfirmation({ isOpen: false, row: null });
       await onRefreshAll();
     } catch (err: unknown) {
@@ -336,6 +349,72 @@ export function TransactionsSheet({
       setDeleteConfirmation({ isOpen: false, row: null });
     } finally {
       setDeleteLoading(false);
+    }
+  }
+
+  // Selection handlers
+  function toggleSelectRow(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectAllVisible(visibleRows: TransactionRow[]) {
+    const visibleIds = visibleRows.map((r) => r.id);
+    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        visibleIds.forEach((id) => next.delete(id));
+      } else {
+        visibleIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  // Execute confirmed batch delete
+  async function executeBatchDeleteRow() {
+    const idsToDelete = Array.from(selectedIds);
+    if (!idsToDelete.length) return;
+
+    setBatchDeleteLoading(true);
+
+    try {
+      // Split between unsaved new rows (local only) and database persisted rows
+      const newRowIds = idsToDelete.filter((id) => id.startsWith("new_"));
+      const savedRowIds = idsToDelete.filter((id) => !id.startsWith("new_"));
+
+      if (savedRowIds.length > 0) {
+        await deleteTransactionsBatch(savedRowIds, userId, familyId);
+      }
+
+      setRows((prev) => prev.filter((r) => !selectedIds.has(r.id)));
+      setSelectedIds(new Set());
+      setIsBatchDeleteOpen(false);
+      await onRefreshAll();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal menghapus transaksi terpilih.";
+      setAlertModal({
+        isOpen: true,
+        title: "Gagal Menghapus Transaksi",
+        message: msg,
+        variant: "error",
+      });
+      setIsBatchDeleteOpen(false);
+    } finally {
+      setBatchDeleteLoading(false);
     }
   }
 
@@ -434,6 +513,30 @@ export function TransactionsSheet({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={() => setIsBatchDeleteOpen(true)}
+                className="flex-1 sm:flex-initial h-10 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-sm transition-all animate-in fade-in"
+              >
+                <Trash2 className="w-4 h-4 mr-1.5" />
+                Hapus ({selectedIds.size}) Terpilih
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={clearSelection}
+                className="h-10 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+              >
+                Batal
+              </Button>
+            </div>
+          )}
+
           <Button
             type="button"
             onClick={() => setIsExportImportOpen(true)}
@@ -461,7 +564,20 @@ export function TransactionsSheet({
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="bg-zinc-100/80 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 border-b border-zinc-200 dark:border-zinc-800 font-semibold select-none">
-              <th className="p-3 w-10 text-center">#</th>
+              <th className="p-3 w-12 text-center">
+                <div className="flex items-center justify-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    aria-label="Pilih semua baris yang tampil"
+                    checked={
+                      paginatedRows.length > 0 &&
+                      paginatedRows.every((r) => selectedIds.has(r.id))
+                    }
+                    onChange={() => toggleSelectAllVisible(paginatedRows)}
+                    className="w-4 h-4 rounded-md border-zinc-300 dark:border-zinc-700 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer accent-emerald-600"
+                  />
+                </div>
+              </th>
               <th
                 onClick={() => toggleSort("transactionDate")}
                 className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-36"
@@ -558,17 +674,33 @@ export function TransactionsSheet({
                 const isSaving = status === "saving";
                 const isSaved = status === "saved";
                 const isError = status === "error";
+                const isSelected = selectedIds.has(row.id);
 
                 return (
                   <tr
                     key={row.id}
-                    className={`hover:bg-emerald-500/[0.02] transition-colors ${
-                      row.isNew ? "bg-amber-500/[0.04]" : ""
+                    className={`transition-colors ${
+                      isSelected
+                        ? "bg-emerald-500/[0.08] dark:bg-emerald-500/[0.12]"
+                        : row.isNew
+                        ? "bg-amber-500/[0.04] hover:bg-amber-500/[0.08]"
+                        : "hover:bg-zinc-500/[0.03]"
                     }`}
                   >
-                    {/* Index */}
+                    {/* Checkbox & Index */}
                     <td className="p-2.5 text-center text-[11px] text-zinc-400 font-mono">
-                      {globalIndex}
+                      <div className="flex items-center justify-center gap-2">
+                        <input
+                          type="checkbox"
+                          aria-label={`Pilih baris ${globalIndex}`}
+                          checked={isSelected}
+                          onChange={() => toggleSelectRow(row.id)}
+                          className="w-4 h-4 rounded-md border-zinc-300 dark:border-zinc-700 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer accent-emerald-600"
+                        />
+                        <span className="text-[10px] text-zinc-400 select-none hidden sm:inline-block w-4 text-left">
+                          {globalIndex}
+                        </span>
+                      </div>
                     </td>
 
                     {/* Tanggal */}
@@ -857,6 +989,17 @@ export function TransactionsSheet({
         isLoading={deleteLoading}
         onConfirm={executeDeleteRow}
         onClose={() => setDeleteConfirmation({ isOpen: false, row: null })}
+      />
+
+      {/* Confirmation Dialog for Batch Transactions Deletion */}
+      <ConfirmDeleteModal
+        isOpen={isBatchDeleteOpen}
+        title="Hapus Transaksi Terpilih"
+        description={`Apakah kamu yakin ingin menghapus ${selectedIds.size} transaksi yang dipilih? Saldo seluruh kantong terkait akan otomatis disesuaikan kembali.`}
+        itemName={`${selectedIds.size} transaksi`}
+        isLoading={batchDeleteLoading}
+        onConfirm={executeBatchDeleteRow}
+        onClose={() => setIsBatchDeleteOpen(false)}
       />
 
       {/* Export & Import Modal */}

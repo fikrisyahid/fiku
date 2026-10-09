@@ -277,6 +277,78 @@ export async function deleteTransaction(
   return { success: true };
 }
 
+export async function deleteTransactionsBatch(
+  transactionIds: string[],
+  userId: string,
+  _familyId?: string | null
+) {
+  if (!transactionIds.length) {
+    return { success: true, count: 0 };
+  }
+
+  const txList = await db.query.transactions.findMany({
+    where: (tx, { inArray, and: andFields, eq: eqField }) =>
+      andFields(eqField(tx.userId, userId), inArray(tx.id, transactionIds)),
+    with: { account: true, toAccount: true },
+  });
+
+  if (!txList.length) {
+    return { success: true, count: 0 };
+  }
+
+  await db.transaction(async (trx) => {
+    // Process balance reversals per transaction
+    for (const tx of txList) {
+      const txAmount = parseFloat(tx.amount);
+
+      if (tx.type === "transfer" && tx.toAccountId) {
+        const fromAcc = await trx.query.accounts.findFirst({
+          where: eq(accounts.id, tx.accountId),
+        });
+        const toAcc = await trx.query.accounts.findFirst({
+          where: eq(accounts.id, tx.toAccountId),
+        });
+
+        if (fromAcc) {
+          const fromBal = parseFloat(fromAcc.balance) + txAmount;
+          await trx
+            .update(accounts)
+            .set({ balance: fromBal.toString(), updatedAt: new Date() })
+            .where(eq(accounts.id, tx.accountId));
+        }
+
+        if (toAcc) {
+          const toBal = parseFloat(toAcc.balance) - txAmount;
+          await trx
+            .update(accounts)
+            .set({ balance: toBal.toString(), updatedAt: new Date() })
+            .where(eq(accounts.id, tx.toAccountId));
+        }
+      } else {
+        const currentBal = parseFloat(tx.account.balance);
+        const revertedBal =
+          tx.type === "income" ? currentBal - txAmount : currentBal + txAmount;
+
+        await trx
+          .update(accounts)
+          .set({
+            balance: revertedBal.toString(),
+            updatedAt: new Date(),
+          })
+          .where(eq(accounts.id, tx.accountId));
+      }
+    }
+
+    // Delete all matched transactions
+    const foundIds = txList.map((t) => t.id);
+    for (const id of foundIds) {
+      await trx.delete(transactions).where(eq(transactions.id, id));
+    }
+  });
+
+  return { success: true, count: txList.length };
+}
+
 export async function updateTransaction(
   transactionId: string,
   data: {
