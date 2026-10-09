@@ -179,32 +179,13 @@ export function TransactionsSheet({
     setSortOrder(serverSortOrder || "desc");
   }, [serverSortField, serverSortOrder]);
 
-  // Sync state when initialTransactions changes without wiping unsaved or actively edited rows
+  // Sync state when initialTransactions changes (e.g. pagination, sort, search, or refresh)
   useEffect(() => {
     setRows((prev) => {
-      const serverMap = new Map(initialTransactions.map((tx) => [tx.id, mapTxToRow(tx)]));
-
-      // Keep order of prev rows while updating with server data when safe
-      const updatedPrev = prev.map((localRow) => {
-        // Keep unsaved newly added rows
-        if (localRow.isNew) return localRow;
-
-        // If row is currently saving or has a pending debounced auto-save, preserve local changes
-        if (rowStatusRef.current[localRow.id] === "saving" || debounceTimers.current[localRow.id]) {
-          return localRow;
-        }
-
-        // Otherwise sync with server data if available
-        return serverMap.get(localRow.id) || localRow;
-      });
-
-      // Prepend any server rows that are not in prev (e.g. added from Smart Input or another device)
-      const prevIds = new Set(prev.map((p) => p.id));
-      const newlyArrivedFromServer = initialTransactions
-        .filter((tx) => !prevIds.has(tx.id))
-        .map(mapTxToRow);
-
-      return [...newlyArrivedFromServer, ...updatedPrev];
+      // Keep any unsaved newly added rows created by user clicking "Tambah Baris"
+      const unsavedNewRows = prev.filter((r) => r.isNew);
+      const serverRows = initialTransactions.map(mapTxToRow);
+      return [...unsavedNewRows, ...serverRows];
     });
   }, [initialTransactions]);
 
