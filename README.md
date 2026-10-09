@@ -1,105 +1,110 @@
 # Fiku - Zero-Knowledge Personal Finance Platform
 
-Fiku adalah platform manajemen keuangan pribadi modern berbasis web yang dibangun dengan **Next.js 16**, **TypeScript**, **Tailwind CSS v4**, dan **PostgreSQL (Drizzle ORM)**. Seluruh data nominal, saldo dompet, dan catatan keuangan diamankan menggunakan arsitektur **Zero-Knowledge Encryption** (ECIES Asymmetric Encryption + AES-256-GCM).
+Fiku is a modern web-based personal finance management platform built with **Next.js 16**, **TypeScript**, **Tailwind CSS v4**, and **PostgreSQL (Drizzle ORM)**. All monetary amounts, wallet balances, and financial notes are secured using an end-to-end **Zero-Knowledge Encryption** architecture (ECIES Asymmetric Encryption with X25519 + AES-256-GCM).
 
 ---
 
-## 📁 Struktur Repositori
+## 📁 Repository Structure
 
 ```text
 fana/
-├── main/              # Sumber kode aplikasi utama (Next.js 16 Web App, Server Actions, DB, Crypto)
-│   ├── app/           # Next.js App Router (/login, /transaction, /summary, /)
-│   ├── components/    # Komponen antarmuka (Spreadsheet UI, Modals, Navbar, Charts)
-│   ├── db/            # Definisi skema Drizzle ORM (PostgreSQL)
-│   ├── lib/           # Logika bisnis, kriptografi Zero-Knowledge, i18n, Smart Input
-│   ├── public/        # Asset statis, logo & screenshots
-│   ├── scripts/       # Skrip otomatisasi (db-sync, db-reset, seed-dummy)
-│   └── package.json   # Dependensi Next.js & Bun
-├── docs/              # Dokumentasi teknis komprehensif
-│   ├── ARCHITECTURE.md # Gambaran arsitektur sistem & alur enkripsi Zero-Knowledge
-│   ├── DATABASE.md     # Skema tabel database & model data
-│   ├── DEPLOYMENT.md   # Panduan deployment Vercel & environment variables
-│   ├── SMART_INPUT.md  # Panduan format pencatatan cepat Smart Input (ID & EN)
-│   └── COMMANDS.md     # Referensi seluruh perintah CLI & skrip
-├── ops/               # Task runner & sinkronisasi otomatis
-│   ├── workflow.py    # Python runner & sinkronisasi .env root <-> main/.env
-│   └── pyproject.toml # Konfigurasi runner ops
+├── main/              # Main application source code (Next.js 16 Web App, Server Actions, DB, Crypto)
+│   ├── app/           # Next.js App Router (/login, /transaction, /summary, /settings, /)
+│   ├── components/    # UI components (Spreadsheet UI, Modals, Navbar, Charts)
+│   ├── db/            # Drizzle ORM schema definitions (PostgreSQL)
+│   ├── lib/           # Business logic, Zero-Knowledge cryptography, i18n, Smart Input
+│   ├── public/        # Static assets, brand logos & icons
+│   ├── scripts/       # Automation scripts (db-sync, db-reset, seed-dummy)
+│   └── package.json   # Next.js & Bun dependencies
+├── docs/              # Comprehensive technical documentation
+│   ├── ARCHITECTURE.md # System architecture overview & Zero-Knowledge encryption flow
+│   ├── DATABASE.md     # Database table schemas & data models
+│   ├── DEPLOYMENT.md   # Deployment guide for Vercel & environment variables
+│   ├── SMART_INPUT.md  # Quick entry syntax guide for Smart Input (ID & EN)
+│   └── COMMANDS.md     # CLI commands and task runner reference
+├── ops/               # Task runner & automatic synchronization
+│   ├── workflow.py    # Python runner & .env sync between root <-> main/.env
+│   └── pyproject.toml # Ops runner configuration
 ├── package.json       # Root task runner forwarding commands
-├── .gitignore         # Aturan git ignore
-└── .env.example       # Template konfigurasi environment variables
+├── .gitignore         # Git ignore rules
+└── .env.example       # Environment variables template
 ```
 
 ---
 
-## 🚀 Fitur Unggulan
+## 🚀 Key Features
 
 1. **Live Interactive Spreadsheet (`/transaction`)**:
-   - Pengalaman spreadsheet ala Google Sheets langsung di browser.
-   - Edit baris tanggal, tipe (pemasukan/pengeluaran/transfer), kategori, kantong, nominal (format ribuan dinamis), dan keterangan secara instan dengan auto-save debounced.
-   - Pengecekan saldo otomatis untuk mencegah pengeluaran melebihi saldo dompet yang tersedia.
-   - Impor & Ekspor data transaksi massal format `.xlsx` (Excel).
+   - Google Sheets-like spreadsheet experience running directly in the browser.
+   - Instantly edit transaction date, type (income/expense/transfer), category, wallet/account, amount (dynamic thousand-separated formatting), and notes with debounced auto-save.
+   - Automatic balance validation to prevent spending exceeding the available wallet balance.
+   - Server-side pagination with sorting, search query filtering, and configurable page limits (10, 25, 50, 100).
+   - Bulk Excel (`.xlsx`) transaction import & export.
 
 2. **Bilingual Smart Natural Language Input**:
-   - Ketik pencatatan secepat kilat dalam Bahasa Indonesia atau English tanpa form bertahap.
-   - Contoh: `-25k ayam bakar bca`, `+5jt gaji bulanan mandiri`, `tf 100k bca ke gopay`, `-35k grilled chicken cash`, `move 50k gopay to cash`.
+   - Lightning-fast entry in both Indonesian and English without multi-step forms.
+   - Examples: `-25k grilled chicken bca`, `+5m monthly salary mandiri`, `tf 100k bca to gopay`, `-35k sayur cash`, `move 50k gopay to cash`.
 
 3. **Zero-Knowledge Encryption**:
-   - Saldo dompet (`balance`), nominal transaksi (`amount`), dan catatan (`note`) dienkripsi di sisi klien/server menggunakan public key unik pengguna (`X25519`).
-   - Tersimpan di PostgreSQL dalam format ciphertext terenkripsi (`enc:v1:...`). Admin atau pihak ketiga yang melihat database tidak dapat membaca nominal maupun catatan finansial pengguna.
-   - Private key dienkripsi dengan kombinasi Password pengguna + per-user salt + server pepper + master secret key, dan hanya disimpan sementara di in-memory RAM session vault selama sesi login aktif.
+   - Wallet balances (`balance`), transaction amounts (`amount`), and notes (`note`) are encrypted client/server-side using the user's unique public key (`X25519`).
+   - Stored in PostgreSQL as ciphertext payloads (`enc:v1:...`). Database administrators or unauthorized third parties cannot read users' monetary figures or financial descriptions.
+   - Private keys are protected using a combination of the user's password + per-user salt + server pepper + master application secret key, and are only held in an in-memory RAM session vault for the duration of an active authenticated session.
 
-4. **Ringkasan Visual Realtime (`/summary`)**:
-   - Filter periode fleksibel: Harian, Mingguan, Bulanan, dan Tahunan.
-   - Statistik akumulasi saldo, total pemasukan, pengeluaran, net surplus/defisit, grafik arus kas, dan diagram alokasi pengeluaran per kategori.
+4. **Realtime Visual Financial Summary (`/summary`)**:
+   - Flexible time period filtering: Daily, Weekly, Monthly, and Yearly.
+   - Accumulated balance metrics, total income, expenses, net surplus/deficit, cash flow trend charts, and category expense distribution breakdowns.
 
-5. **Live Interactive Sandbox di Halaman Utama (`/`)**:
-   - Calon pengguna dapat langsung mencoba live spreadsheet dan ringkasan interaktif di homepage tanpa perlu login.
+5. **User Settings & Multi-Currency (`/settings`)**:
+   - Global currency configuration (IDR, USD, EUR, SGD, JPY, GBP, AUD, CNY, MYR) reflecting throughout the UI and reports.
+   - Denormalized transaction count cache stored in `user_settings` to eliminate expensive full-table scans.
+
+6. **Interactive Sandbox on the Homepage (`/`)**:
+   - Prospective users can immediately try out the live spreadsheet and interactive summary directly on the landing page without signing up.
 
 ---
 
-## 🛠️ Pengembangan Lokal (Local Development)
+## 🛠️ Local Development
 
-Semua perintah dapat dijalankan langsung dari **root repositori** menggunakan `bun run`. Environment variables disinkronkan otomatis antara `.env` di root dan `main/.env`.
+All commands can be run directly from the **repository root** using `bun run`. Environment variables are automatically synchronized between root `.env` and `main/.env`.
 
-### Prasyarat:
+### Prerequisites:
 - [Bun](https://bun.sh/) (`bun >= 1.4`)
-- [uv](https://docs.astral.sh/uv/) (Python package runner untuk workflow runner ops)
+- [uv](https://docs.astral.sh/uv/) (Python package runner for ops workflow runner)
 
-### Panduan Mulai Cepat:
+### Quick Start Guide:
 
 ```bash
-# 1. Setup environment variables di root
+# 1. Setup environment variables at the root
 cp .env.example .env
-# Isi DATABASE_URL, ENCRYPTION_PEPPER, dan APP_SECRET_KEY di .env
+# Fill in DATABASE_URL, ENCRYPTION_PEPPER, and APP_SECRET_KEY in .env
 
-# 2. Install dependensi
+# 2. Install dependencies
 bun run install:main
 
-# 3. Sinkronkan skema database ke Supabase/PostgreSQL
+# 3. Synchronize database schema to Supabase/PostgreSQL
 bun run db:sync
 
-# 4. (Opsional) Buat data akun demo terenkripsi Zero-Knowledge
+# 4. (Optional) Generate demo user data encrypted with Zero-Knowledge
 bun run seed:dummy
 
-# 5. Jalankan development server
+# 5. Start development server
 bun run dev
 ```
 
-Buka [http://localhost:3000](http://localhost:3000) di browser.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Perintah Utama:
+### Key Commands:
 
-| Perintah | Aksi |
+| Command | Action |
 | :--- | :--- |
-| `bun run dev` | Menjalankan Next.js Web App di port 3000 |
-| `bun run check` | Memeriksa tipe TypeScript (`tsc --noEmit`) |
-| `bun run lint` | Menjalankan linting ESLint |
-| `bun run build` | Membuat production build Next.js |
-| `bun run db:sync` | Sinkronisasi skema & constraint tabel database |
-| `bun run db:reset` | Mengosongkan data database |
-| `bun run db:push` | Mendorong perubahan skema Drizzle langsung ke DB |
-| `bun run db:studio` | Membuka Drizzle Studio visual editor |
-| `bun run seed:dummy` | Men-generate data akun dummy demo lengkap |
+| `bun run dev` | Runs the Next.js Web App on port 3000 |
+| `bun run check` | Checks TypeScript types (`tsc --noEmit`) |
+| `bun run lint` | Runs ESLint across the codebase |
+| `bun run build` | Creates an optimized production build |
+| `bun run db:sync` | Synchronizes database schema columns & constraints |
+| `bun run db:reset` | Clears all data from database tables |
+| `bun run db:push` | Pushes Drizzle schema changes directly to the DB |
+| `bun run db:studio` | Opens Drizzle Studio visual editor in browser |
+| `bun run seed:dummy` | Generates a full demo account with dummy data |
 
-Untuk panduan lengkap, lihat [docs/COMMANDS.md](file:///docs/COMMANDS.md) dan [docs/ARCHITECTURE.md](file:///docs/ARCHITECTURE.md).
+For comprehensive documentation, see [docs/COMMANDS.md](file:///docs/COMMANDS.md) and [docs/ARCHITECTURE.md](file:///docs/ARCHITECTURE.md).

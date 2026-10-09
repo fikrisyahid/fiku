@@ -1,34 +1,34 @@
 # CLI & Scripts Reference
 
-Dokumen ini menjelaskan semua perintah yang tersedia di [`package.json`](file:///package.json) root dan `main/package.json`.
+This document describes all available commands configured in the root [`package.json`](file:///package.json) and `main/package.json`.
 
 ---
 
-## 📋 Perintah Utama (Root / main)
+## 📋 Main Commands (Root / main)
 
 ### Development & Build
 
-| Perintah | Deskripsi |
+| Command | Description |
 | :--- | :--- |
-| `bun run dev` | Menjalankan Next.js development server pada port 3000 (`http://localhost:3000`). |
-| `bun run build` | Membuat production build Next.js yang teroptimasi. |
-| `bun run start` | Menjalankan Next.js production server. |
-| `bun run lint` | Menjalankan ESLint pada seluruh codebase. |
-| `bun run check` | Menjalankan TypeScript type check (`tsc --noEmit`). |
+| `bun run dev` | Runs the Next.js development server on port 3000 (`http://localhost:3000`). |
+| `bun run build` | Builds an optimized production bundle for Next.js. |
+| `bun run start` | Starts the Next.js production server. |
+| `bun run lint` | Runs ESLint across the entire codebase. |
+| `bun run check` | Runs TypeScript type checking (`tsc --noEmit`). |
 
 ### Database (PostgreSQL & Drizzle ORM)
 
-| Perintah | Deskripsi |
+| Command | Description |
 | :--- | :--- |
-| `bun run db:sync` | Menjalankan sinkronisasi kolom dan relasi schema ke PostgreSQL Supabase (`scripts/db-sync.ts`). |
-| `bun run db:reset` | Mengosongkan dan membersihkan seluruh isi data tabel database (`scripts/db-reset.ts`). |
-| `bun run db:push` | Mendorong perubahan skema Drizzle langsung ke database PostgreSQL. |
-| `bun run db:studio` | Membuka Drizzle Studio di browser untuk inspeksi data visual. |
-| `bun run seed:dummy` | Membuat data demo dummy terenkripsi Zero-Knowledge (`scripts/seed-dummy.ts`). |
+| `bun run db:sync` | Synchronizes schema columns and constraints with PostgreSQL Supabase (`scripts/db-sync.ts`). |
+| `bun run db:reset` | Truncates and resets all database table rows (`scripts/db-reset.ts`). |
+| `bun run db:push` | Pushes Drizzle schema changes directly to the PostgreSQL database. |
+| `bun run db:studio` | Launches Drizzle Studio in the browser for visual data inspection. |
+| `bun run seed:dummy` | Generates dummy demo data encrypted with Zero-Knowledge (`scripts/seed-dummy.ts`). |
 
-### Utilitas Tambahan
+### Additional Utilities
 
-| Perintah | Deskripsi |
+| Command | Description |
 | :--- | :--- |
-| `bun run sync:env` | Menyinkronkan file `.env` antara root dan folder `main/`. |
-| `bun run install:main` | Menginstall seluruh dependensi Bun di folder `main/`. |
+| `bun run sync:env` | Synchronizes `.env` files between root and the `main/` directory. |
+| `bun run install:main` | Installs all Bun dependencies inside the `main/` directory. |

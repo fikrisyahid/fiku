@@ -1,55 +1,55 @@
-# Panduan Deployment (Vercel & Next.js)
+# Deployment Guide (Vercel & Next.js)
 
-Fiku adalah aplikasi **Next.js 16 (App Router)** murni berbasis web yang dioptimalkan untuk platform serverless modern seperti **Vercel**.
+Fiku is a pure web-based **Next.js 16 (App Router)** application optimized for modern serverless deployment platforms such as **Vercel**.
 
 ---
 
-## 🚀 1. Deploy ke Vercel
+## 🚀 1. Deploying to Vercel
 
-### Langkah Cepat via Vercel Dashboard:
-1. Impor repositori GitHub Fiku ke dashboard Vercel.
-2. Di bagian **Root Directory**, pilih:
+### Quick Steps via Vercel Dashboard:
+1. Import the Fiku GitHub repository in your Vercel Dashboard.
+2. In the **Root Directory** setting, specify:
    ```
    main
    ```
-3. Framework Preset akan otomatis terdeteksi sebagai **Next.js**.
-4. Isi Environment Variables yang diperlukan (lihat tabel di bawah).
-5. Klik **Deploy**.
+3. The Framework Preset will automatically be detected as **Next.js**.
+4. Configure the required Environment Variables (detailed in the table below).
+5. Click **Deploy**.
 
 ---
 
-## ⚙️ 2. Environment Variables yang Dibutuhkan
+## ⚙️ 2. Required Environment Variables
 
-Pastikan variabel berikut telah dikonfigurasi di pengaturan Environment Variables Vercel:
+Ensure the following variables are configured in the Vercel Environment Variables settings:
 
-| Variabel | Deskripsi | Contoh |
+| Variable | Description | Example |
 | :--- | :--- | :--- |
 | `DATABASE_URL` | PostgreSQL connection string (Supabase Session Pooler / Direct) | `postgresql://postgres.[REF]:[PASS]@aws-0-[REGION].pooler.supabase.com:6543/postgres` |
-| `ENCRYPTION_PEPPER` | Secret key server untuk proteksi kriptografi | `fana_secure_server_pepper_2026` |
-| `APP_SECRET_KEY` | Master secret key server untuk double protection data enkripsi | `fana_production_secret_key_32_characters` |
+| `ENCRYPTION_PEPPER` | Server secret string for cryptographic key derivation | `fana_secure_server_pepper_2026` |
+| `APP_SECRET_KEY` | Master application secret key for double protection data encryption | `fana_production_secret_key_32_characters` |
 
 ---
 
-## 🛠️ 3. Menjalankan di Lokal (Local Development)
+## 🛠️ 3. Running Locally (Local Development)
 
 ```bash
-# Clone dan pindah ke root project
+# Clone and navigate to the project root
 cd fana
 
-# Install dependensi
+# Install dependencies
 bun install
 
-# Salin template environment
+# Copy environment variables template
 cp .env.example .env
 
-# Jalankan sinkronisasi database
+# Run database synchronization
 bun run db:sync
 
-# (Opsional) Seed data dummy demo
+# (Optional) Seed demo dummy data
 bun run seed:dummy
 
-# Jalankan development server
+# Start development server
 bun run dev
 ```
 
-Aplikasi dapat diakses di browser pada `http://localhost:3000`.
+The application will be accessible in your browser at `http://localhost:3000`.
