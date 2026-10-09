@@ -120,5 +120,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `bun run db:reset` | Clears all data from database tables |
 | `bun run db:studio` | Opens Drizzle Studio visual editor in browser |
 | `bun run seed:dummy` | Generates a full demo account with dummy data |
-
-For comprehensive documentation, see [docs/COMMANDS.md](file:///docs/COMMANDS.md) and [docs/ARCHITECTURE.md](file:///docs/ARCHITECTURE.md).
+For comprehensive technical documentation, refer to:
+- [System Architecture](docs/ARCHITECTURE.md)
+- [Database Schema & Models](docs/DATABASE.md)
+- [CLI Commands Reference](docs/COMMANDS.md)
+- [Smart Input Guide](docs/SMART_INPUT.md)
+- [Deployment Guide](docs/DEPLOYMENT.md)
