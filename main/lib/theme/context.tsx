@@ -36,6 +36,10 @@ export function ThemeProvider({
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
   const [isPending, startTransition] = useTransition();
 
+  useEffect(() => {
+    setThemeState(initialTheme);
+  }, [initialTheme]);
+
   // Apply theme to document root
   useEffect(() => {
     function applyTheme() {

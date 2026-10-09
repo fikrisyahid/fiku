@@ -50,7 +50,6 @@ export default async function RootLayout({
       className={cn(
         "h-full",
         "antialiased",
-        theme === "dark" && "dark",
         geistSans.variable,
         geistMono.variable,
         "font-sans",
