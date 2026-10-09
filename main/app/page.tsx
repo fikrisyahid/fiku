@@ -16,6 +16,7 @@ import {
 
 import { getServerLocale, getServerDictionary } from "@/lib/i18n/server";
 import { AppNavbar } from "@/components/app-navbar";
+import { HomepageScreenshotPreview } from "@/components/homepage-screenshot-preview";
 
 export async function generateMetadata() {
   const dict = await getServerDictionary();
@@ -149,6 +150,9 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Interactive UI Showcase & Screenshot Placeholder (Adapts to Light/Dark mode) */}
+      <HomepageScreenshotPreview />
 
       {/* Key Advantages / Features */}
       <section className="py-12 bg-white dark:bg-zinc-900 border-y border-zinc-200 dark:border-zinc-800">

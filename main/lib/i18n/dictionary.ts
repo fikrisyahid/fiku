@@ -113,6 +113,11 @@ export interface Dictionary {
     footerDesc: string;
     mockupAutoParsed: string;
     mockupSaved: string;
+    previewTitle: string;
+    previewSub: string;
+    previewTabTransactions: string;
+    previewTabSummary: string;
+    previewPlaceholderNotice: string;
   };
 
   // Transaksi Page
@@ -434,6 +439,11 @@ export const idDict: Dictionary = {
     footerDesc: "Zero-Knowledge Personal Finance Platform",
     mockupAutoParsed: "Terbaca Otomatis",
     mockupSaved: "Tersimpan",
+    previewTitle: "Intip Tampilan Antarmuka Fiku",
+    previewSub: "Desain minimalis, bersih, dan responsif. Mendukung mode Terang & Gelap secara otomatis.",
+    previewTabTransactions: "Lembar Transaksi",
+    previewTabSummary: "Ringkasan Finansial",
+    previewPlaceholderNotice: "Screenshot belum diunggah. Menampilkan ilustrasi placeholder sesuai tema aktif.",
   },
   transaksi: {
     metaTitle: "Transaksi • Fiku",
@@ -747,6 +757,11 @@ export const enDict: Dictionary = {
     footerDesc: "Zero-Knowledge Personal Finance Platform",
     mockupAutoParsed: "Auto Parsed",
     mockupSaved: "Saved",
+    previewTitle: "Preview the Fiku Experience",
+    previewSub: "Minimal, ultra-clean, and responsive. Naturally adapts to your preferred light or dark theme.",
+    previewTabTransactions: "Transactions Sheet",
+    previewTabSummary: "Financial Summary",
+    previewPlaceholderNotice: "Screenshot not yet uploaded. Displaying theme-aware interactive placeholder illustration.",
   },
   transaksi: {
     metaTitle: "Transactions • Fiku",
