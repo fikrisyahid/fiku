@@ -246,9 +246,9 @@ export function QuickModals({
         <button
           type="button"
           onClick={() => openModal("kantong")}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all shadow-sm cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-900/60 text-xs font-semibold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-all shadow-sm cursor-pointer"
         >
-          <PiggyBank className="w-3.5 h-3.5" />
+          <PiggyBank className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
           <span>{dict.quickModals.btnKantong}</span>
         </button>
 

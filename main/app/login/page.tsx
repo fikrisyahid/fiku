@@ -8,6 +8,8 @@ import { getServerLocale, getServerDictionary } from "@/lib/i18n/server";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 
+import { FikuLogo } from "@/components/fiku-logo";
+
 export async function generateMetadata() {
   const dict = await getServerDictionary();
   return {
@@ -43,13 +45,8 @@ export default async function LoginPage() {
       </div>
 
       <div className="w-full max-w-md mb-6 text-center">
-        <Link href="/" className="inline-flex items-center gap-2 mb-3 group">
-          <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-lg shadow-sm group-hover:scale-105 transition-transform">
-            F
-          </div>
-          <span className="font-bold text-lg tracking-tight text-zinc-900 dark:text-zinc-50">
-            Fiku
-          </span>
+        <Link href="/" className="inline-flex items-center mb-3 group">
+          <FikuLogo size="lg" />
         </Link>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
           {dict.login.brandTagline}

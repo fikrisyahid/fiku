@@ -9,6 +9,8 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Locale, getDictionary } from "@/lib/i18n/dictionary";
 
+import { FikuLogo } from "@/components/fiku-logo";
+
 interface AppNavbarProps {
   user?: {
     fullName: string;
@@ -83,15 +85,8 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
       <header className="sticky top-0 z-30 backdrop-blur-md bg-white/85 dark:bg-zinc-900/85 border-b border-zinc-200 dark:border-zinc-800">
         <div className="max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-lg shadow-sm shadow-emerald-600/30 group-hover:scale-105 transition-transform">
-                F
-              </div>
-              <div>
-                <span className="font-bold text-base tracking-tight text-zinc-900 dark:text-zinc-50">
-                  Fiku
-                </span>
-              </div>
+            <Link href="/" className="group">
+              <FikuLogo size="md" />
             </Link>
 
             {/* Desktop Navigation */}
@@ -171,14 +166,9 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
             {/* Top: Header & Close button */}
             <div className="space-y-6">
               <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-sm shadow-sm">
-                    F
-                  </div>
-                  <span className="font-bold text-sm tracking-tight text-zinc-900 dark:text-zinc-100">
-                    Fiku
-                  </span>
-                </div>
+                <Link href="/" onClick={() => setIsSidebarOpen(false)} className="group">
+                  <FikuLogo size="sm" />
+                </Link>
                 <button
                   type="button"
                   onClick={() => setIsSidebarOpen(false)}

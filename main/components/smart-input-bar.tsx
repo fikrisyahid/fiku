@@ -107,9 +107,9 @@ export function SmartInputBar({ userId, familyId, onSuccess }: SmartInputBarProp
             type="button"
             onClick={() => setIsHelpOpen(true)}
             title={dict.transaksi.smartInputGuideBtn}
-            className="h-9 px-2.5 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 border border-emerald-200/80 dark:border-emerald-800/60 transition-colors shadow-2xs"
+            className="h-9 px-2.5 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/50 dark:hover:bg-sky-900/60 border border-sky-200/80 dark:border-sky-800/60 transition-colors shadow-2xs"
           >
-            <HelpCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <HelpCircle className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
             <span className="hidden xs:inline sm:inline">{dict.transaksi.smartInputGuideBtn}</span>
           </button>
           <Button

@@ -835,9 +835,9 @@ export function HomepageScreenshotPreview() {
                 <button
                   type="button"
                   onClick={() => setActiveQuickModal("kantong")}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all shadow-sm cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-900/60 text-xs font-semibold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-all shadow-sm cursor-pointer"
                 >
-                  <PiggyBank className="w-3.5 h-3.5 text-blue-500" />
+                  <PiggyBank className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                   <span>{dict.quickModals.btnKantong}</span>
                 </button>
 
@@ -846,7 +846,7 @@ export function HomepageScreenshotPreview() {
                   onClick={() => setActiveQuickModal("kategori")}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all shadow-sm cursor-pointer"
                 >
-                  <Tag className="w-3.5 h-3.5 text-amber-500" />
+                  <Tag className="w-3.5 h-3.5" />
                   <span>{dict.quickModals.btnKategori}</span>
                 </button>
 
@@ -876,9 +876,9 @@ export function HomepageScreenshotPreview() {
                       type="button"
                       onClick={() => setIsHelpOpen(true)}
                       title={dict.transaksi.smartInputGuideBtn}
-                      className="h-9 px-2.5 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 border border-emerald-200/80 dark:border-emerald-800/60 transition-colors shadow-2xs"
+                      className="h-9 px-2.5 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/50 dark:hover:bg-sky-900/60 border border-sky-200/80 dark:border-sky-800/60 transition-colors shadow-2xs"
                     >
-                      <HelpCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <HelpCircle className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                       <span className="hidden xs:inline sm:inline">{dict.transaksi.smartInputGuideBtn}</span>
                     </button>
                     <Button
