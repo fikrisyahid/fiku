@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useTheme } from "@/lib/theme/context";
 import { useI18n } from "@/lib/i18n/context";
 import {
@@ -9,97 +9,60 @@ import {
   Sparkles,
   ArrowUpRight,
   ArrowDownLeft,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   PieChart,
   Plus,
   Trash2,
+  Save,
   RotateCcw,
   CheckCircle2,
-  Loader2,
-  Calendar,
+  RefreshCw,
+  AlertCircle,
+  FileSpreadsheet,
+  Wallet,
+  Tag,
+  PiggyBank,
+  Check,
+  X,
+  Search,
   Layers,
-  ExternalLink,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CustomSelect } from "@/components/ui/custom-select";
 
-interface LiveTransaction {
+export interface DemoTransaction {
   id: string;
-  transactionDate: string;
-  type: "expense" | "income" | "transfer";
+  transactionDate: string; // YYYY-MM-DD
+  type: "income" | "expense" | "transfer";
+  categoryId: string;
+  accountId: string;
+  toAccountId?: string;
   amount: number;
-  wallet: string;
-  category: string;
   note: string;
+  isNew?: boolean;
 }
 
-// Generate relative dates from today: today, yesterday, 2 days ago
+interface DemoAccount {
+  id: string;
+  name: string;
+  type: "cash" | "bank" | "ewallet";
+  balance: number;
+  isDefault?: boolean;
+}
+
+interface DemoCategory {
+  id: string;
+  name: string;
+  type: "income" | "expense";
+  icon: string;
+}
+
 function getRelativeDateStr(offsetDays: number): string {
   const d = new Date();
   d.setDate(d.getDate() - offsetDays);
   return d.toISOString().split("T")[0];
-}
-
-function getInitialDemoTransactions(locale: string): LiveTransaction[] {
-  const today = getRelativeDateStr(0);
-  const yesterday = getRelativeDateStr(1);
-  const twoDaysAgo = getRelativeDateStr(2);
-
-  const isEn = locale === "en";
-
-  return [
-    {
-      id: "demo-1",
-      transactionDate: today,
-      type: "expense",
-      amount: 45000,
-      wallet: "BCA",
-      category: isEn ? "Food & Drinks" : "Makan & Minum",
-      note: isEn ? "Grilled chicken dinner" : "Makan malam ayam bakar",
-    },
-    {
-      id: "demo-2",
-      transactionDate: today,
-      type: "expense",
-      amount: 18000,
-      wallet: "GoPay",
-      category: isEn ? "Transportation" : "Transportasi",
-      note: isEn ? "Online ride to train station" : "Ojek online ke stasiun",
-    },
-    {
-      id: "demo-3",
-      transactionDate: yesterday,
-      type: "expense",
-      amount: 85000,
-      wallet: "BCA",
-      category: isEn ? "Groceries" : "Belanja",
-      note: isEn ? "Supermarket veggies & fruits" : "Belanja sayur & buah supermarket",
-    },
-    {
-      id: "demo-4",
-      transactionDate: yesterday,
-      type: "income",
-      amount: 7500000,
-      wallet: "Mandiri",
-      category: isEn ? "Salary" : "Gaji",
-      note: isEn ? "Monthly salary payout" : "Gaji bulanan",
-    },
-    {
-      id: "demo-5",
-      transactionDate: twoDaysAgo,
-      type: "transfer",
-      amount: 500000,
-      wallet: "Mandiri ➔ BCA",
-      category: isEn ? "Transfer" : "Transfer",
-      note: isEn ? "Top up weekly living expense" : "Top up kebutuhan mingguan",
-    },
-    {
-      id: "demo-6",
-      transactionDate: twoDaysAgo,
-      type: "expense",
-      amount: 150000,
-      wallet: "Cash",
-      category: isEn ? "Bills" : "Tagihan",
-      note: isEn ? "WiFi internet bill" : "Tagihan internet bulanan",
-    },
-  ];
 }
 
 export function HomepageScreenshotPreview() {
@@ -107,70 +70,227 @@ export function HomepageScreenshotPreview() {
   const { dict, locale } = useI18n();
 
   const [activeTab, setActiveTab] = useState<"transactions" | "summary">("transactions");
-  const [transactions, setTransactions] = useState<LiveTransaction[]>(() =>
-    getInitialDemoTransactions(locale)
-  );
+  const [activeQuickModal, setActiveQuickModal] = useState<"saldo" | "kantong" | "kategori" | null>(null);
 
-  // Sync state (simulates real cloud debounce sync)
-  const [syncStatus, setSyncStatus] = useState<"synced" | "saving">("synced");
+  // Default standard demo accounts
+  const demoAccounts = useMemo<DemoAccount[]>(() => [
+    {
+      id: "acc-cash",
+      name: dict.defaultWallets.cash,
+      type: "cash",
+      balance: 450000,
+      isDefault: true,
+    },
+    {
+      id: "acc-bank",
+      name: dict.defaultWallets.bank,
+      type: "bank",
+      balance: 12500000,
+      isDefault: false,
+    },
+    {
+      id: "acc-ewallet",
+      name: dict.defaultWallets.ewallet,
+      type: "ewallet",
+      balance: 850000,
+      isDefault: false,
+    },
+  ], [dict]);
 
-  // Smart Input text
+  // Default standard demo categories matching full app
+  const demoCategories = useMemo<DemoCategory[]>(() => [
+    // Expenses
+    { id: "cat-food", name: dict.defaultCategories.food, type: "expense", icon: "🍜" },
+    { id: "cat-transport", name: dict.defaultCategories.transport, type: "expense", icon: "🚗" },
+    { id: "cat-groceries", name: dict.defaultCategories.groceries, type: "expense", icon: "🛒" },
+    { id: "cat-bills", name: dict.defaultCategories.bills, type: "expense", icon: "💡" },
+    { id: "cat-health", name: dict.defaultCategories.health, type: "expense", icon: "💊" },
+    { id: "cat-entertainment", name: dict.defaultCategories.entertainment, type: "expense", icon: "🎬" },
+    // Incomes
+    { id: "cat-salary", name: dict.defaultCategories.salary, type: "income", icon: "💰" },
+    { id: "cat-freelance", name: dict.defaultCategories.freelance, type: "income", icon: "💻" },
+    { id: "cat-investment", name: dict.defaultCategories.investment, type: "income", icon: "📈" },
+  ], [dict]);
+
+  // Initial demo data with 2 days backward relative dates
+  const initialData = useMemo<DemoTransaction[]>(() => {
+    const today = getRelativeDateStr(0);
+    const yesterday = getRelativeDateStr(1);
+    const twoDaysAgo = getRelativeDateStr(2);
+
+    return [
+      {
+        id: "tx-1",
+        transactionDate: today,
+        type: "expense",
+        categoryId: "cat-food",
+        accountId: "acc-bank",
+        amount: 45000,
+        note: locale === "en" ? "Grilled chicken dinner" : "Makan siang ayam bakar",
+      },
+      {
+        id: "tx-2",
+        transactionDate: today,
+        type: "expense",
+        categoryId: "cat-transport",
+        accountId: "acc-ewallet",
+        amount: 18000,
+        note: locale === "en" ? "Online ride to train station" : "Ojek online ke kantor",
+      },
+      {
+        id: "tx-3",
+        transactionDate: yesterday,
+        type: "expense",
+        categoryId: "cat-groceries",
+        accountId: "acc-bank",
+        amount: 125000,
+        note: locale === "en" ? "Supermarket veggies & fruits" : "Belanja sayur & buah supermarket",
+      },
+      {
+        id: "tx-4",
+        transactionDate: yesterday,
+        type: "income",
+        categoryId: "cat-salary",
+        accountId: "acc-bank",
+        amount: 8500000,
+        note: locale === "en" ? "Monthly salary payout" : "Gaji bulanan",
+      },
+      {
+        id: "tx-5",
+        transactionDate: twoDaysAgo,
+        type: "transfer",
+        categoryId: "",
+        accountId: "acc-bank",
+        toAccountId: "acc-ewallet",
+        amount: 500000,
+        note: locale === "en" ? "Top up weekly living expense" : "Top up kebutuhan mingguan",
+      },
+      {
+        id: "tx-6",
+        transactionDate: twoDaysAgo,
+        type: "expense",
+        categoryId: "cat-bills",
+        accountId: "acc-cash",
+        amount: 150000,
+        note: locale === "en" ? "Monthly internet & wifi" : "Tagihan internet bulanan",
+      },
+    ];
+  }, [locale]);
+
+  const [rows, setRows] = useState<DemoTransaction[]>(initialData);
+  useEffect(() => {
+    setRows(initialData);
+  }, [initialData]);
+
+  // Per-row saving/saved status tracking
+  const [rowStatus, setRowStatus] = useState<Record<string, "saving" | "saved" | "error">>({});
+  const timeoutRefs = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // Global sync status indicator
+  const [globalSync, setGlobalSync] = useState<"synced" | "saving">("synced");
+
+  // Selection & Search
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortField, setSortField] = useState<keyof DemoTransaction>("transactionDate");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  // Smart input bar state
   const [smartInputText, setSmartInputText] = useState("");
   const [smartFeedback, setSmartFeedback] = useState<string | null>(null);
 
   const isDark = resolvedTheme === "dark";
 
-  // Re-initialize demo data if locale changes
-  useEffect(() => {
-    setTransactions(getInitialDemoTransactions(locale));
-  }, [locale]);
+  // Debounced row status simulator
+  function markRowSaving(id: string) {
+    setGlobalSync("saving");
+    setRowStatus((prev) => ({ ...prev, [id]: "saving" }));
 
-  // Trigger sync animation whenever transactions change
-  function triggerSync() {
-    setSyncStatus("saving");
-    const t = setTimeout(() => {
-      setSyncStatus("synced");
-    }, 450);
-    return () => clearTimeout(t);
+    if (timeoutRefs.current[id]) {
+      clearTimeout(timeoutRefs.current[id]);
+    }
+
+    timeoutRefs.current[id] = setTimeout(() => {
+      setRowStatus((prev) => ({ ...prev, [id]: "saved" }));
+      setGlobalSync("synced");
+
+      // Reset 'saved' badge back to idle after 2.5s
+      setTimeout(() => {
+        setRowStatus((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      }, 2500);
+    }, 600);
   }
 
-  // Handle cell edit
-  function handleCellChange(id: string, field: keyof LiveTransaction, val: any) {
-    setTransactions((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, [field]: val } : item))
+  // Handle cell edit in spreadsheet
+  function handleCellChange(id: string, field: keyof DemoTransaction, value: any) {
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        const updated = { ...r, [field]: value };
+        // If switching to transfer, clear category
+        if (field === "type" && value === "transfer") {
+          updated.categoryId = "";
+          if (!updated.toAccountId) {
+            updated.toAccountId = demoAccounts.find((a) => a.id !== updated.accountId)?.id || demoAccounts[0].id;
+          }
+        } else if (field === "type" && value !== "transfer") {
+          // ensure valid category for income or expense
+          const validCat = demoCategories.find((c) => c.type === value);
+          updated.categoryId = validCat ? validCat.id : demoCategories[0].id;
+        }
+        return updated;
+      })
     );
-    triggerSync();
+    markRowSaving(id);
   }
 
-  // Handle Add Row
-  function handleAddRow() {
+  // Add new row at top
+  function handleAddNewRow() {
     const today = getRelativeDateStr(0);
-    const newTx: LiveTransaction = {
-      id: `demo-${Date.now()}`,
+    const newId = `demo-${Date.now()}`;
+    const newRow: DemoTransaction = {
+      id: newId,
       transactionDate: today,
       type: "expense",
+      categoryId: "cat-food",
+      accountId: demoAccounts[0].id,
       amount: 25000,
-      wallet: "Cash",
-      category: locale === "en" ? "Food & Drinks" : "Makan & Minum",
       note: locale === "en" ? "Coffee & snack" : "Kopi & camilan",
+      isNew: true,
     };
-    setTransactions((prev) => [newTx, ...prev]);
-    triggerSync();
+    setRows((prev) => [newRow, ...prev]);
+    markRowSaving(newId);
   }
 
-  // Handle Delete Row
+  // Delete row
   function handleDeleteRow(id: string) {
-    setTransactions((prev) => prev.filter((item) => item.id !== id));
-    triggerSync();
+    setRows((prev) => prev.filter((r) => r.id !== id));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
   }
 
-  // Reset demo data
+  // Batch delete selected
+  function handleBatchDelete() {
+    setRows((prev) => prev.filter((r) => !selectedIds.has(r.id)));
+    setSelectedIds(new Set());
+  }
+
+  // Reset to initial demo state
   function handleReset() {
-    setTransactions(getInitialDemoTransactions(locale));
-    triggerSync();
+    setRows(initialData);
+    setSelectedIds(new Set());
+    setRowStatus({});
+    setGlobalSync("synced");
   }
 
-  // Handle Smart Input submission
+  // Smart Input submit handler
   function handleSmartInputSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!smartInputText.trim()) return;
@@ -178,7 +298,6 @@ export function HomepageScreenshotPreview() {
     const raw = smartInputText.trim().toLowerCase();
     const today = getRelativeDateStr(0);
 
-    // Parse amount (support 25k, 25rb, 100000, 1.5jt, 1.5m)
     let amount = 25000;
     let type: "expense" | "income" | "transfer" = "expense";
 
@@ -188,89 +307,129 @@ export function HomepageScreenshotPreview() {
       type = "transfer";
     }
 
-    // Match numbers
+    // Number matching (25k, 25rb, 100000, 1.5jt, etc.)
     const numMatch = raw.match(/(\d+(?:[.,]\d+)?)\s*(k|rb|ribu|jt|juta|m|million)?/i);
     if (numMatch) {
       let num = parseFloat(numMatch[1].replace(",", "."));
       const unit = (numMatch[2] || "").toLowerCase();
-      if (unit === "k" || unit === "rb" || unit === "ribu") {
-        num *= 1000;
-      } else if (unit === "jt" || unit === "juta" || unit === "m" || unit === "million") {
-        num *= 1000000;
-      }
+      if (unit === "k" || unit === "rb" || unit === "ribu") num *= 1000;
+      else if (unit === "jt" || unit === "juta" || unit === "m" || unit === "million") num *= 1000000;
       amount = Math.round(num);
     }
 
-    // Wallets & Categories heuristics
-    let wallet = "BCA";
-    if (raw.includes("cash") || raw.includes("tunai")) wallet = "Cash";
-    else if (raw.includes("gopay") || raw.includes("gojek")) wallet = "GoPay";
-    else if (raw.includes("mandiri")) wallet = "Mandiri";
-    else if (raw.includes("bca")) wallet = "BCA";
+    // Wallet matching
+    let accountId = demoAccounts[0].id;
+    let toAccountId: string | undefined = undefined;
 
-    let category = type === "income" ? (locale === "en" ? "Salary" : "Gaji") : (locale === "en" ? "Food & Drinks" : "Makan & Minum");
-    if (raw.includes("makan") || raw.includes("ayam") || raw.includes("kopi") || raw.includes("food") || raw.includes("lunch")) {
-      category = locale === "en" ? "Food & Drinks" : "Makan & Minum";
-    } else if (raw.includes("ojek") || raw.includes("bensin") || raw.includes("transport") || raw.includes("ride")) {
-      category = locale === "en" ? "Transportation" : "Transportasi";
-    } else if (raw.includes("belanja") || raw.includes("sayur") || raw.includes("grocery")) {
-      category = locale === "en" ? "Groceries" : "Belanja";
-    } else if (raw.includes("wifi") || raw.includes("listrik") || raw.includes("bill")) {
-      category = locale === "en" ? "Bills" : "Tagihan";
+    if (raw.includes("cash") || raw.includes("tunai")) accountId = "acc-cash";
+    else if (raw.includes("bank") || raw.includes("bca") || raw.includes("mandiri")) accountId = "acc-bank";
+    else if (raw.includes("gopay") || raw.includes("ewallet") || raw.includes("ovo")) accountId = "acc-ewallet";
+
+    if (type === "transfer") {
+      toAccountId = accountId === "acc-bank" ? "acc-ewallet" : "acc-bank";
     }
 
-    const note = smartInputText.trim();
+    // Category matching
+    let categoryId = type === "income" ? "cat-salary" : "cat-food";
+    if (raw.includes("makan") || raw.includes("ayam") || raw.includes("kopi") || raw.includes("food") || raw.includes("lunch")) {
+      categoryId = "cat-food";
+    } else if (raw.includes("ojek") || raw.includes("bensin") || raw.includes("transport") || raw.includes("ride")) {
+      categoryId = "cat-transport";
+    } else if (raw.includes("belanja") || raw.includes("sayur") || raw.includes("grocery")) {
+      categoryId = "cat-groceries";
+    } else if (raw.includes("wifi") || raw.includes("listrik") || raw.includes("tagihan") || raw.includes("bill")) {
+      categoryId = "cat-bills";
+    }
 
-    const created: LiveTransaction = {
-      id: `demo-${Date.now()}`,
+    const newId = `demo-${Date.now()}`;
+    const newRow: DemoTransaction = {
+      id: newId,
       transactionDate: today,
       type,
+      categoryId: type === "transfer" ? "" : categoryId,
+      accountId,
+      toAccountId,
       amount,
-      wallet,
-      category,
-      note,
+      note: smartInputText.trim(),
     };
 
-    setTransactions((prev) => [created, ...prev]);
+    setRows((prev) => [newRow, ...prev]);
     setSmartInputText("");
+    markRowSaving(newId);
+
+    const catName = demoCategories.find((c) => c.id === categoryId)?.name || "";
     setSmartFeedback(
       locale === "en"
-        ? `Added: ${type.toUpperCase()} ${new Intl.NumberFormat("id-ID").format(amount)} (${category})`
-        : `Ditambahkan: ${type === "expense" ? "Pengeluaran" : type === "income" ? "Pemasukan" : "Transfer"} Rp ${new Intl.NumberFormat("id-ID").format(amount)} (${category})`
+        ? `Added: ${type.toUpperCase()} Rp ${new Intl.NumberFormat("id-ID").format(amount)} (${catName})`
+        : `Ditambahkan: ${type === "expense" ? "Pengeluaran" : type === "income" ? "Pemasukan" : "Transfer"} Rp ${new Intl.NumberFormat("id-ID").format(amount)} (${catName})`
     );
-    triggerSync();
 
     setTimeout(() => {
       setSmartFeedback(null);
     }, 3500);
   }
 
-  // Computed summary metrics
+  // Sort & Filter
+  const filteredRows = useMemo(() => {
+    let result = [...rows];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (r) =>
+          r.note.toLowerCase().includes(q) ||
+          r.transactionDate.includes(q) ||
+          r.amount.toString().includes(q)
+      );
+    }
+
+    result.sort((a, b) => {
+      let valA: any = a[sortField];
+      let valB: any = b[sortField];
+
+      if (sortField === "amount") {
+        return sortOrder === "asc" ? valA - valB : valB - valA;
+      }
+
+      valA = String(valA || "");
+      valB = String(valB || "");
+      return sortOrder === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    });
+
+    return result;
+  }, [rows, searchQuery, sortField, sortOrder]);
+
+  // Realtime Financial Summary Calculation
   const summary = useMemo(() => {
     let totalExpense = 0;
     let totalIncome = 0;
     let expenseCount = 0;
     let incomeCount = 0;
-    const catMap: Record<string, number> = {};
+    const catMap: Record<string, { name: string; amount: number; icon: string }> = {};
 
-    for (const t of transactions) {
-      if (t.type === "expense") {
-        totalExpense += t.amount;
+    for (const r of rows) {
+      if (r.type === "expense") {
+        totalExpense += r.amount;
         expenseCount += 1;
-        catMap[t.category] = (catMap[t.category] || 0) + t.amount;
-      } else if (t.type === "income") {
-        totalIncome += t.amount;
+        const cat = demoCategories.find((c) => c.id === r.categoryId);
+        const name = cat ? cat.name : dict.common.category;
+        const icon = cat ? cat.icon : "🏷️";
+        if (!catMap[name]) {
+          catMap[name] = { name, amount: 0, icon };
+        }
+        catMap[name].amount += r.amount;
+      } else if (r.type === "income") {
+        totalIncome += r.amount;
         incomeCount += 1;
       }
     }
 
     const netCashflow = totalIncome - totalExpense;
 
-    const catBreakdown = Object.entries(catMap)
-      .map(([name, amount]) => ({
-        name,
-        amount,
-        percentage: totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0,
+    const catBreakdown = Object.values(catMap)
+      .map((item) => ({
+        ...item,
+        percentage: totalExpense > 0 ? Math.round((item.amount / totalExpense) * 100) : 0,
       }))
       .sort((a, b) => b.amount - a.amount);
 
@@ -282,18 +441,20 @@ export function HomepageScreenshotPreview() {
       incomeCount,
       catBreakdown,
     };
-  }, [transactions]);
+  }, [rows, demoCategories, dict]);
 
-  const formatRupiah = (num: number) => {
+  const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat(locale === "en" ? "en-US" : "id-ID", {
       style: "currency",
       currency: "IDR",
       maximumFractionDigits: 0,
-    }).format(num);
+    }).format(amount || 0);
   };
 
+  const totalSaldo = demoAccounts.reduce((sum, a) => sum + a.balance, 0);
+
   return (
-    <section className="py-12 sm:py-16 px-4 sm:px-6 max-w-6xl mx-auto w-full space-y-6">
+    <section className="py-10 sm:py-16 px-4 sm:px-6 lg:px-8 max-w-[1560px] mx-auto w-full space-y-6">
       {/* Section Header */}
       <div className="text-center max-w-3xl mx-auto space-y-2.5">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold border border-emerald-200 dark:border-emerald-900/60 shadow-2xs">
@@ -308,7 +469,7 @@ export function HomepageScreenshotPreview() {
         </p>
       </div>
 
-      {/* Tabs & Controls */}
+      {/* Tabs Switcher: Transaksi vs Summary */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
         <div className="inline-flex p-1 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs">
           <button
@@ -323,7 +484,7 @@ export function HomepageScreenshotPreview() {
             <TableProperties className="w-4 h-4" />
             <span>{dict.landing.previewTabTransactions}</span>
             <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 font-mono">
-              {transactions.length}
+              {rows.length}
             </span>
           </button>
           <button
@@ -340,13 +501,13 @@ export function HomepageScreenshotPreview() {
           </button>
         </div>
 
-        {/* Sync Indicator & Reset Button */}
+        {/* Global Sync Indicator & Reset Button */}
         <div className="flex items-center gap-2 text-xs">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 text-[11px] font-semibold text-zinc-500 shadow-2xs">
-            {syncStatus === "saving" ? (
+            {globalSync === "saving" ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
-                <span>{dict.landing.previewSyncing}</span>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                <span className="text-amber-600 dark:text-amber-400 font-bold">{dict.landing.previewSyncing}</span>
               </>
             ) : (
               <>
@@ -363,13 +524,13 @@ export function HomepageScreenshotPreview() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 transition-colors shadow-2xs"
           >
             <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
-            <span className="hidden sm:inline">{dict.landing.previewResetBtn}</span>
+            <span>{dict.landing.previewResetBtn}</span>
           </button>
         </div>
       </div>
 
-      {/* Main Sandbox Window Frame */}
-      <div className="relative rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl overflow-hidden transition-all">
+      {/* Main Sandbox Frame Container */}
+      <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl overflow-hidden transition-all">
         {/* Window Chrome Header */}
         <div className="h-10 px-4 bg-zinc-100/80 dark:bg-zinc-950/80 border-b border-zinc-200/80 dark:border-zinc-800/80 flex items-center justify-between text-xs text-zinc-500">
           <div className="flex items-center gap-1.5">
@@ -382,237 +543,426 @@ export function HomepageScreenshotPreview() {
             <span>https://fiku.app/{activeTab === "transactions" ? "transaction" : "summary"}</span>
           </div>
 
-          <div className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <div className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             {isDark ? "Dark Theme" : "Light Theme"}
           </div>
         </div>
 
-        {/* Sandbox Content Area */}
-        <div className="p-4 sm:p-6 bg-zinc-50/70 dark:bg-zinc-950/80 space-y-5">
+        {/* Content Area */}
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6 bg-zinc-50/60 dark:bg-zinc-950/70">
           {activeTab === "transactions" ? (
-            <div className="space-y-4">
-              {/* Interactive Smart Input Form */}
-              <form
-                onSubmit={handleSmartInputSubmit}
-                className="p-2 sm:p-2.5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col sm:flex-row items-center gap-2"
-              >
-                <div className="relative w-full flex-1 flex items-center">
-                  <Sparkles className="w-4 h-4 text-emerald-600 absolute left-3 shrink-0 pointer-events-none" />
+            <div className="space-y-6">
+              {/* 1. Quick Modals Button Strip (/saldo, /kantong, /kategori) */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                <button
+                  type="button"
+                  onClick={() => setActiveQuickModal("saldo")}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60 text-xs font-semibold hover:bg-emerald-100 transition-all shadow-sm cursor-pointer"
+                >
+                  <Wallet className="w-3.5 h-3.5" />
+                  <span>{dict.quickModals.btnSaldo}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveQuickModal("kantong")}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all shadow-sm cursor-pointer"
+                >
+                  <PiggyBank className="w-3.5 h-3.5 text-blue-500" />
+                  <span>{dict.quickModals.btnKantong}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveQuickModal("kategori")}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all shadow-sm cursor-pointer"
+                >
+                  <Tag className="w-3.5 h-3.5 text-amber-500" />
+                  <span>{dict.quickModals.btnKategori}</span>
+                </button>
+
+                <div className="ml-auto text-[11px] text-zinc-400 font-mono hidden md:inline">
+                  Total Saldo Demo: <strong className="text-emerald-600 dark:text-emerald-400">{formatCurrency(totalSaldo)}</strong>
+                </div>
+              </div>
+
+              {/* 2. Interactive Smart Input Bar */}
+              <div className="space-y-2">
+                <form
+                  onSubmit={handleSmartInputSubmit}
+                  className="relative flex items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-1.5 shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all"
+                >
+                  <div className="pl-3 pr-2 text-zinc-400">
+                    <Sparkles className="w-4 h-4 text-emerald-600" />
+                  </div>
                   <input
                     type="text"
                     value={smartInputText}
                     onChange={(e) => setSmartInputText(e.target.value)}
-                    placeholder={dict.landing.previewSmartHint}
-                    className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-transparent rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-sans"
+                    placeholder={dict.transaksi.smartInputPlaceholder}
+                    className="flex-1 bg-transparent border-none text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none"
                   />
-                </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                  <button
+                  <Button
                     type="submit"
-                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center justify-center gap-1.5 shadow-xs transition-colors shrink-0"
+                    size="sm"
+                    className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm transition-all"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Catat Instan</span>
-                  </button>
-                </div>
-              </form>
+                    {dict.transaksi.smartInputSubmitBtn}
+                  </Button>
+                </form>
 
-              {smartFeedback && (
-                <div className="text-xs px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 animate-in fade-in flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>{smartFeedback}</span>
-                </div>
-              )}
-
-              {/* Action Strip: Add Row & Table Count */}
-              <div className="flex items-center justify-between text-xs px-1">
-                <button
-                  type="button"
-                  onClick={handleAddRow}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-emerald-500 font-bold text-xs text-zinc-700 dark:text-zinc-200 transition-colors shadow-2xs"
-                >
-                  <Plus className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{dict.landing.previewAddRowBtn}</span>
-                </button>
-                <span className="text-[11px] text-zinc-400">
-                  {transactions.length} baris (editable live)
-                </span>
+                {smartFeedback && (
+                  <div className="text-xs px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 animate-in fade-in flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>{smartFeedback}</span>
+                  </div>
+                )}
               </div>
 
-              {/* Editable Live Spreadsheet Table */}
-              <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-x-auto shadow-xs">
-                <table className="w-full text-left text-xs border-collapse min-w-[700px]">
+              {/* 3. Toolbar: Search, Batch Delete, Add Row */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={dict.transaksi.searchPlaceholder}
+                    className="w-full h-10 pl-9 pr-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {selectedIds.size > 0 && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleBatchDelete}
+                      className="h-10 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-sm transition-all"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1.5" />
+                      {dict.transaksi.btnDeleteSelected(selectedIds.size)}
+                    </Button>
+                  )}
+
+                  <Button
+                    type="button"
+                    onClick={handleAddNewRow}
+                    size="sm"
+                    className="h-10 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm"
+                  >
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    {dict.transaksi.btnNewRow}
+                  </Button>
+                </div>
+              </div>
+
+              {/* 4. Full-Featured Spreadsheet Table */}
+              <div className="overflow-x-auto border border-zinc-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm">
+                <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-zinc-100/80 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
-                      <th className="py-2.5 px-3 w-28">{dict.common.date}</th>
-                      <th className="py-2.5 px-3 w-24">{dict.common.type}</th>
-                      <th className="py-2.5 px-3 w-32">{dict.common.amount}</th>
-                      <th className="py-2.5 px-3 w-32">{dict.common.wallet}</th>
-                      <th className="py-2.5 px-3 w-36">{dict.common.category}</th>
-                      <th className="py-2.5 px-3">{dict.common.note}</th>
-                      <th className="py-2.5 px-2 w-10 text-center"></th>
+                    <tr className="bg-zinc-100/80 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 border-b border-zinc-200 dark:border-zinc-800 font-semibold select-none">
+                      <th className="p-3 w-12 text-center">
+                        <input
+                          type="checkbox"
+                          checked={filteredRows.length > 0 && filteredRows.every((r) => selectedIds.has(r.id))}
+                          onChange={() => {
+                            if (filteredRows.every((r) => selectedIds.has(r.id))) {
+                              setSelectedIds(new Set());
+                            } else {
+                              setSelectedIds(new Set(filteredRows.map((r) => r.id)));
+                            }
+                          }}
+                          className="w-4 h-4 rounded-md border-zinc-300 dark:border-zinc-700 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer accent-emerald-600"
+                        />
+                      </th>
+                      <th className="p-3 w-36">
+                        <div className="flex items-center gap-1 cursor-pointer" onClick={() => {
+                          setSortField("transactionDate");
+                          setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+                        }}>
+                          <span>{dict.transaksi.colDate}</span>
+                          <ArrowUpDown className="w-3 h-3 text-zinc-400" />
+                        </div>
+                      </th>
+                      <th className="p-3 w-32">{dict.transaksi.colType}</th>
+                      <th className="p-3 w-52">{dict.transaksi.colCategory}</th>
+                      <th className="p-3 w-52">{dict.transaksi.colWallet}</th>
+                      <th className="p-3 w-36">{dict.transaksi.colAmount}</th>
+                      <th className="p-3 min-w-[180px]">{dict.transaksi.colNote}</th>
+                      <th className="p-3 w-28 text-center">{dict.transaksi.colActions}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
-                    {transactions.map((t) => (
-                      <tr
-                        key={t.id}
-                        className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors group"
-                      >
-                        {/* Date Cell */}
-                        <td className="p-2">
-                          <input
-                            type="date"
-                            value={t.transactionDate}
-                            onChange={(e) =>
-                              handleCellChange(t.id, "transactionDate", e.target.value)
-                            }
-                            className="w-full bg-transparent text-[11px] font-mono text-zinc-600 dark:text-zinc-300 focus:outline-none focus:bg-zinc-100 dark:focus:bg-zinc-800 px-1.5 py-1 rounded"
-                          />
-                        </td>
 
-                        {/* Type Cell */}
-                        <td className="p-2">
-                          <select
-                            value={t.type}
-                            onChange={(e) =>
-                              handleCellChange(t.id, "type", e.target.value)
-                            }
-                            className={`w-full text-[11px] font-bold px-1.5 py-1 rounded focus:outline-none cursor-pointer ${
-                              t.type === "expense"
-                                ? "bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300"
-                                : t.type === "income"
-                                ? "bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300"
-                                : "bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300"
-                            }`}
-                          >
-                            <option value="expense">{dict.txTypes.expense}</option>
-                            <option value="income">{dict.txTypes.income}</option>
-                            <option value="transfer">{dict.txTypes.transfer}</option>
-                          </select>
-                        </td>
+                  <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                    {filteredRows.map((row, index) => {
+                      const status = rowStatus[row.id];
+                      const isSaving = status === "saving";
+                      const isSaved = status === "saved";
+                      const isSelected = selectedIds.has(row.id);
 
-                        {/* Amount Cell */}
-                        <td className="p-2">
-                          <input
-                            type="number"
-                            value={t.amount}
-                            onChange={(e) =>
-                              handleCellChange(
-                                t.id,
-                                "amount",
-                                Math.max(0, parseInt(e.target.value) || 0)
-                              )
-                            }
-                            className={`w-full font-mono font-bold text-xs px-1.5 py-1 rounded bg-transparent focus:outline-none focus:bg-zinc-100 dark:focus:bg-zinc-800 ${
-                              t.type === "expense"
-                                ? "text-rose-600 dark:text-rose-400"
-                                : t.type === "income"
-                                ? "text-emerald-600 dark:text-emerald-400"
-                                : "text-blue-600 dark:text-blue-400"
-                            }`}
-                          />
-                        </td>
+                      return (
+                        <tr
+                          key={row.id}
+                          className={`transition-colors ${
+                            isSelected
+                              ? "bg-emerald-500/[0.08] dark:bg-emerald-500/[0.12]"
+                              : row.isNew
+                              ? "bg-amber-500/[0.04] hover:bg-amber-500/[0.08]"
+                              : "hover:bg-zinc-500/[0.03]"
+                          }`}
+                        >
+                          {/* Checkbox & Index */}
+                          <td className="p-2.5 text-center text-[11px] text-zinc-400 font-mono">
+                            <div className="flex items-center justify-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {
+                                  setSelectedIds((prev) => {
+                                    const next = new Set(prev);
+                                    if (next.has(row.id)) next.delete(row.id);
+                                    else next.add(row.id);
+                                    return next;
+                                  });
+                                }}
+                                className="w-4 h-4 rounded-md border-zinc-300 dark:border-zinc-700 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer accent-emerald-600"
+                              />
+                              <span className="text-[10px] text-zinc-400 select-none hidden sm:inline-block w-4 text-left">
+                                {index + 1}
+                              </span>
+                            </div>
+                          </td>
 
-                        {/* Wallet Cell */}
-                        <td className="p-2">
-                          <input
-                            type="text"
-                            value={t.wallet}
-                            onChange={(e) =>
-                              handleCellChange(t.id, "wallet", e.target.value)
-                            }
-                            className="w-full text-xs text-zinc-700 dark:text-zinc-200 px-1.5 py-1 rounded bg-transparent focus:outline-none focus:bg-zinc-100 dark:focus:bg-zinc-800 font-medium"
-                          />
-                        </td>
+                          {/* Tanggal */}
+                          <td className="p-2">
+                            <input
+                              type="date"
+                              value={row.transactionDate}
+                              onChange={(e) => handleCellChange(row.id, "transactionDate", e.target.value)}
+                              className="w-full h-8 px-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono outline-hidden"
+                            />
+                          </td>
 
-                        {/* Category Cell */}
-                        <td className="p-2">
-                          <input
-                            type="text"
-                            value={t.category}
-                            onChange={(e) =>
-                              handleCellChange(t.id, "category", e.target.value)
-                            }
-                            className="w-full text-xs text-zinc-600 dark:text-zinc-300 px-1.5 py-1 rounded bg-transparent focus:outline-none focus:bg-zinc-100 dark:focus:bg-zinc-800"
-                          />
-                        </td>
+                          {/* Tipe with CustomSelect */}
+                          <td className="p-2">
+                            <CustomSelect
+                              value={row.type}
+                              onChange={(val) => handleCellChange(row.id, "type", val as any)}
+                              options={[
+                                {
+                                  value: "expense",
+                                  label: dict.txTypes.expense,
+                                  badge: "out",
+                                  badgeClassName: "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300",
+                                },
+                                {
+                                  value: "income",
+                                  label: dict.txTypes.income,
+                                  badge: "in",
+                                  badgeClassName: "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300",
+                                },
+                                {
+                                  value: "transfer",
+                                  label: dict.txTypes.transfer,
+                                  badge: "tf",
+                                  badgeClassName: "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300",
+                                },
+                              ]}
+                              triggerClassName={`h-8 font-semibold ${
+                                row.type === "income"
+                                  ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/30"
+                                  : row.type === "expense"
+                                  ? "text-rose-600 dark:text-rose-400 bg-rose-50/50 dark:bg-rose-950/30"
+                                  : "text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30"
+                              }`}
+                            />
+                          </td>
 
-                        {/* Note Cell */}
-                        <td className="p-2">
-                          <input
-                            type="text"
-                            value={t.note}
-                            onChange={(e) =>
-                              handleCellChange(t.id, "note", e.target.value)
-                            }
-                            className="w-full text-xs text-zinc-500 dark:text-zinc-400 px-1.5 py-1 rounded bg-transparent focus:outline-none focus:bg-zinc-100 dark:focus:bg-zinc-800 truncate"
-                          />
-                        </td>
+                          {/* Kategori with CustomSelect */}
+                          <td className="p-2">
+                            {row.type === "transfer" ? (
+                              <div className="text-[11px] text-zinc-400 italic px-2">
+                                {dict.transaksi.internalTransfer}
+                              </div>
+                            ) : (
+                              <CustomSelect
+                                value={row.categoryId}
+                                onChange={(val) => handleCellChange(row.id, "categoryId", val)}
+                                options={demoCategories
+                                  .filter((c) => c.type === row.type)
+                                  .map((c) => ({
+                                    value: c.id,
+                                    label: c.name,
+                                    icon: c.icon,
+                                  }))}
+                                triggerClassName="h-8"
+                              />
+                            )}
+                          </td>
 
-                        {/* Delete Cell */}
-                        <td className="p-2 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteRow(t.id)}
-                            title="Hapus baris"
-                            className="p-1 rounded text-zinc-300 hover:text-rose-600 dark:hover:text-rose-400 transition-colors opacity-60 group-hover:opacity-100"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                          {/* Kantong with CustomSelect */}
+                          <td className="p-2">
+                            {row.type === "transfer" ? (
+                              <div className="flex items-center gap-1">
+                                <CustomSelect
+                                  value={row.accountId}
+                                  onChange={(val) => handleCellChange(row.id, "accountId", val)}
+                                  options={demoAccounts.map((a) => ({
+                                    value: a.id,
+                                    label: a.name,
+                                    icon: a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱",
+                                  }))}
+                                  triggerClassName="h-8 border-zinc-200 dark:border-zinc-700"
+                                />
+                                <span className="text-[10px] text-zinc-400">➔</span>
+                                <CustomSelect
+                                  value={row.toAccountId || demoAccounts[1].id}
+                                  onChange={(val) => handleCellChange(row.id, "toAccountId", val)}
+                                  options={demoAccounts.map((a) => ({
+                                    value: a.id,
+                                    label: a.name,
+                                    icon: a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱",
+                                  }))}
+                                  triggerClassName="h-8 border-zinc-200 dark:border-zinc-700"
+                                />
+                              </div>
+                            ) : (
+                              <CustomSelect
+                                value={row.accountId}
+                                onChange={(val) => handleCellChange(row.id, "accountId", val)}
+                                options={demoAccounts.map((a) => ({
+                                  value: a.id,
+                                  label: a.name,
+                                  icon: a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱",
+                                  badge: formatCurrency(a.balance),
+                                  badgeClassName: "font-mono font-normal text-zinc-500",
+                                }))}
+                                triggerClassName="h-8"
+                              />
+                            )}
+                          </td>
+
+                          {/* Nominal */}
+                          <td className="p-2">
+                            <div className="relative flex items-center">
+                              <span className="absolute left-2.5 text-xs font-semibold text-zinc-400 select-none pointer-events-none">
+                                Rp
+                              </span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={row.amount ? row.amount.toLocaleString(locale === "en" ? "en-US" : "id-ID") : ""}
+                                onChange={(e) => {
+                                  const rawDigits = e.target.value.replace(/\D/g, "");
+                                  const numericVal = rawDigits ? parseInt(rawDigits, 10) : 0;
+                                  handleCellChange(row.id, "amount", numericVal);
+                                }}
+                                placeholder="0"
+                                className="w-full h-8 pl-8 pr-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono font-bold outline-hidden"
+                              />
+                            </div>
+                          </td>
+
+                          {/* Keterangan */}
+                          <td className="p-2">
+                            <input
+                              type="text"
+                              value={row.note}
+                              onChange={(e) => handleCellChange(row.id, "note", e.target.value)}
+                              placeholder={dict.transaksi.notePlaceholder}
+                              className="w-full h-8 px-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs outline-hidden"
+                            />
+                          </td>
+
+                          {/* Status Per-Row & Actions */}
+                          <td className="p-2 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              {isSaving && (
+                                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-amber-500 bg-amber-50/50 dark:bg-amber-950/20" title={dict.transaksi.statusSaving}>
+                                  <RefreshCw className="w-4 h-4 animate-spin" />
+                                </div>
+                              )}
+                              {isSaved && (
+                                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20" title={dict.transaksi.statusSaved}>
+                                  <CheckCircle2 className="w-4 h-4" />
+                                </div>
+                              )}
+                              {!isSaving && !isSaved && (
+                                <button
+                                  type="button"
+                                  onClick={() => markRowSaving(row.id)}
+                                  title={dict.transaksi.tooltipSave}
+                                  className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all"
+                                >
+                                  <Save className="w-4 h-4" />
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteRow(row.id)}
+                                title={dict.transaksi.tooltipDelete}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
           ) : (
             /* Realtime Financial Summary Tab */
-            <div className="space-y-5 animate-in fade-in duration-200">
+            <div className="space-y-6 animate-in fade-in duration-200">
               {/* Stat Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-1">
                   <div className="flex items-center justify-between text-xs text-zinc-500">
                     <span>{dict.ringkasan.expenseThisPeriod}</span>
                     <ArrowDownLeft className="w-4 h-4 text-rose-500" />
                   </div>
-                  <div className="text-xl sm:text-2xl font-black font-mono text-rose-600 dark:text-rose-400">
-                    {formatRupiah(summary.totalExpense)}
+                  <div className="text-2xl sm:text-3xl font-black font-mono text-rose-600 dark:text-rose-400">
+                    {formatCurrency(summary.totalExpense)}
                   </div>
                   <div className="text-[11px] text-zinc-400">
-                    {summary.expenseCount} {locale === "en" ? "expenses" : "transaksi pengeluaran"}
+                    {summary.expenseCount} {locale === "en" ? "expenses recorded" : "transaksi pengeluaran"}
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-1">
+                <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-1">
                   <div className="flex items-center justify-between text-xs text-zinc-500">
                     <span>{dict.ringkasan.incomeThisPeriod}</span>
                     <ArrowUpRight className="w-4 h-4 text-emerald-500" />
                   </div>
-                  <div className="text-xl sm:text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                    {formatRupiah(summary.totalIncome)}
+                  <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(summary.totalIncome)}
                   </div>
                   <div className="text-[11px] text-zinc-400">
-                    {summary.incomeCount} {locale === "en" ? "income records" : "pemasukan"}
+                    {summary.incomeCount} {locale === "en" ? "incomes recorded" : "pemasukan"}
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-1">
+                <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-1">
                   <div className="flex items-center justify-between text-xs text-zinc-500">
                     <span>{dict.ringkasan.netSavings}</span>
                     <PieChart className="w-4 h-4 text-emerald-500" />
                   </div>
                   <div
-                    className={`text-xl sm:text-2xl font-black font-mono ${
+                    className={`text-2xl sm:text-3xl font-black font-mono ${
                       summary.netCashflow >= 0
                         ? "text-emerald-600 dark:text-emerald-400"
                         : "text-rose-600 dark:text-rose-400"
                     }`}
                   >
                     {summary.netCashflow >= 0 ? "+" : ""}
-                    {formatRupiah(summary.netCashflow)}
+                    {formatCurrency(summary.netCashflow)}
                   </div>
                   <div className="text-[11px] text-emerald-600 font-semibold">
                     {summary.netCashflow >= 0
@@ -627,14 +977,14 @@ export function HomepageScreenshotPreview() {
               </div>
 
               {/* Dynamic Categorical Breakdown based on current live transactions */}
-              <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-4">
+              <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                     <Layers className="w-4 h-4 text-emerald-600" />
                     <span>{dict.ringkasan.categoryAllocationTitle}</span>
                   </h4>
-                  <span className="text-[11px] font-mono text-zinc-400">
-                    {transactions.length} Total Data
+                  <span className="text-xs font-mono text-zinc-400">
+                    {rows.length} {locale === "en" ? "Transactions" : "Total Transaksi"}
                   </span>
                 </div>
 
@@ -643,7 +993,7 @@ export function HomepageScreenshotPreview() {
                     Belum ada pengeluaran yang dicatat.
                   </p>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-3.5">
                     {summary.catBreakdown.map((cat, idx) => {
                       const colors = [
                         "bg-emerald-500",
@@ -655,16 +1005,17 @@ export function HomepageScreenshotPreview() {
                       const color = colors[idx % colors.length];
 
                       return (
-                        <div key={cat.name} className="space-y-1">
+                        <div key={cat.name} className="space-y-1.5">
                           <div className="flex justify-between text-xs">
-                            <span className="font-medium text-zinc-700 dark:text-zinc-300 truncate max-w-[200px]">
-                              {cat.name}
+                            <span className="font-medium text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5 truncate max-w-[240px]">
+                              <span>{cat.icon}</span>
+                              <span>{cat.name}</span>
                             </span>
                             <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">
-                              {formatRupiah(cat.amount)} ({cat.percentage}%)
+                              {formatCurrency(cat.amount)} ({cat.percentage}%)
                             </span>
                           </div>
-                          <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                          <div className="h-2.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                             <div
                               className={`h-full ${color} rounded-full transition-all duration-300`}
                               style={{ width: `${Math.max(5, cat.percentage)}%` }}
@@ -685,6 +1036,129 @@ export function HomepageScreenshotPreview() {
           {dict.landing.previewSandboxNotice}
         </div>
       </div>
+
+      {/* Quick Modal Popups Simulation (Saldo / Kantong / Kategori) */}
+      {activeQuickModal && (
+        <div
+          onClick={() => setActiveQuickModal(null)}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center gap-2">
+                {activeQuickModal === "saldo" && <Wallet className="w-5 h-5 text-emerald-600" />}
+                {activeQuickModal === "kantong" && <PiggyBank className="w-5 h-5 text-blue-500" />}
+                {activeQuickModal === "kategori" && <Tag className="w-5 h-5 text-amber-500" />}
+                <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">
+                  {activeQuickModal === "saldo" && dict.quickModals.titleSaldo}
+                  {activeQuickModal === "kantong" && dict.quickModals.titleKantong}
+                  {activeQuickModal === "kategori" && dict.quickModals.titleKategori}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveQuickModal(null)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            {activeQuickModal === "saldo" && (
+              <div className="space-y-3">
+                <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30">
+                  <div className="text-xs text-zinc-500">{dict.quickModals.totalWealth}</div>
+                  <div className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(totalSaldo)}
+                  </div>
+                </div>
+
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {demoAccounts.map((a) => (
+                    <div
+                      key={a.id}
+                      className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-100 dark:border-zinc-800 text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱"}</span>
+                        <span className="font-bold text-zinc-800 dark:text-zinc-200">{a.name}</span>
+                        {a.isDefault && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-semibold">
+                            {dict.quickModals.defaultBadge}
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
+                        {formatCurrency(a.balance)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeQuickModal === "kantong" && (
+              <div className="space-y-3">
+                <p className="text-xs text-zinc-500">
+                  {dict.quickModals.activeWallets(demoAccounts.length)}
+                </p>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {demoAccounts.map((a) => (
+                    <div
+                      key={a.id}
+                      className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-100 dark:border-zinc-800 text-xs"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-base">{a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱"}</span>
+                        <div>
+                          <div className="font-bold text-zinc-800 dark:text-zinc-200">{a.name}</div>
+                          <div className="text-[10px] text-zinc-400 font-mono uppercase">{a.type}</div>
+                        </div>
+                      </div>
+                      <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
+                        {formatCurrency(a.balance)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeQuickModal === "kategori" && (
+              <div className="space-y-3">
+                <p className="text-xs text-zinc-500">
+                  Daftar kategori bawaan resmi di Fiku:
+                </p>
+                <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                  {demoCategories.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-center gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-100 dark:border-zinc-800 text-xs"
+                    >
+                      <span>{c.icon}</span>
+                      <span className="font-semibold text-zinc-800 dark:text-zinc-200 truncate">
+                        {c.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Button
+              type="button"
+              onClick={() => setActiveQuickModal(null)}
+              className="w-full h-10 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold text-xs mt-2"
+            >
+              {dict.common.close}
+            </Button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
