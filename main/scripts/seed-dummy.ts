@@ -6,6 +6,7 @@ import { onboardUser } from "@/lib/onboarding";
 import {
   generateUserKeyPair,
   encryptPrivateKeyWithSecret,
+  encryptWithPublicKey,
 } from "@/lib/crypto";
 
 async function main() {
@@ -60,10 +61,10 @@ async function main() {
   const bankAccount = userAccounts.find((a) => a.type === "bank") || userAccounts[1];
   const ewalletAccount = userAccounts.find((a) => a.type === "ewallet") || userAccounts[2];
 
-  // Set initial realistic balances
-  await db.update(accounts).set({ balance: "1550000.00" }).where(eq(accounts.id, cashAccount.id));
-  await db.update(accounts).set({ balance: "18750000.00" }).where(eq(accounts.id, bankAccount.id));
-  await db.update(accounts).set({ balance: "845000.00" }).where(eq(accounts.id, ewalletAccount.id));
+  // Set initial realistic balances encrypted with user's public key
+  await db.update(accounts).set({ balance: encryptWithPublicKey("1550000.00", keyPair.publicKeyPem) }).where(eq(accounts.id, cashAccount.id));
+  await db.update(accounts).set({ balance: encryptWithPublicKey("18750000.00", keyPair.publicKeyPem) }).where(eq(accounts.id, bankAccount.id));
+  await db.update(accounts).set({ balance: encryptWithPublicKey("845000.00", keyPair.publicKeyPem) }).where(eq(accounts.id, ewalletAccount.id));
 
   // Get system & user categories
   let allCategories = await db.query.categories.findMany();
@@ -223,7 +224,12 @@ async function main() {
   ];
 
   console.log("Inserting dummy transactions...");
-  await db.insert(transactions).values(dummyTxs);
+  const encryptedDummyTxs = dummyTxs.map((tx) => ({
+    ...tx,
+    amount: encryptWithPublicKey(tx.amount, keyPair.publicKeyPem),
+    note: tx.note ? encryptWithPublicKey(tx.note, keyPair.publicKeyPem) : null,
+  }));
+  await db.insert(transactions).values(encryptedDummyTxs);
 
   console.log("\n==========================================");
   console.log("✔ DUMMY ACCOUNT SUCCESSFULLY CREATED!");

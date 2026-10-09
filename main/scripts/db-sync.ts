@@ -55,10 +55,11 @@ async function main() {
   await sql`ALTER TABLE transactions DROP COLUMN IF EXISTS source CASCADE;`;
   console.log("✅ Deprecated columns (family_id, budget_id, active_family_id, source, telegram_id, telegram_username, expired_at) removed");
 
-  // 5. Update transactions type check constraint
+  // 5. Update transactions type check constraint and drop amount check constraint
   await sql`
     ALTER TABLE transactions 
     DROP CONSTRAINT IF EXISTS transactions_source_check,
+    DROP CONSTRAINT IF EXISTS transactions_amount_check,
     DROP CONSTRAINT IF EXISTS transactions_type_check;
   `;
   await sql`
@@ -66,14 +67,42 @@ async function main() {
     ADD CONSTRAINT transactions_type_check 
     CHECK (type IN ('income', 'expense', 'transfer'));
   `;
-  console.log("✅ Constraint type ('income', 'expense', 'transfer') updated and source check removed");
+  console.log("✅ Constraint type ('income', 'expense', 'transfer') updated and old amount/source checks removed");
 
-  // 6. Add to_account_id to transactions if not exists and allow null category_id (for transfer)
+  // 6. Alter balance and amount columns to text for Zero-Knowledge Encryption
+  await sql`ALTER TABLE accounts ALTER COLUMN balance TYPE text;`;
+  await sql`ALTER TABLE transactions ALTER COLUMN amount TYPE text;`;
+  console.log("✅ Accounts balance and transactions amount columns migrated to text for Zero-Knowledge encryption");
+
+  // 7. Add to_account_id to transactions if not exists and allow null category_id (for transfer)
   await sql`
     ALTER TABLE transactions 
     ADD COLUMN IF NOT EXISTS to_account_id uuid REFERENCES accounts(id) ON DELETE RESTRICT,
     ALTER COLUMN category_id DROP NOT NULL;
   `;
+
+  // 8. Ensure default categories exist
+  const existingCats = await sql`SELECT count(*) FROM categories WHERE is_default = true;`;
+  if (parseInt(existingCats[0].count) === 0) {
+    const defaultCats = [
+      { name: "Gaji & Pendapatan", type: "income", icon: "💼", is_default: true },
+      { name: "Bonus & Freelance", type: "income", icon: "✨", is_default: true },
+      { name: "Investasi / Bunga", type: "income", icon: "📈", is_default: true },
+      { name: "Makanan & Minuman", type: "expense", icon: "🍜", is_default: true },
+      { name: "Transportasi", type: "expense", icon: "🛵", is_default: true },
+      { name: "Kebutuhan Rumah", type: "expense", icon: "🛒", is_default: true },
+      { name: "Langganan & Utilitas", type: "expense", icon: "⚡", is_default: true },
+      { name: "Hiburan & Rekreasi", type: "expense", icon: "🍿", is_default: true },
+      { name: "Kesehatan", type: "expense", icon: "💊", is_default: true },
+    ];
+    for (const cat of defaultCats) {
+      await sql`
+        INSERT INTO categories (name, type, icon, is_default)
+        VALUES (${cat.name}, ${cat.type}, ${cat.icon}, ${cat.is_default});
+      `;
+    }
+    console.log("✅ Default categories seeded");
+  }
 
   // 7. Trigger protection preventing default categories (is_default = true) from being deleted
   await sql`

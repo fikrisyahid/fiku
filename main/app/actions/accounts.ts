@@ -6,6 +6,12 @@ import { eq, and, or, isNull } from "drizzle-orm";
 
 import { getServerLocale } from "@/lib/i18n/server";
 import { translateAccountName } from "@/lib/i18n/dictionary";
+import {
+  encryptWithPublicKey,
+  decryptWithPrivateKey,
+  getActiveUserPrivateKey,
+  getUserPublicKey,
+} from "@/lib/crypto";
 
 export async function getUserAccounts(userId: string, _familyId?: string | null) {
   const locale = await getServerLocale();
@@ -14,11 +20,25 @@ export async function getUserAccounts(userId: string, _familyId?: string | null)
     orderBy: (acc, { desc, asc }) => [desc(acc.isDefault), asc(acc.createdAt)],
   });
 
-  return accs.map((a) => ({
-    ...a,
-    name: translateAccountName(a.name, locale),
-    rawName: a.name,
-  }));
+  const privKey = getActiveUserPrivateKey(userId);
+
+  return accs.map((a) => {
+    let plainBalance = a.balance;
+    if (privKey && a.balance.startsWith("enc:v1:")) {
+      try {
+        plainBalance = decryptWithPrivateKey(a.balance, privKey);
+      } catch (e) {
+        console.error("Failed to decrypt account balance for account", a.id, e);
+      }
+    }
+
+    return {
+      ...a,
+      balance: plainBalance,
+      name: translateAccountName(a.name, locale),
+      rawName: a.name,
+    };
+  });
 }
 
 export async function getAccountById(
@@ -26,9 +46,26 @@ export async function getAccountById(
   userId: string,
   _familyId?: string | null
 ) {
-  return await db.query.accounts.findFirst({
+  const acc = await db.query.accounts.findFirst({
     where: and(eq(accounts.id, accountId), eq(accounts.userId, userId)),
   });
+
+  if (!acc) return null;
+
+  const privKey = getActiveUserPrivateKey(userId);
+  let plainBalance = acc.balance;
+  if (privKey && acc.balance.startsWith("enc:v1:")) {
+    try {
+      plainBalance = decryptWithPrivateKey(acc.balance, privKey);
+    } catch (e) {
+      console.error("Failed to decrypt account balance for account", acc.id, e);
+    }
+  }
+
+  return {
+    ...acc,
+    balance: plainBalance,
+  };
 }
 
 export async function createAccount(data: {
@@ -56,19 +93,28 @@ export async function createAccount(data: {
       .where(eq(accounts.userId, userId));
   }
 
+  const publicKey = await getUserPublicKey(userId);
+  const rawBalanceStr = balance.toString();
+  const storedBalance = publicKey
+    ? encryptWithPublicKey(rawBalanceStr, publicKey)
+    : rawBalanceStr;
+
   const [newAccount] = await db
     .insert(accounts)
     .values({
       userId,
       name: name.trim(),
       type: type.toLowerCase(),
-      balance: balance.toString(),
+      balance: storedBalance,
       currency,
       isDefault,
     })
     .returning();
 
-  return newAccount;
+  return {
+    ...newAccount,
+    balance: rawBalanceStr,
+  };
 }
 
 export async function updateAccount(
@@ -95,7 +141,13 @@ export async function updateAccount(
 
   if (data.name !== undefined) updateValues.name = data.name.trim();
   if (data.type !== undefined) updateValues.type = data.type.toLowerCase();
-  if (data.balance !== undefined) updateValues.balance = data.balance.toString();
+  if (data.balance !== undefined) {
+    const publicKey = await getUserPublicKey(userId);
+    const rawBalanceStr = data.balance.toString();
+    updateValues.balance = publicKey
+      ? encryptWithPublicKey(rawBalanceStr, publicKey)
+      : rawBalanceStr;
+  }
   if (data.isDefault !== undefined) updateValues.isDefault = data.isDefault;
 
   const [updated] = await db
@@ -104,7 +156,10 @@ export async function updateAccount(
     .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)))
     .returning();
 
-  return updated;
+  return updated ? {
+    ...updated,
+    balance: data.balance !== undefined ? data.balance.toString() : updated.balance,
+  } : null;
 }
 
 export async function deleteAccount(
@@ -259,17 +314,24 @@ export async function transferBetweenAccounts(data: {
     ? `Transfer dari ${fromAccount.name}: ${note}`
     : `Transfer dari ${fromAccount.name}`;
 
+  const publicKey = await getUserPublicKey(userId);
+  const fromBalStored = publicKey ? encryptWithPublicKey(fromNewBalance.toString(), publicKey) : fromNewBalance.toString();
+  const toBalStored = publicKey ? encryptWithPublicKey(toNewBalance.toString(), publicKey) : toNewBalance.toString();
+  const amtStored = publicKey ? encryptWithPublicKey(amount.toString(), publicKey) : amount.toString();
+  const noteOutStored = note ? (publicKey ? encryptWithPublicKey(transferNoteOut, publicKey) : transferNoteOut) : null;
+  const noteInStored = note ? (publicKey ? encryptWithPublicKey(transferNoteIn, publicKey) : transferNoteIn) : null;
+
   await db.transaction(async (tx) => {
     // 1. Deduct balance from origin wallet
     await tx
       .update(accounts)
-      .set({ balance: fromNewBalance.toString(), updatedAt: new Date() })
+      .set({ balance: fromBalStored, updatedAt: new Date() })
       .where(eq(accounts.id, fromAccountId));
 
     // 2. Add balance to destination wallet
     await tx
       .update(accounts)
-      .set({ balance: toNewBalance.toString(), updatedAt: new Date() })
+      .set({ balance: toBalStored, updatedAt: new Date() })
       .where(eq(accounts.id, toAccountId));
 
     // 3. Record outgoing transaction on origin wallet
@@ -277,9 +339,9 @@ export async function transferBetweenAccounts(data: {
       userId,
       accountId: fromAccountId,
       categoryId: expenseTransferCat.id,
-      amount: amount.toString(),
+      amount: amtStored,
       type: "expense",
-      note: transferNoteOut,
+      note: noteOutStored,
       transactionDate,
     });
 
@@ -288,9 +350,9 @@ export async function transferBetweenAccounts(data: {
       userId,
       accountId: toAccountId,
       categoryId: incomeTransferCat.id,
-      amount: amount.toString(),
+      amount: amtStored,
       type: "income",
-      note: transferNoteIn,
+      note: noteInStored,
       transactionDate,
     });
   });

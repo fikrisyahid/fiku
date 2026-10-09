@@ -8,8 +8,6 @@ export interface OnboardUserInput {
   fullName: string;
   email?: string | null;
   phone?: string | null;
-  telegramId?: string | null;
-  telegramUsername?: string | null;
   initialCashBalance?: number;
   initialBankBalance?: number;
   initialEwalletBalance?: number;
@@ -25,36 +23,22 @@ export interface OnboardUserResult {
 }
 
 /**
- * Shared onboarding logic for Web and Telegram integrations.
+ * Shared onboarding logic for Web user creation and wallet setup.
  */
 export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserResult> {
   const {
     fullName,
     email: rawEmail,
     phone,
-    telegramId,
-    telegramUsername,
   } = input;
 
   const email = rawEmail?.trim().toLowerCase() || null;
 
   try {
-    // 1. Check for existing user (by telegramId, telegramUsername, or email)
+    // 1. Check for existing user by email
     let existingUser: typeof users.$inferSelect | undefined;
 
-    if (telegramId) {
-      existingUser = await db.query.users.findFirst({
-        where: eq(users.telegramId, telegramId),
-      });
-    }
-
-    if (!existingUser && telegramUsername) {
-      existingUser = await db.query.users.findFirst({
-        where: eq(users.telegramUsername, telegramUsername),
-      });
-    }
-
-    if (!existingUser && email) {
+    if (email) {
       existingUser = await db.query.users.findFirst({
         where: eq(users.email, email),
       });
@@ -69,15 +53,6 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
         updatedAt: new Date(),
       };
 
-      if (email && existingUser.email.startsWith("tg_")) {
-        updateData.email = email;
-      }
-      if (telegramId && !existingUser.telegramId) {
-        updateData.telegramId = telegramId;
-      }
-      if (telegramUsername && !existingUser.telegramUsername) {
-        updateData.telegramUsername = telegramUsername;
-      }
       if (fullName && (!existingUser.fullName || existingUser.fullName === "Sobat Fiku")) {
         updateData.fullName = fullName;
       }
@@ -98,18 +73,17 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
     } else {
       // Create new user record
       isNew = true;
-      // Database email column is NOT NULL: generate placeholder if registered via Telegram without email
-      const userEmail = email || `tg_${telegramId || Date.now()}@fiku.app`;
+      if (!email) {
+        throw new Error("Email wajib diisi untuk membuat akun pengguna.");
+      }
 
       const [newUser] = await db
         .insert(users)
         .values({
           id: crypto.randomUUID(),
           fullName: fullName || "Sobat Fiku",
-          email: userEmail,
+          email,
           phone: phone || null,
-          telegramId: telegramId || null,
-          telegramUsername: telegramUsername || null,
         })
         .returning();
 

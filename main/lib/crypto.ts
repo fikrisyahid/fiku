@@ -10,7 +10,14 @@ interface ActiveSession {
   expiresAt: number;
 }
 
-const ramSessionVault = new Map<string, ActiveSession>();
+declare global {
+  // eslint-disable-next-line no-var
+  var __fana_ramSessionVault: Map<string, ActiveSession> | undefined;
+}
+
+const ramSessionVault: Map<string, ActiveSession> =
+  globalThis.__fana_ramSessionVault ||
+  (globalThis.__fana_ramSessionVault = new Map<string, ActiveSession>());
 
 /**
  * Derive 256-bit encryption key combining:
@@ -254,4 +261,22 @@ export function lockUserSession(userId: string) {
     session.privateKey.fill(0);
     ramSessionVault.delete(userId);
   }
+}
+
+/**
+ * Retrieve user Public Key for asymmetric encryption
+ */
+export async function getUserPublicKey(userId: string): Promise<string | null> {
+  const { db } = await import("@/db");
+  const { users } = await import("@/db/schema");
+  const { eq } = await import("drizzle-orm");
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: {
+      publicKey: true,
+    },
+  });
+
+  return user?.publicKey || null;
 }

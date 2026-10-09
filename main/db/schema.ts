@@ -18,14 +18,11 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   fullName: text("full_name").notNull(),
   phone: text("phone"),
-  telegramId: text("telegram_id").unique(),
-  telegramUsername: text("telegram_username"),
   passwordHash: text("password_hash"),
   pinHash: text("pin_hash"),
   pinSalt: text("pin_salt"),
   publicKey: text("public_key"),
   encryptedPrivateKey: text("encrypted_private_key"),
-  expiredAt: timestamp("expired_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -41,7 +38,7 @@ export const accounts = pgTable("accounts", {
     .notNull(),
   name: text("name").notNull(),
   type: text("type").notNull(), // 'bank', 'ewallet', 'cash'
-  balance: numeric("balance", { precision: 15, scale: 2 }).default("0").notNull(),
+  balance: text("balance").default("0").notNull(),
   currency: text("currency").default("IDR").notNull(),
   isDefault: boolean("is_default").default(false).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -77,7 +74,7 @@ export const transactions = pgTable("transactions", {
     .notNull(),
   toAccountId: uuid("to_account_id").references(() => accounts.id, { onDelete: "restrict" }),
   categoryId: uuid("category_id").references(() => categories.id, { onDelete: "set null" }),
-  amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
+  amount: text("amount").notNull(),
   type: text("type").notNull(), // 'income' | 'expense' | 'transfer'
   note: text("note"),
   transactionDate: date("transaction_date").notNull(),
