@@ -317,6 +317,8 @@ export interface Dictionary {
     categoryNameLabel: string;
     categoryNamePlaceholder: string;
     categoryTypeLabel: string;
+    categoryIconLabel: string;
+    categoryIconPlaceholder: string;
     expenseType: string;
     incomeType: string;
     btnSaveCategory: string;
@@ -696,6 +698,8 @@ export const idDict: Dictionary = {
     categoryNameLabel: "Nama Kategori",
     categoryNamePlaceholder: "misal: Belanja Bulanan",
     categoryTypeLabel: "Tipe",
+    categoryIconLabel: "Ikon Kategori",
+    categoryIconPlaceholder: "Pilih atau ketik emoji...",
     expenseType: "Pengeluaran",
     incomeType: "Pemasukan",
     btnSaveCategory: "Simpan",
@@ -1071,6 +1075,8 @@ export const enDict: Dictionary = {
     categoryNameLabel: "Category Name",
     categoryNamePlaceholder: "e.g. Monthly Groceries",
     categoryTypeLabel: "Type",
+    categoryIconLabel: "Category Icon",
+    categoryIconPlaceholder: "Choose or type emoji...",
     expenseType: "Expense",
     incomeType: "Income",
     btnSaveCategory: "Save",

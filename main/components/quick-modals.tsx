@@ -30,6 +30,7 @@ import { CustomSelect } from "@/components/ui/custom-select";
 
 import { useI18n } from "@/lib/i18n/context";
 import { formatCurrencyValue } from "@/lib/currency";
+import { PRESET_CATEGORY_ICONS, getCategoryIcon } from "@/lib/category-icons";
 
 interface ModalProps {
   userId: string;
@@ -469,13 +470,57 @@ export function QuickModals({
                       <label className="text-[11px] text-zinc-500 font-medium">{dict.quickModals.categoryTypeLabel}</label>
                       <CustomSelect
                         value={categoryType}
-                        onChange={(val) => setCategoryType(val as any)}
+                        onChange={(val) => {
+                          const newType = val as "income" | "expense";
+                          setCategoryType(newType);
+                          // Suggest appropriate default icon when switching types if using default
+                          if (categoryIcon === "💸" && newType === "income") setCategoryIcon("💰");
+                          if (categoryIcon === "💰" && newType === "expense") setCategoryIcon("💸");
+                        }}
                         options={[
                           { value: "expense", label: dict.quickModals.expenseType, badge: "out", badgeClassName: "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300" },
                           { value: "income", label: dict.quickModals.incomeType, badge: "in", badgeClassName: "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300" },
                         ]}
                         triggerClassName="h-9 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
                       />
+                    </div>
+                  </div>
+
+                  {/* Custom Icon Picker & Preset Strip */}
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] text-zinc-500 font-medium">{dict.quickModals.categoryIconLabel}</label>
+                      <span className="text-[10px] text-zinc-400">Preset emoji</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="relative w-12 shrink-0">
+                        <Input
+                          value={categoryIcon}
+                          onChange={(e) => setCategoryIcon(e.target.value)}
+                          placeholder="💸"
+                          className="h-9 text-center text-lg p-0"
+                          maxLength={6}
+                        />
+                      </div>
+                      <div className="flex items-center gap-1 overflow-x-auto py-1 px-1 rounded-lg bg-zinc-100/70 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800 scrollbar-none flex-1">
+                        {(PRESET_CATEGORY_ICONS[categoryType] || PRESET_CATEGORY_ICONS.expense).map((preset) => {
+                          const isSelected = categoryIcon === preset;
+                          return (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => setCategoryIcon(preset)}
+                              className={`p-1 text-sm rounded-md transition-all shrink-0 cursor-pointer hover:scale-115 ${
+                                isSelected
+                                  ? "bg-white dark:bg-zinc-800 shadow-xs ring-1 ring-emerald-500"
+                                  : "hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60"
+                              }`}
+                            >
+                              {preset}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
@@ -499,10 +544,11 @@ export function QuickModals({
                   <div className="max-h-60 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800">
                     {categories.map((cat) => {
                       const isProtected = cat.isDefault || (!cat.userId && !cat.familyId);
+                      const iconDisplay = getCategoryIcon(cat);
                       return (
                         <div key={cat.id} className="py-2 flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2">
-                            <span>{cat.icon || (cat.type === "income" ? "💰" : "💸")}</span>
+                            <span className="text-base shrink-0">{iconDisplay}</span>
                             <div>
                               <span className="font-semibold">{cat.name}</span>
                               <span className={`ml-2 text-[10px] px-1.5 py-0.2 rounded font-semibold ${
@@ -525,7 +571,7 @@ export function QuickModals({
                                   setEditingCategory(cat);
                                   setCategoryName(cat.name);
                                   setCategoryType(cat.type);
-                                  setCategoryIcon(cat.icon || "🏷️");
+                                  setCategoryIcon(getCategoryIcon(cat));
                                 }}
                                 className="p-1 rounded text-zinc-500 hover:text-emerald-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
                               >

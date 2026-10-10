@@ -6,6 +6,7 @@ import { eq, and, desc, asc, count, isNull } from "drizzle-orm";
 
 import { getServerLocale } from "@/lib/i18n/server";
 import { translateCategoryName, translateAccountName } from "@/lib/i18n/dictionary";
+import { getCategoryIcon } from "@/lib/category-icons";
 import {
   encryptWithPublicKey,
   decryptWithPrivateKey,
@@ -123,6 +124,7 @@ function mapAndDecryptTransaction(tx: any, privKey: string | null, locale: any) 
           ...tx.category,
           name: translateCategoryName(catPlainName ?? tx.category.name, locale),
           rawName: catPlainName ?? tx.category.name,
+          icon: getCategoryIcon({ ...tx.category, name: catPlainName ?? tx.category.name }),
         }
       : tx.category,
   };

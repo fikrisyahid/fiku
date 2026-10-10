@@ -12,6 +12,7 @@ import {
   getActiveUserPrivateKey,
   getUserPublicKey,
 } from "@/lib/crypto";
+import { getCategoryIcon } from "@/lib/category-icons";
 
 export async function getCategories(userId?: string, _familyId?: string | null) {
   const locale = await getServerLocale();
@@ -48,6 +49,7 @@ export async function getCategories(userId?: string, _familyId?: string | null) 
       ...cat,
       name: translateCategoryName(plainName, locale),
       rawName: plainName,
+      icon: getCategoryIcon({ ...cat, name: plainName }),
     };
   });
 }
@@ -63,6 +65,7 @@ export async function createCategory(data: {
   const publicKey = await getUserPublicKey(userId);
   const trimmedName = name.trim();
   const storedName = publicKey ? encryptWithPublicKey(trimmedName, publicKey) : trimmedName;
+  const resolvedIcon = getCategoryIcon({ icon, name: trimmedName, type });
 
   const [newCategory] = await db
     .insert(categories)
@@ -70,7 +73,7 @@ export async function createCategory(data: {
       userId,
       name: storedName,
       type,
-      icon: icon || (type === "income" ? "💰" : "💸"),
+      icon: resolvedIcon,
       isDefault: false,
     })
     .returning();
@@ -78,6 +81,7 @@ export async function createCategory(data: {
   return {
     ...newCategory,
     name: trimmedName,
+    icon: resolvedIcon,
   };
 }
 

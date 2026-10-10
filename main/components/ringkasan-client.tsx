@@ -17,6 +17,7 @@ import { FinancialChart } from "@/components/financial-chart";
 
 import { useI18n } from "@/lib/i18n/context";
 import { formatCurrencyValue } from "@/lib/currency";
+import { getCategoryIcon } from "@/lib/category-icons";
 
 interface RingkasanClientProps {
   transactions: any[];
@@ -140,7 +141,7 @@ export function RingkasanClient({
         const catId = t.category.id;
         const current = map.get(catId) || {
           name: t.category.name,
-          icon: t.category.icon || "💸",
+          icon: getCategoryIcon(t.category),
           total: 0,
         };
         current.total += parseFloat(t.amount || "0");

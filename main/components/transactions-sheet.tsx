@@ -37,6 +37,7 @@ import { getLocalTodayDateString } from "@/lib/utils";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatCurrencyValue, getCurrencySymbol } from "@/lib/currency";
+import { getCategoryIcon } from "@/lib/category-icons";
 
 export interface TransactionRow {
   id: string;
@@ -756,7 +757,7 @@ export function TransactionsSheet({
                             .map((c) => ({
                               value: c.id,
                               label: c.name,
-                              icon: c.icon || "🏷️",
+                              icon: getCategoryIcon(c),
                             }))}
                           triggerClassName={`h-8 ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
                         />
