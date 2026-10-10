@@ -70,7 +70,7 @@ export default async function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 dark:bg-gradient-to-b dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 text-zinc-900 dark:text-zinc-50 flex flex-col overflow-x-hidden">
       {/* Top Navigation with User Badge, Logout & Mobile Drawer */}
       <AppNavbar user={user} locale={locale} />
 
