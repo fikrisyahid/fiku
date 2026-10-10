@@ -253,6 +253,8 @@ export interface Dictionary {
     emptyCategoryExpenses: string;
     walletStatusTitle: string;
     primaryWalletBadge: string;
+    viewMore: (count: number) => string;
+    viewLess: string;
   };
 
   // Login & Register
@@ -638,6 +640,8 @@ export const idDict: Dictionary = {
     emptyCategoryExpenses: "Belum ada pengeluaran pada periode ini.",
     walletStatusTitle: "Status Kantong & Rekening",
     primaryWalletBadge: "Dompet Utama",
+    viewMore: (count: number) => `Lihat Semua (${count})`,
+    viewLess: "Perkecil Tampilan",
   },
   login: {
     metaTitle: "Masuk • Fiku",
@@ -1015,6 +1019,8 @@ export const enDict: Dictionary = {
     emptyCategoryExpenses: "No expenses recorded for this period.",
     walletStatusTitle: "Wallets & Accounts Status",
     primaryWalletBadge: "Primary Wallet",
+    viewMore: (count: number) => `View All (${count})`,
+    viewLess: "Show Less",
   },
   login: {
     metaTitle: "Sign In • Fiku",

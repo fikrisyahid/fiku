@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useTransition } from "react";
+import { useState, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   TrendingUp,
@@ -12,6 +12,8 @@ import {
   ArrowDownRight,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Settings,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -143,6 +145,17 @@ export function RingkasanClient({
     }
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
   }, [transactions]);
+
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [showAllAccounts, setShowAllAccounts] = useState(false);
+
+  const displayedCategories = showAllCategories
+    ? expensesByCategory
+    : expensesByCategory.slice(0, 5);
+
+  const displayedAccounts = showAllAccounts
+    ? accounts
+    : accounts.slice(0, 4);
 
   return (
     <div className="relative space-y-6">
@@ -337,29 +350,52 @@ export function RingkasanClient({
                 {dict.ringkasan.emptyCategoryExpenses}
               </div>
             ) : (
-              expensesByCategory.map((cat) => {
-                const percentage =
-                  totalExpense > 0 ? Math.round((cat.total / totalExpense) * 100) : 0;
+              <>
+                {displayedCategories.map((cat) => {
+                  const percentage =
+                    totalExpense > 0 ? Math.round((cat.total / totalExpense) * 100) : 0;
 
-                return (
-                  <div key={cat.name} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-                        <span>{cat.icon}</span> {cat.name}
-                      </span>
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                        {formatCurrency(cat.total)} ({percentage}%)
-                      </span>
+                  return (
+                    <div key={cat.name} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                          <span>{cat.icon}</span> {cat.name}
+                        </span>
+                        <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                          {formatCurrency(cat.total)} ({percentage}%)
+                        </span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-emerald-500 transition-all duration-300"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-emerald-500 transition-all duration-300"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
+                  );
+                })}
+
+                {expensesByCategory.length > 5 && (
+                  <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllCategories((prev) => !prev)}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors py-1 px-3 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                    >
+                      <span>
+                        {showAllCategories
+                          ? dict.ringkasan.viewLess
+                          : dict.ringkasan.viewMore(expensesByCategory.length)}
+                      </span>
+                      {showAllCategories ? (
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      )}
+                    </button>
                   </div>
-                );
-              })
+                )}
+              </>
             )}
           </CardContent>
         </Card>
@@ -372,29 +408,52 @@ export function RingkasanClient({
               {dict.ringkasan.walletStatusTitle}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 sm:p-5 divide-y divide-zinc-100 dark:divide-zinc-800">
-            {accounts.map((acc) => (
-              <div key={acc.id} className="py-3 flex items-center justify-between text-xs first:pt-0 last:pb-0">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-lg">
-                    {acc.type === "cash" ? "💵" : acc.type === "bank" ? "🏦" : "📱"}
+          <CardContent className="p-4 sm:p-5">
+            <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              {displayedAccounts.map((acc) => (
+                <div key={acc.id} className="py-3 flex items-center justify-between text-xs first:pt-0 last:pb-0">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg">
+                      {acc.type === "cash" ? "💵" : acc.type === "bank" ? "🏦" : "📱"}
+                    </span>
+                    <div>
+                      <div className="font-semibold text-zinc-800 dark:text-zinc-200">
+                        {acc.name}
+                      </div>
+                      <div className="text-[10px] text-zinc-400 uppercase tracking-wider">
+                        {acc.type} {acc.isDefault ? `• ${dict.ringkasan.primaryWalletBadge}` : ""}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
+                      {formatCurrency(parseFloat(acc.balance || "0"))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {accounts.length > 4 && (
+              <div className="pt-3 mt-1 border-t border-zinc-100 dark:border-zinc-800/80 text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowAllAccounts((prev) => !prev)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors py-1 px-3 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                >
+                  <span>
+                    {showAllAccounts
+                      ? dict.ringkasan.viewLess
+                      : dict.ringkasan.viewMore(accounts.length)}
                   </span>
-                  <div>
-                    <div className="font-semibold text-zinc-800 dark:text-zinc-200">
-                      {acc.name}
-                    </div>
-                    <div className="text-[10px] text-zinc-400 uppercase tracking-wider">
-                      {acc.type} {acc.isDefault ? `• ${dict.ringkasan.primaryWalletBadge}` : ""}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                    {formatCurrency(parseFloat(acc.balance || "0"))}
-                  </div>
-                </div>
+                  {showAllAccounts ? (
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  )}
+                </button>
               </div>
-            ))}
+            )}
           </CardContent>
         </Card>
       </div>
