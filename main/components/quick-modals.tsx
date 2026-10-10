@@ -242,32 +242,38 @@ export function QuickModals({
 
   return (
     <div className="space-y-3">
-      {/* Quick Action Button Strip (layaknya di Telegram) */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none">
+      {/* Spotlight Quick Action Chips */}
+      <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none select-none">
         <button
           type="button"
           onClick={() => openModal("saldo")}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60 text-xs font-semibold hover:bg-emerald-100 transition-all shadow-sm cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs sm:text-sm font-bold transition-all shadow-xs cursor-pointer active:scale-95"
         >
-          <Wallet className="w-3.5 h-3.5" />
+          <div className="p-1 rounded-lg bg-emerald-500 text-white shadow-2xs">
+            <Wallet className="w-3.5 h-3.5" />
+          </div>
           <span>{dict.quickModals.btnSaldo}</span>
         </button>
 
         <button
           type="button"
           onClick={() => openModal("kantong")}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-900/60 text-xs font-semibold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-all shadow-sm cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 text-xs sm:text-sm font-bold transition-all shadow-xs cursor-pointer active:scale-95"
         >
-          <PiggyBank className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+          <div className="p-1 rounded-lg bg-amber-500 text-white shadow-2xs">
+            <PiggyBank className="w-3.5 h-3.5" />
+          </div>
           <span>{dict.quickModals.btnKantong}</span>
         </button>
 
         <button
           type="button"
           onClick={() => openModal("kategori")}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all shadow-sm cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30 text-xs sm:text-sm font-bold transition-all shadow-xs cursor-pointer active:scale-95"
         >
-          <Tag className="w-3.5 h-3.5" />
+          <div className="p-1 rounded-lg bg-purple-500 text-white shadow-2xs">
+            <Tag className="w-3.5 h-3.5" />
+          </div>
           <span>{dict.quickModals.btnKategori}</span>
         </button>
       </div>

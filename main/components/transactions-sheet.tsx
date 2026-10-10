@@ -501,16 +501,16 @@ export function TransactionsSheet({
 
   return (
     <div className="space-y-4">
-      {/* Top Toolbar: Search, Add Row, Export/Import */}
+      {/* Top Toolbar: Search, Add Row (Primary), Secondary Actions */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 max-w-sm">
           <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <Input
             type="text"
             placeholder={dict.transaksi.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-9 h-10 text-xs bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl"
+            className="pl-9 h-9.5 text-xs bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl"
           />
         </div>
 
@@ -522,9 +522,9 @@ export function TransactionsSheet({
                 variant="destructive"
                 size="sm"
                 onClick={() => setIsBatchDeleteOpen(true)}
-                className="flex-1 sm:flex-initial h-10 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-sm transition-all animate-in fade-in"
+                className="flex-1 sm:flex-initial h-9.5 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-xs transition-all animate-in fade-in"
               >
-                <Trash2 className="w-4 h-4 mr-1.5" />
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
                 {dict.transaksi.btnDeleteSelected(selectedIds.size)}
               </Button>
               <Button
@@ -532,41 +532,43 @@ export function TransactionsSheet({
                 variant="ghost"
                 size="sm"
                 onClick={clearSelection}
-                className="h-10 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                className="h-9.5 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
               >
                 {dict.common.cancel}
               </Button>
             </div>
           )}
 
-          <Button
-            type="button"
-            onClick={() => setIsDatabaseInspectorOpen(true)}
-            variant="outline"
-            size="sm"
-            title={dict.transaksi.btnInspectDatabase}
-            className="flex-1 sm:flex-initial h-10 text-xs font-semibold border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-          >
-            <ShieldCheck className="w-4 h-4 mr-1.5 text-emerald-600" />
-            <span className="hidden xs:inline sm:inline">{dict.transaksi.btnInspectDatabase}</span>
-          </Button>
-
+          {/* Secondary Actions (Compact / Non-competing) */}
           <Button
             type="button"
             onClick={() => setIsExportImportOpen(true)}
             variant="outline"
             size="sm"
-            className="flex-1 sm:flex-initial h-10 text-xs font-semibold border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800"
+            className="h-9.5 px-3 text-xs font-semibold border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
           >
-            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-emerald-600" />
-            {dict.transaksi.btnExportImport}
+            <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-zinc-500" />
+            <span className="hidden sm:inline">{dict.transaksi.btnExportImport}</span>
+            <span className="sm:hidden">Excel</span>
           </Button>
 
           <Button
             type="button"
+            onClick={() => setIsDatabaseInspectorOpen(true)}
+            variant="ghost"
+            size="sm"
+            title={dict.transaksi.btnInspectDatabase}
+            className="h-9.5 px-2.5 text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          </Button>
+
+          {/* Spotlight Primary Call-to-Action */}
+          <Button
+            type="button"
             onClick={handleAddNewRow}
             size="sm"
-            className="flex-1 sm:flex-initial h-10 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm"
+            className="flex-1 sm:flex-initial h-9.5 px-4 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95"
           >
             <Plus className="w-4 h-4 mr-1.5" /> {dict.transaksi.btnNewRow}
           </Button>

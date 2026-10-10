@@ -61,9 +61,6 @@ export default async function TransaksiPage({ searchParams }: TransaksiPageProps
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
             {dict.transaksi.heading}
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-            {dict.transaksi.subheading}
-          </p>
         </div>
 
         <TransactionsClient
