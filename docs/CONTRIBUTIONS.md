@@ -114,6 +114,8 @@ Run these commands from the repository root:
 | `bun run db:reset` | Wipes and resets all database table rows (`scripts/db-reset.ts`) |
 | `bun run sync:env` | Synchronizes `.env` files between root and the `main/` directory |
 
+> **Note**: For the complete, exhaustive list of task runner scripts and background options, please see [**COMMANDS.md**](COMMANDS.md).
+
 ---
 
 ## 🔐 Zero-Knowledge Security Compliance (Mandatory)

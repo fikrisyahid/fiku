@@ -89,41 +89,23 @@ All commands can be run directly from the **repository root** using `bun run`. E
 - [Bun](https://bun.sh/) (`bun >= 1.4`)
 - [uv](https://docs.astral.sh/uv/) (Python package runner for ops workflow runner)
 
-### Quick Start Guide:
+### Quick Start:
 
 ```bash
-# 1. Setup environment variables at the root
+# 1. Setup environment variables
 cp .env.example .env
-# Fill in DATABASE_URL, ENCRYPTION_PEPPER, and APP_SECRET_KEY in .env
 
-# 2. Install dependencies
+# 2. Install dependencies & sync database
 bun run install:main
-
-# 3. Synchronize database schema to Supabase/PostgreSQL
 bun run db:sync
 
-# 4. (Optional) Generate demo user data encrypted with Zero-Knowledge
-bun run seed:dummy
-
-# 5. Start development server
+# 3. Start development server
 bun run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Key Commands:
-
-| Command | Action |
-| :--- | :--- |
-| `bun run dev` | Runs the Next.js Web App on port 3000 |
-| `bun run check` | Checks TypeScript types (`tsc --noEmit`) |
-| `bun run lint` | Runs ESLint across the codebase |
-| `bun run test` | Runs unit & integration test suites (`bun test tests/`) |
-| `bun run build` | Creates an optimized production build |
-| `bun run db:sync` | Synchronizes database schema columns & constraints |
-| `bun run db:reset` | Clears all data from database tables |
-| `bun run db:studio` | Opens Drizzle Studio visual editor in browser |
-| `bun run seed:dummy` | Generates a full demo account with dummy data |
+> For the complete list of scripts, testing commands, and database tasks, see [**docs/COMMANDS.md**](docs/COMMANDS.md).
 
 ---
 
@@ -131,7 +113,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 We welcome community contributions! To maintain code quality and production stability:
 - All Pull Requests must target the **`staging`** branch. Direct PRs to `main` are restricted.
-- Review our complete contributor guide, branching strategy, and local environment setup in:
+- Review our complete step-by-step setup, coding conventions, and branching workflow in:
   👉 **[Contributor Guide (docs/CONTRIBUTIONS.md)](docs/CONTRIBUTIONS.md)**
 
 ---
