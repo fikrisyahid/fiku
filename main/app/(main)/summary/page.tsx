@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { RingkasanClient } from "@/components/ringkasan-client";
 import { getServerLocale, getServerDictionary } from "@/lib/i18n/server";
 
+import { getPeriodDateRange, PeriodMode } from "@/lib/date-summary";
+
 export async function generateMetadata() {
   const dict = await getServerDictionary();
   return {
@@ -14,19 +16,33 @@ export async function generateMetadata() {
   };
 }
 
-export default async function RingkasanPage() {
+export default async function RingkasanPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string; offset?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");
   }
 
-  const locale = await getServerLocale();
-  const dict = await getServerDictionary();
+  const resolvedParams = await searchParams;
+  const rawPeriod = resolvedParams?.period;
+  const validPeriods: PeriodMode[] = ["harian", "mingguan", "bulanan", "tahunan"];
+  const period: PeriodMode = validPeriods.includes(rawPeriod as PeriodMode)
+    ? (rawPeriod as PeriodMode)
+    : "bulanan";
 
-  const [accounts, transactionsList, settings] = await Promise.all([
+  const rawOffset = parseInt(resolvedParams?.offset || "0", 10);
+  const offset = Number.isNaN(rawOffset) ? 0 : rawOffset;
+
+  const { startDate, endDate } = getPeriodDateRange(period, offset);
+
+  const [accounts, transactionsList, settings, dict] = await Promise.all([
     getUserAccounts(user.id),
-    getUserTransactions(user.id, { limit: 500 }),
+    getUserTransactions(user.id, { startDate, endDate }),
     getUserSettings(user.id),
+    getServerDictionary(),
   ]);
 
   return (
@@ -45,6 +61,8 @@ export default async function RingkasanPage() {
           transactions={transactionsList}
           accounts={accounts}
           currency={settings.currency || "IDR"}
+          initialPeriod={period}
+          initialOffset={offset}
         />
       </main>
     </div>

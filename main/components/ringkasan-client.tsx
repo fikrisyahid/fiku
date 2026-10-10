@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   TrendingUp,
   TrendingDown,
@@ -11,6 +12,7 @@ import {
   ArrowDownRight,
   ChevronLeft,
   ChevronRight,
+  Settings,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FinancialChart } from "@/components/financial-chart";
@@ -18,23 +20,39 @@ import { FinancialChart } from "@/components/financial-chart";
 import { useI18n } from "@/lib/i18n/context";
 import { formatCurrencyValue } from "@/lib/currency";
 import { getCategoryIcon } from "@/lib/category-icons";
+import { PeriodMode } from "@/lib/date-summary";
 
 interface RingkasanClientProps {
   transactions: any[];
   accounts: any[];
   currency?: string;
+  initialPeriod?: PeriodMode;
+  initialOffset?: number;
 }
-
-type PeriodMode = "harian" | "mingguan" | "bulanan" | "tahunan";
 
 export function RingkasanClient({
   transactions,
   accounts,
   currency = "IDR",
+  initialPeriod = "bulanan",
+  initialOffset = 0,
 }: RingkasanClientProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const { dict, locale } = useI18n();
-  const [period, setPeriod] = useState<PeriodMode>("bulanan");
-  const [offset, setOffset] = useState<number>(0); // 0 = current, -1 = previous, etc.
+
+  const period = initialPeriod;
+  const offset = initialOffset;
+
+  const navigateTo = (newPeriod: PeriodMode, newOffset: number) => {
+    startTransition(() => {
+      const params = new URLSearchParams();
+      if (newPeriod !== "bulanan") params.set("period", newPeriod);
+      if (newOffset !== 0) params.set("offset", String(newOffset));
+      const qs = params.toString();
+      router.push(qs ? `/summary?${qs}` : "/summary");
+    });
+  };
 
   const formatCurrency = (amount: number) => {
     return formatCurrencyValue(amount, currency, locale);
@@ -43,37 +61,29 @@ export function RingkasanClient({
   const dateLocale = locale === "en" ? "en-US" : "id-ID";
 
   // Helper date calculations based on period and offset
-  const { periodLabel, filteredTransactions } = useMemo(() => {
+  const periodLabel = useMemo(() => {
     const now = new Date();
     const targetDate = new Date();
 
     if (period === "harian") {
       targetDate.setDate(now.getDate() + offset);
-      const targetStr = targetDate.toISOString().split("T")[0];
-      const label = targetDate.toLocaleDateString(dateLocale, {
+      return targetDate.toLocaleDateString(dateLocale, {
         weekday: "long",
         day: "numeric",
         month: "long",
         year: "numeric",
       });
-      const filtered = transactions.filter((t) => t.transactionDate === targetStr);
-      return { periodLabel: label, filteredTransactions: filtered };
     }
 
     if (period === "mingguan") {
-      // Offset weeks
       targetDate.setDate(now.getDate() + offset * 7);
-      // Get current week start (Monday) and end (Sunday)
       const day = targetDate.getDay();
       const diffToMonday = targetDate.getDate() - day + (day === 0 ? -6 : 1);
       const monday = new Date(targetDate.setDate(diffToMonday));
       const sunday = new Date(monday);
       sunday.setDate(monday.getDate() + 6);
 
-      const monStr = monday.toISOString().split("T")[0];
-      const sunStr = sunday.toISOString().split("T")[0];
-
-      const label = `${monday.toLocaleDateString(dateLocale, {
+      return `${monday.toLocaleDateString(dateLocale, {
         day: "numeric",
         month: "short",
       })} - ${sunday.toLocaleDateString(dateLocale, {
@@ -81,50 +91,33 @@ export function RingkasanClient({
         month: "short",
         year: "numeric",
       })}`;
-
-      const filtered = transactions.filter(
-        (t) => t.transactionDate >= monStr && t.transactionDate <= sunStr
-      );
-      return { periodLabel: label, filteredTransactions: filtered };
     }
 
     if (period === "bulanan") {
       targetDate.setMonth(now.getMonth() + offset);
-      const year = targetDate.getFullYear();
-      const month = String(targetDate.getMonth() + 1).padStart(2, "0");
-      const prefix = `${year}-${month}`;
-      const label = targetDate.toLocaleDateString(dateLocale, {
+      return targetDate.toLocaleDateString(dateLocale, {
         month: "long",
         year: "numeric",
       });
-      const filtered = transactions.filter((t) =>
-        t.transactionDate.startsWith(prefix)
-      );
-      return { periodLabel: label, filteredTransactions: filtered };
     }
 
     // tahunan
     targetDate.setFullYear(now.getFullYear() + offset);
-    const yearStr = `${targetDate.getFullYear()}`;
-    const label = `${dict.ringkasan.yearLabel} ${yearStr}`;
-    const filtered = transactions.filter((t) =>
-      t.transactionDate.startsWith(yearStr)
-    );
-    return { periodLabel: label, filteredTransactions: filtered };
-  }, [period, offset, transactions, dateLocale, dict.ringkasan.yearLabel]);
+    return `${dict.ringkasan.yearLabel} ${targetDate.getFullYear()}`;
+  }, [period, offset, dateLocale, dict.ringkasan.yearLabel]);
 
-  // Aggregate financial metrics
+  // Aggregate financial metrics (transactions already filtered server-side)
   const totalIncome = useMemo(() => {
-    return filteredTransactions
+    return transactions
       .filter((t) => t.type === "income")
       .reduce((sum, t) => sum + parseFloat(t.amount || "0"), 0);
-  }, [filteredTransactions]);
+  }, [transactions]);
 
   const totalExpense = useMemo(() => {
-    return filteredTransactions
+    return transactions
       .filter((t) => t.type === "expense")
       .reduce((sum, t) => sum + parseFloat(t.amount || "0"), 0);
-  }, [filteredTransactions]);
+  }, [transactions]);
 
   const netSavings = totalIncome - totalExpense;
 
@@ -136,7 +129,7 @@ export function RingkasanClient({
   // Group expenses by category
   const expensesByCategory = useMemo(() => {
     const map = new Map<string, { name: string; icon: string; total: number }>();
-    for (const t of filteredTransactions) {
+    for (const t of transactions) {
       if (t.type === "expense" && t.category) {
         const catId = t.category.id;
         const current = map.get(catId) || {
@@ -149,10 +142,25 @@ export function RingkasanClient({
       }
     }
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
-  }, [filteredTransactions]);
+  }, [transactions]);
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6">
+      {/* Gear Loading Overlay when changing period or offset */}
+      {isPending && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/60 dark:bg-zinc-950/60 backdrop-blur-[2px] transition-all animate-in fade-in duration-150">
+          <div className="flex flex-col items-center gap-2.5 p-4 rounded-2xl bg-white/95 dark:bg-zinc-900/95 border border-zinc-200/80 dark:border-zinc-800 shadow-xl">
+            <div className="relative flex items-center justify-center">
+              <Settings className="w-8 h-8 text-emerald-600 dark:text-emerald-400 animate-spin" />
+              <Settings className="w-4 h-4 text-emerald-500/70 absolute -top-1 -right-1 animate-[spin_1.5s_linear_infinite_reverse]" />
+            </div>
+            <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              {locale === "id" ? "Memuat ringkasan..." : "Loading summary..."}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Period Filter Selector */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-zinc-900 p-2 sm:p-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
         <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800/70 p-1 rounded-xl">
@@ -171,10 +179,8 @@ export function RingkasanClient({
                 <button
                   key={mode}
                   type="button"
-                  onClick={() => {
-                    setPeriod(mode);
-                    setOffset(0);
-                  }}
+                  disabled={isPending}
+                  onClick={() => navigateTo(mode, 0)}
                   className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
                     period === mode
                       ? "bg-white dark:bg-zinc-900 text-emerald-700 dark:text-emerald-300 shadow-xs"
@@ -192,8 +198,9 @@ export function RingkasanClient({
         <div className="flex items-center justify-between sm:justify-end gap-2">
           <button
             type="button"
-            onClick={() => setOffset((prev) => prev - 1)}
-            className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            disabled={isPending}
+            onClick={() => navigateTo(period, offset - 1)}
+            className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -202,8 +209,8 @@ export function RingkasanClient({
           </span>
           <button
             type="button"
-            onClick={() => setOffset((prev) => prev + 1)}
-            disabled={offset >= 0}
+            disabled={offset >= 0 || isPending}
+            onClick={() => navigateTo(period, offset + 1)}
             className={`p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
               offset >= 0 ? "opacity-30 cursor-not-allowed" : ""
             }`}
@@ -213,7 +220,8 @@ export function RingkasanClient({
           {offset !== 0 && (
             <button
               type="button"
-              onClick={() => setOffset(0)}
+              disabled={isPending}
+              onClick={() => navigateTo(period, 0)}
               className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold hover:underline ml-1"
             >
               {dict.ringkasan.btnReset}
@@ -255,7 +263,7 @@ export function RingkasanClient({
               {formatCurrency(totalIncome)}
             </div>
             <p className="text-[11px] text-zinc-400 mt-0.5">
-              {dict.ringkasan.txCount(filteredTransactions.filter((t) => t.type === "income").length)}
+              {dict.ringkasan.txCount(transactions.filter((t) => t.type === "income").length)}
             </p>
           </CardContent>
         </Card>
@@ -275,7 +283,7 @@ export function RingkasanClient({
               {formatCurrency(totalExpense)}
             </div>
             <p className="text-[11px] text-zinc-400 mt-0.5">
-              {dict.ringkasan.txCount(filteredTransactions.filter((t) => t.type === "expense").length)}
+              {dict.ringkasan.txCount(transactions.filter((t) => t.type === "expense").length)}
             </p>
           </CardContent>
         </Card>
@@ -309,7 +317,7 @@ export function RingkasanClient({
       <FinancialChart
         period={period}
         periodLabel={periodLabel}
-        transactions={filteredTransactions}
+        transactions={transactions}
         currency={currency}
       />
 

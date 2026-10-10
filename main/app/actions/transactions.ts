@@ -137,18 +137,23 @@ export async function getUserTransactions(
     type?: "income" | "expense";
     accountId?: string;
     familyId?: string | null;
+    startDate?: string;
+    endDate?: string;
   }
 ) {
-  const limit = options?.limit || 15;
+  const limit = options?.limit;
   const familyId = options?.familyId;
   const locale = await getServerLocale();
 
   const txs = await db.query.transactions.findMany({
-    where: (tx, { eq: eqField, and: andFields }) => {
+    where: (tx, { eq: eqField, and: andFields, gte: gteField, lte: lteField }) => {
       const conditions = [eqField(tx.userId, userId)];
 
       if (options?.type) conditions.push(eqField(tx.type, options.type));
       if (options?.accountId) conditions.push(eqField(tx.accountId, options.accountId));
+      if (options?.startDate) conditions.push(gteField(tx.transactionDate, options.startDate));
+      if (options?.endDate) conditions.push(lteField(tx.transactionDate, options.endDate));
+
       return andFields(...conditions);
     },
     with: {
@@ -158,7 +163,7 @@ export async function getUserTransactions(
       user: true,
     },
     orderBy: [desc(transactions.transactionDate), desc(transactions.createdAt)],
-    limit,
+    ...(limit ? { limit } : {}),
   });
 
   const privKey = await getActiveUserPrivateKey(userId);
