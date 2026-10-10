@@ -188,8 +188,95 @@ export async function getUserTransactionsPaginated(
   const locale = await getServerLocale();
   const privKey = await getActiveUserPrivateKey(userId);
 
-  // 1. Fetch matching transactions
-  // If sorting is by native date or there is no query, we can optimize or fetch with appropriate order
+  // -------------------------------------------------------------
+  // SMART HYBRID PAGINATION STRATEGY
+  // 1. FAST PATH (95% of requests):
+  //    When there is no search query and sorting is by transactionDate,
+  //    push pagination & ordering directly to Postgres using composite index
+  //    idx_transactions_user_date. Only fetch and decrypt the requested page slice!
+  // -------------------------------------------------------------
+  const isFastPathEligible = !searchQuery && sortBy === "transactionDate";
+
+  if (isFastPathEligible) {
+    const orderClause =
+      sortOrder === "asc"
+        ? [asc(transactions.transactionDate), asc(transactions.createdAt)]
+        : [desc(transactions.transactionDate), desc(transactions.createdAt)];
+
+    // 1a. Fast total count determination
+    let totalCount = 0;
+    if (!options.type && !options.accountId) {
+      // Use cached transaction count from userSettings, fallback to exact count if needed
+      const settings = await getUserSettings(userId);
+      totalCount = typeof settings.transactionCount === "number" ? settings.transactionCount : parseInt(String(settings.transactionCount || "0"), 10);
+      if (isNaN(totalCount) || totalCount === 0) {
+        const [exactCount] = await db
+          .select({ val: count() })
+          .from(transactions)
+          .where(eq(transactions.userId, userId));
+        totalCount = exactCount?.val || 0;
+        // Self-heal cached counter
+        if (settings.transactionCount !== totalCount) {
+          await db
+            .update(userSettings)
+            .set({ transactionCount: totalCount.toString(), updatedAt: new Date() })
+            .where(eq(userSettings.userId, userId));
+        }
+      }
+    } else {
+      // Filtered by type or account: count matching records with SQL count()
+      const whereConditions = [eq(transactions.userId, userId)];
+      if (options.type) whereConditions.push(eq(transactions.type, options.type));
+      if (options.accountId) whereConditions.push(eq(transactions.accountId, options.accountId));
+
+      const [filteredCount] = await db
+        .select({ val: count() })
+        .from(transactions)
+        .where(and(...whereConditions));
+      totalCount = filteredCount?.val || 0;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+    const safePage = Math.min(page, totalPages);
+    const offsetIndex = (safePage - 1) * pageSize;
+
+    // 1b. Fetch only the requested 25 rows from database using SQL limit & offset
+    const txs = await db.query.transactions.findMany({
+      where: (tx, { eq: eqField, and: andFields }) => {
+        const conditions = [eqField(tx.userId, userId)];
+        if (options.type) conditions.push(eqField(tx.type, options.type));
+        if (options.accountId) conditions.push(eqField(tx.accountId, options.accountId));
+        return andFields(...conditions);
+      },
+      with: {
+        account: true,
+        toAccount: true,
+        category: true,
+        user: true,
+      },
+      orderBy: orderClause,
+      limit: pageSize,
+      offset: offsetIndex,
+    });
+
+    // 1c. Decrypt only the fetched page items (e.g. 25 items instead of entire DB table!)
+    const paginatedTransactions = txs.map((tx) =>
+      mapAndDecryptTransaction(tx, privKey, locale)
+    );
+
+    return {
+      transactions: paginatedTransactions,
+      totalCount,
+      page: safePage,
+      pageSize,
+      totalPages,
+    };
+  }
+
+  // -------------------------------------------------------------
+  // 2. FALLBACK MEMORY PATH (For text search or encrypted column sorting):
+  //    Fetch matching rows, decrypt, filter by text, sort, and slice
+  // -------------------------------------------------------------
   const orderClause =
     sortBy === "transactionDate"
       ? sortOrder === "asc"
@@ -197,8 +284,6 @@ export async function getUserTransactionsPaginated(
         : [desc(transactions.transactionDate), desc(transactions.createdAt)]
       : [desc(transactions.transactionDate), desc(transactions.createdAt)];
 
-  // For full search across decrypted fields (amount, note) or in-memory sort,
-  // we fetch records, decrypt, filter & sort, then return paginated slice
   const txs = await db.query.transactions.findMany({
     where: (tx, { eq: eqField, and: andFields }) => {
       const conditions = [eqField(tx.userId, userId)];
@@ -215,10 +300,10 @@ export async function getUserTransactionsPaginated(
     orderBy: orderClause,
   });
 
-  // 2. Decrypt all matching records for this user
+  // Decrypt matching records
   let decryptedList = txs.map((tx) => mapAndDecryptTransaction(tx, privKey, locale));
 
-  // 3. In-Memory Search (handles decrypted amount, note, wallet names, category names, dates)
+  // In-Memory Search
   if (searchQuery) {
     decryptedList = decryptedList.filter((item) => {
       const noteMatch = (item.note || "").toLowerCase().includes(searchQuery);
@@ -231,7 +316,7 @@ export async function getUserTransactionsPaginated(
     });
   }
 
-  // 4. In-Memory Sorting (for decrypted fields like amount, note, category, account)
+  // In-Memory Sorting (for decrypted fields like amount, note, category, account)
   if (sortBy !== "transactionDate") {
     decryptedList.sort((a, b) => {
       let valA: any = "";
@@ -260,19 +345,7 @@ export async function getUserTransactionsPaginated(
     });
   }
 
-  // 5. Total count determination
-  // If no search filter is applied, we can use the cached transactionCount from userSettings
-  let totalCount = decryptedList.length;
-  if (!searchQuery && !options.type && !options.accountId) {
-    const settings = await getUserSettings(userId);
-    if (settings.transactionCount !== totalCount) {
-      await db
-        .update(userSettings)
-        .set({ transactionCount: totalCount.toString(), updatedAt: new Date() })
-        .where(eq(userSettings.userId, userId));
-    }
-  }
-
+  const totalCount = decryptedList.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const safePage = Math.min(page, totalPages);
   const startIndex = (safePage - 1) * pageSize;
