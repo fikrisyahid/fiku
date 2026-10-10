@@ -243,38 +243,38 @@ export function QuickModals({
   return (
     <div className="space-y-3">
       {/* Spotlight Quick Action Chips */}
-      <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none select-none">
+      <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-2.5 w-full sm:w-auto pb-1 select-none">
         <button
           type="button"
           onClick={() => openModal("saldo")}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs sm:text-sm font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+          className="flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs sm:text-sm font-bold transition-all shadow-xs cursor-pointer active:scale-95 text-center truncate"
         >
-          <div className="p-1 rounded-lg bg-emerald-500 text-white shadow-2xs">
+          <div className="p-1 rounded-lg bg-emerald-500 text-white shadow-2xs shrink-0">
             <Wallet className="w-3.5 h-3.5" />
           </div>
-          <span>{dict.quickModals.btnSaldo}</span>
+          <span className="truncate">{dict.quickModals.btnSaldo}</span>
         </button>
 
         <button
           type="button"
           onClick={() => openModal("kantong")}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 text-xs sm:text-sm font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+          className="flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 text-xs sm:text-sm font-bold transition-all shadow-xs cursor-pointer active:scale-95 text-center truncate"
         >
-          <div className="p-1 rounded-lg bg-amber-500 text-white shadow-2xs">
+          <div className="p-1 rounded-lg bg-amber-500 text-white shadow-2xs shrink-0">
             <PiggyBank className="w-3.5 h-3.5" />
           </div>
-          <span>{dict.quickModals.btnKantong}</span>
+          <span className="truncate">{dict.quickModals.btnKantong}</span>
         </button>
 
         <button
           type="button"
           onClick={() => openModal("kategori")}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30 text-xs sm:text-sm font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+          className="flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30 text-xs sm:text-sm font-bold transition-all shadow-xs cursor-pointer active:scale-95 text-center truncate"
         >
-          <div className="p-1 rounded-lg bg-purple-500 text-white shadow-2xs">
+          <div className="p-1 rounded-lg bg-purple-500 text-white shadow-2xs shrink-0">
             <Tag className="w-3.5 h-3.5" />
           </div>
-          <span>{dict.quickModals.btnKategori}</span>
+          <span className="truncate">{dict.quickModals.btnKategori}</span>
         </button>
       </div>
 
