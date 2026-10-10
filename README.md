@@ -125,9 +125,23 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `bun run db:studio` | Opens Drizzle Studio visual editor in browser |
 | `bun run seed:dummy` | Generates a full demo account with dummy data |
 
-For comprehensive technical documentation, refer to:
+---
+
+## 🤝 Contributing
+
+We welcome community contributions! To maintain code quality and production stability:
+- All Pull Requests must target the **`staging`** branch. Direct PRs to `main` are restricted.
+- Review our complete contributor guide, branching strategy, and local environment setup in:
+  👉 **[Panduan Kontribusi (docs/CONTRIBUTIONS.md)](docs/CONTRIBUTIONS.md)**
+
+---
+
+## 📚 Technical Documentation
+
+For in-depth architectural and module details:
 - [System Architecture](docs/ARCHITECTURE.md)
 - [Database Schema & Models](docs/DATABASE.md)
 - [CLI Commands Reference](docs/COMMANDS.md)
 - [Smart Input Guide](docs/SMART_INPUT.md)
 - [Deployment Guide](docs/DEPLOYMENT.md)
+- [Contributor Guide](docs/CONTRIBUTIONS.md)

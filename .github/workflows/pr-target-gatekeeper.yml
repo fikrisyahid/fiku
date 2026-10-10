@@ -1,0 +1,36 @@
+name: PR Target Gatekeeper
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  check-target-branch:
+    name: Verify PR Base Branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Target Branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          ACTOR: ${{ github.actor }}
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          echo "Base branch: $BASE_REF"
+          echo "Head branch: $HEAD_REF"
+          echo "PR Actor: $ACTOR"
+          echo "Repository Owner: $REPO_OWNER"
+
+          # Allow PRs targeting main ONLY if authored by repo owner or coming from internal staging branch
+          if [ "$BASE_REF" = "main" ]; then
+            if [ "$ACTOR" = "$REPO_OWNER" ] || [ "$HEAD_REF" = "staging" ]; then
+              echo "✅ PR to main permitted (Staging promotion / Repo owner action)."
+              exit 0
+            else
+              echo "::error::Direct PRs to 'main' branch are restricted! Contributor Pull Requests must target the 'staging' branch."
+              exit 1
+            fi
+          fi
+
+          echo "✅ PR target branch is valid."
+          exit 0
