@@ -173,9 +173,15 @@ export function getOrCreatePrivateKeyObject(privateKeyPem: string): crypto.KeyOb
   return keyObj;
 }
 
+// In-Memory cache for decrypted ciphertexts (bounded to prevent memory bloat)
+// Provides instant O(1) lookups for identical encrypted category names, wallet names, amounts, and notes.
+const decryptedCiphertextCache = new Map<string, string>();
+const MAX_DECRYPT_CACHE_SIZE = 1000;
+
 /**
  * Decrypt ciphertext payload using recipient Private Key (PEM string or KeyObject).
  * Used when READING balances/history once the user unlocks their session.
+ * Utilizes an in-memory decryption cache for instant O(1) lookups on repetitive ciphertext.
  */
 export function decryptWithPrivateKey(
   ciphertextPayload: string,
@@ -184,6 +190,12 @@ export function decryptWithPrivateKey(
   if (!ciphertextPayload || !ciphertextPayload.startsWith("enc:v1:")) {
     // If legacy plaintext data, return as-is
     return ciphertextPayload;
+  }
+
+  // Check in-memory decrypted cache first (Instant O(1))
+  const cached = decryptedCiphertextCache.get(ciphertextPayload);
+  if (cached !== undefined) {
+    return cached;
   }
 
   const parts = ciphertextPayload.split(":");
@@ -215,6 +227,14 @@ export function decryptWithPrivateKey(
 
   let decrypted = decipher.update(ciphertext, "base64", "utf8");
   decrypted += decipher.final("utf8");
+
+  // Store in cache
+  if (decryptedCiphertextCache.size >= MAX_DECRYPT_CACHE_SIZE) {
+    // Evict oldest entries
+    const firstKey = decryptedCiphertextCache.keys().next().value;
+    if (firstKey) decryptedCiphertextCache.delete(firstKey);
+  }
+  decryptedCiphertextCache.set(ciphertextPayload, decrypted);
 
   return decrypted;
 }
