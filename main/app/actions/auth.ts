@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { users, sessions } from "@/db/schema";
 import { eq, and, gt, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { onboardUser } from "@/lib/onboarding";
@@ -260,7 +261,7 @@ export async function registerWithEmailPassword(
   };
 }
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async function getCurrentUser() {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
@@ -290,7 +291,7 @@ export async function getCurrentUser() {
   }
 
   return session.user;
-}
+});
 
 export async function logoutUser() {
   const cookieStore = await cookies();

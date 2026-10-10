@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 
 import { getServerLocale, getServerDictionary } from "@/lib/i18n/server";
-import { AppNavbar } from "@/components/app-navbar";
 import { HomepageScreenshotPreview } from "@/components/homepage-screenshot-preview";
 
 export async function generateMetadata() {
@@ -71,9 +70,6 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 dark:bg-gradient-to-b dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 text-zinc-900 dark:text-zinc-50 flex flex-col overflow-x-hidden">
-      {/* Top Navigation with User Badge, Logout & Mobile Drawer */}
-      <AppNavbar user={user} locale={locale} />
-
       {/* Hero Section */}
       <section className="relative pt-12 sm:pt-20 pb-16 sm:pb-24 px-4 sm:px-6 max-w-5xl mx-auto text-center space-y-6">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 text-xs font-semibold border border-amber-500/25 dark:border-amber-500/30 shadow-xs">

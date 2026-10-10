@@ -3,7 +3,6 @@ import { getUserAccounts } from "@/app/actions/accounts";
 import { getUserTransactions } from "@/app/actions/transactions";
 import { getUserSettings } from "@/app/actions/settings";
 import { redirect } from "next/navigation";
-import { AppNavbar } from "@/components/app-navbar";
 import { RingkasanClient } from "@/components/ringkasan-client";
 import { getServerLocale, getServerDictionary } from "@/lib/i18n/server";
 
@@ -32,8 +31,6 @@ export default async function RingkasanPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 dark:bg-gradient-to-b dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 text-zinc-900 dark:text-zinc-50 pb-16 overflow-x-hidden">
-      <AppNavbar user={user} locale={locale} />
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 space-y-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
