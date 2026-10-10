@@ -54,7 +54,10 @@ export function SettingsClient({
     setErrorMsg(null);
 
     try {
-      await updateUserCurrency(userId, newCurrency);
+      const res = await updateUserCurrency(userId, newCurrency);
+      if (!res.success) {
+        throw new Error(res.error);
+      }
       setCurrency(newCurrency);
       setSuccessMsg(dict.settings.saveSuccess);
       router.refresh();

@@ -48,10 +48,13 @@ export async function getUserSettings(userId: string): Promise<UserSettingsData>
 /**
  * Update user currency preference
  */
-export async function updateUserCurrency(userId: string, currency: string) {
+export async function updateUserCurrency(userId: string, currency: string): Promise<
+  | { success: true; currency: string }
+  | { success: false; error: string; currency?: never }
+> {
   const valid = SUPPORTED_CURRENCIES.some((c) => c.code === currency);
   if (!valid) {
-    throw new Error(`Currency ${currency} tidak didukung.`);
+    return { success: false, error: `Currency ${currency} tidak didukung.` };
   }
 
   await getUserSettings(userId); // ensure row exists

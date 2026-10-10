@@ -330,6 +330,14 @@ export async function processSmartTextInput(data: {
         transactionDate,
       });
 
+      if (!res.success) {
+        return {
+          success: false,
+          message: res.error,
+          type: "transfer",
+        };
+      }
+
       return {
         success: true,
         message: `Transfer berhasil! Rp ${parsed.amount.toLocaleString("id-ID")} dipindahkan dari ${parsed.fromAccount.name} ke ${parsed.toAccount.name}.`,
@@ -399,6 +407,14 @@ export async function processSmartTextInput(data: {
         note,
         transactionDate,
       });
+
+      if (!res.success) {
+        return {
+          success: false,
+          message: res.error,
+          type: "transfer",
+        };
+      }
 
       return {
         success: true,
@@ -497,6 +513,14 @@ export async function processSmartTextInput(data: {
       note: description,
       transactionDate,
     });
+
+    if (!res.success) {
+      return {
+        success: false,
+        message: res.error,
+        type,
+      };
+    }
 
     const actionText = type === "income" ? "Pemasukan" : "Pengeluaran";
     return {

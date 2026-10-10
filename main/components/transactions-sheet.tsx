@@ -272,6 +272,11 @@ export function TransactionsSheet({
           note: row.note,
           transactionDate: row.transactionDate,
         });
+
+        if (!res.success) {
+          throw new Error(res.error);
+        }
+
         // Replace temp new ID with real database ID and preserve createdAt
         setRows((prev) =>
           prev.map((r) =>
@@ -291,7 +296,7 @@ export function TransactionsSheet({
         if (row.type === "transfer" && (!row.toAccountId || row.accountId === row.toAccountId)) {
           throw new Error(dict.transaksi.errTransferSameWallet);
         }
-        await updateTransaction(id, {
+        const res = await updateTransaction(id, {
           userId,
           familyId,
           accountId: row.accountId,
@@ -302,6 +307,10 @@ export function TransactionsSheet({
           note: row.note,
           transactionDate: row.transactionDate,
         });
+
+        if (!res.success) {
+          throw new Error(res.error);
+        }
       }
 
       setRowStatus((prev) => ({ ...prev, [id]: "saved" }));
@@ -361,7 +370,10 @@ export function TransactionsSheet({
     setRowStatus((prev) => ({ ...prev, [row.id]: "saving" }));
 
     try {
-      await deleteTransaction(row.id, userId, familyId);
+      const res = await deleteTransaction(row.id, userId, familyId);
+      if (!res.success) {
+        throw new Error(res.error);
+      }
       setRows((prev) => prev.filter((r) => r.id !== row.id));
       setSelectedIds((prev) => {
         const next = new Set(prev);
@@ -430,7 +442,10 @@ export function TransactionsSheet({
       const savedRowIds = idsToDelete.filter((id) => !id.startsWith("new_"));
 
       if (savedRowIds.length > 0) {
-        await deleteTransactionsBatch(savedRowIds, userId, familyId);
+        const res = await deleteTransactionsBatch(savedRowIds, userId, familyId);
+        if (!res.success) {
+          throw new Error(res.error);
+        }
       }
 
       setRows((prev) => prev.filter((r) => !selectedIds.has(r.id)));

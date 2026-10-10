@@ -268,6 +268,9 @@ export function ExportImportModal({
       }));
 
       const res = await importTransactionsBatch(userId, familyId, recordsToImport);
+      if (!res.success) {
+        throw new Error(res.error);
+      }
       setSuccessMessage(`Berhasil mengimpor ${res.count} transaksi!`);
       setFile(null);
       setPreviewData([]);

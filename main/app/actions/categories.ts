@@ -61,21 +61,21 @@ export async function deleteCategory(
   categoryId: string,
   userId: string,
   _familyId?: string | null
-) {
+): Promise<{ success: true; data: any } | { success: false; error: string; data?: never }> {
   const cat = await db.query.categories.findFirst({
     where: eq(categories.id, categoryId),
   });
 
   if (!cat) {
-    throw new Error("Kategori tidak ditemukan.");
+    return { success: false, error: "Kategori tidak ditemukan." };
   }
 
   if (cat.isDefault || !cat.userId) {
-    throw new Error("Kategori bawaan sistem tidak dapat dihapus!");
+    return { success: false, error: "Kategori bawaan sistem tidak dapat dihapus!" };
   }
 
   if (cat.userId !== userId) {
-    throw new Error("Kamu tidak memiliki izin untuk menghapus kategori ini.");
+    return { success: false, error: "Kamu tidak memiliki izin untuk menghapus kategori ini." };
   }
 
   // Cek apakah ada transaksi yang menggunakan kategori ini
@@ -84,9 +84,10 @@ export async function deleteCategory(
   });
 
   if (tx) {
-    throw new Error(
-      `Kategori "${cat.name}" tidak dapat dihapus karena sudah dipakai dalam riwayat transaksi.`
-    );
+    return {
+      success: false,
+      error: `Kategori "${cat.name}" tidak dapat dihapus karena sudah dipakai dalam riwayat transaksi.`,
+    };
   }
 
   const [deleted] = await db
@@ -94,7 +95,7 @@ export async function deleteCategory(
     .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
     .returning();
 
-  return deleted;
+  return { success: true, data: deleted };
 }
 
 export async function updateCategory(
@@ -106,21 +107,21 @@ export async function updateCategory(
     icon?: string;
   },
   _familyId?: string | null
-) {
+): Promise<{ success: true; data: any } | { success: false; error: string; data?: never }> {
   const cat = await db.query.categories.findFirst({
     where: eq(categories.id, categoryId),
   });
 
   if (!cat) {
-    throw new Error("Kategori tidak ditemukan.");
+    return { success: false, error: "Kategori tidak ditemukan." };
   }
 
   if (cat.isDefault || !cat.userId) {
-    throw new Error("Kategori bawaan sistem tidak dapat diubah!");
+    return { success: false, error: "Kategori bawaan sistem tidak dapat diubah!" };
   }
 
   if (cat.userId !== userId) {
-    throw new Error("Kamu tidak memiliki izin untuk mengubah kategori ini.");
+    return { success: false, error: "Kamu tidak memiliki izin untuk mengubah kategori ini." };
   }
 
   const updateValues: Partial<typeof categories.$inferInsert> = {};
@@ -134,5 +135,5 @@ export async function updateCategory(
     .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
     .returning();
 
-  return updated;
+  return { success: true, data: updated };
 }

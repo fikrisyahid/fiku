@@ -282,7 +282,10 @@ export async function createTransaction(data: {
   note?: string;
   transactionDate?: string; // YYYY-MM-DD
   familyId?: string | null;
-}) {
+}): Promise<
+  | { success: true; transaction: any; updatedAccount: any }
+  | { success: false; error: string; transaction?: never; updatedAccount?: never }
+> {
   const {
     userId,
     accountId,
@@ -296,12 +299,12 @@ export async function createTransaction(data: {
   } = data;
 
   if (amount <= 0) {
-    throw new Error("Nominal transaksi harus lebih dari 0.");
+    return { success: false, error: "Nominal transaksi harus lebih dari 0." };
   }
 
   const privKey = await getActiveUserPrivateKey(userId);
   if (!privKey) {
-    throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk mencatat transaksi.");
+    return { success: false, error: "Sesi enkripsi telah berakhir. Silakan login kembali untuk mencatat transaksi." };
   }
   const publicKey = await getUserPublicKey(userId);
 
@@ -325,7 +328,7 @@ export async function createTransaction(data: {
   // Handle transfer transaction
   if (type === "transfer") {
     if (!toAccountId || accountId === toAccountId) {
-      throw new Error("Kantong asal dan tujuan harus berbeda.");
+      return { success: false, error: "Kantong asal dan tujuan harus berbeda." };
     }
 
     const fromAccount = await db.query.accounts.findFirst({
@@ -336,7 +339,7 @@ export async function createTransaction(data: {
     });
 
     if (!fromAccount || !toAccount) {
-      throw new Error("Kantong asal atau tujuan tidak ditemukan.");
+      return { success: false, error: "Kantong asal atau tujuan tidak ditemukan." };
     }
 
     const fromBalance = getPlainBalance(fromAccount.balance);
@@ -354,9 +357,10 @@ export async function createTransaction(data: {
         maximumFractionDigits: 0,
       }).format(amount);
 
-      throw new Error(
-        `Saldo tidak mencukupi! Saldo "${fromAccount.name}" saat ini hanya ${fmtFrom}, tidak cukup untuk transfer sebesar ${fmtAmount}.`
-      );
+      return {
+        success: false,
+        error: `Saldo tidak mencukupi! Saldo "${fromAccount.name}" saat ini hanya ${fmtFrom}, tidak cukup untuk transfer sebesar ${fmtAmount}.`,
+      };
     }
 
     const fromNewBalance = fromBalance - amount;
@@ -366,7 +370,7 @@ export async function createTransaction(data: {
     const toBalStored = encryptVal(toNewBalance.toString());
     const amountStored = encryptVal(amount.toString());
     const rawNote = note?.trim() || `Transfer ke ${toAccount.name}`;
-    const noteStored = encryptVal(rawNote);
+    const noteStored = rawNote ? encryptVal(rawNote) : null;
 
     let createdTx: any;
 
@@ -404,6 +408,7 @@ export async function createTransaction(data: {
     await incrementUserTransactionCount(userId, 1);
 
     return {
+      success: true,
       transaction: {
         ...createdTx,
         amount: amount.toString(),
@@ -422,7 +427,7 @@ export async function createTransaction(data: {
   });
 
   if (!account) {
-    throw new Error("Dompet / rekening tidak ditemukan.");
+    return { success: false, error: "Dompet / rekening tidak ditemukan." };
   }
 
   const currentBalance = getPlainBalance(account.balance);
@@ -440,9 +445,10 @@ export async function createTransaction(data: {
       maximumFractionDigits: 0,
     }).format(amount);
 
-    throw new Error(
-      `Saldo tidak mencukupi! Saldo "${account.name}" saat ini hanya ${fmtCurrent}, tidak cukup untuk pengeluaran sebesar ${fmtAmount}.`
-    );
+    return {
+      success: false,
+      error: `Saldo tidak mencukupi! Saldo "${account.name}" saat ini hanya ${fmtCurrent}, tidak cukup untuk pengeluaran sebesar ${fmtAmount}.`,
+    };
   }
 
   const newBalance =
@@ -480,6 +486,7 @@ export async function createTransaction(data: {
   await incrementUserTransactionCount(userId, 1);
 
   return {
+    success: true,
     transaction: {
       ...newTx,
       amount: amount.toString(),
@@ -496,19 +503,19 @@ export async function deleteTransaction(
   transactionId: string,
   userId: string,
   familyId?: string | null
-) {
+): Promise<{ success: true } | { success: false; error: string }> {
   const tx = await db.query.transactions.findFirst({
     where: and(eq(transactions.id, transactionId), eq(transactions.userId, userId)),
     with: { account: true, toAccount: true },
   });
 
   if (!tx) {
-    throw new Error("Transaksi tidak ditemukan.");
+    return { success: false, error: "Transaksi tidak ditemukan." };
   }
 
   const privKey = await getActiveUserPrivateKey(userId);
   if (!privKey) {
-    throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk menghapus transaksi.");
+    return { success: false, error: "Sesi enkripsi telah berakhir. Silakan login kembali untuk menghapus transaksi." };
   }
   const publicKey = await getUserPublicKey(userId);
 
@@ -583,7 +590,7 @@ export async function deleteTransactionsBatch(
   transactionIds: string[],
   userId: string,
   _familyId?: string | null
-) {
+): Promise<{ success: true; count: number } | { success: false; error: string; count?: never }> {
   if (!transactionIds.length) {
     return { success: true, count: 0 };
   }
@@ -600,7 +607,7 @@ export async function deleteTransactionsBatch(
 
   const privKey = await getActiveUserPrivateKey(userId);
   if (!privKey) {
-    throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk menghapus transaksi.");
+    return { success: false, error: "Sesi enkripsi telah berakhir. Silakan login kembali untuk menghapus transaksi." };
   }
   const publicKey = await getUserPublicKey(userId);
 
@@ -687,7 +694,7 @@ export async function updateTransaction(
     note?: string | null;
     transactionDate?: string;
   }
-) {
+): Promise<{ success: true } | { success: false; error: string }> {
   const {
     userId,
     familyId = null,
@@ -706,12 +713,12 @@ export async function updateTransaction(
   });
 
   if (!existingTx) {
-    throw new Error("Transaksi tidak ditemukan.");
+    return { success: false, error: "Transaksi tidak ditemukan." };
   }
 
   const privKey = await getActiveUserPrivateKey(userId);
   if (!privKey) {
-    throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk memperbarui transaksi.");
+    return { success: false, error: "Sesi enkripsi telah berakhir. Silakan login kembali untuk memperbarui transaksi." };
   }
   const publicKey = await getUserPublicKey(userId);
 
@@ -741,8 +748,10 @@ export async function updateTransaction(
   const newToAccountId = toAccountId !== undefined ? toAccountId : oldToAccountId;
 
   if (newAmount <= 0) {
-    throw new Error("Nominal transaksi harus lebih dari 0.");
+    return { success: false, error: "Nominal transaksi harus lebih dari 0." };
   }
+
+  let txError: string | null = null;
 
   await db.transaction(async (tx) => {
     // 1. Revert previous effect on account(s)
@@ -768,11 +777,17 @@ export async function updateTransaction(
     // 2. Apply new effect on account(s)
     if (newType === "transfer") {
       if (!newToAccountId || newAccountId === newToAccountId) {
-        throw new Error("Kantong asal dan tujuan harus berbeda.");
+        txError = "Kantong asal dan tujuan harus berbeda.";
+        tx.rollback();
+        return;
       }
       const fromAcc = await tx.query.accounts.findFirst({ where: eq(accounts.id, newAccountId) });
       const toAcc = await tx.query.accounts.findFirst({ where: eq(accounts.id, newToAccountId) });
-      if (!fromAcc || !toAcc) throw new Error("Kantong asal atau tujuan tidak ditemukan.");
+      if (!fromAcc || !toAcc) {
+        txError = "Kantong asal atau tujuan tidak ditemukan.";
+        tx.rollback();
+        return;
+      }
 
       const fromBal = getPlain(fromAcc.balance) - newAmount;
       if (fromBal < 0) {
@@ -787,9 +802,9 @@ export async function updateTransaction(
           maximumFractionDigits: 0,
         }).format(newAmount);
 
-        throw new Error(
-          `Saldo tidak mencukupi! Saldo "${fromAcc.name}" saat ini ${fmtFrom}, tidak cukup untuk transfer sebesar ${fmtAmount}.`
-        );
+        txError = `Saldo tidak mencukupi! Saldo "${fromAcc.name}" saat ini ${fmtFrom}, tidak cukup untuk transfer sebesar ${fmtAmount}.`;
+        tx.rollback();
+        return;
       }
       const toBal = getPlain(toAcc.balance) + newAmount;
 
@@ -797,7 +812,11 @@ export async function updateTransaction(
       await tx.update(accounts).set({ balance: encryptVal(toBal.toString()), updatedAt: new Date() }).where(eq(accounts.id, newToAccountId));
     } else {
       const targetAcc = await tx.query.accounts.findFirst({ where: eq(accounts.id, newAccountId) });
-      if (!targetAcc) throw new Error("Kantong tidak ditemukan.");
+      if (!targetAcc) {
+        txError = "Kantong tidak ditemukan.";
+        tx.rollback();
+        return;
+      }
       const currentBal = getPlain(targetAcc.balance);
 
       if (newType === "expense" && currentBal < newAmount) {
@@ -812,9 +831,9 @@ export async function updateTransaction(
           maximumFractionDigits: 0,
         }).format(newAmount);
 
-        throw new Error(
-          `Saldo tidak mencukupi! Saldo "${targetAcc.name}" saat ini ${fmtCurrent}, tidak cukup untuk pengeluaran sebesar ${fmtAmount}.`
-        );
+        txError = `Saldo tidak mencukupi! Saldo "${targetAcc.name}" saat ini ${fmtCurrent}, tidak cukup untuk pengeluaran sebesar ${fmtAmount}.`;
+        tx.rollback();
+        return;
       }
 
       const newBal = newType === "income" ? currentBal + newAmount : currentBal - newAmount;
@@ -839,6 +858,10 @@ export async function updateTransaction(
       .where(eq(transactions.id, transactionId));
   });
 
+  if (txError) {
+    return { success: false, error: txError };
+  }
+
   return { success: true };
 }
 
@@ -854,14 +877,14 @@ export async function importTransactionsBatch(
     amount: number;
     note?: string;
   }>
-) {
+): Promise<{ success: true; count: number } | { success: false; error: string; count?: never }> {
   if (!records || records.length === 0) {
     return { success: true, count: 0 };
   }
 
   const privKey = await getActiveUserPrivateKey(userId);
   if (!privKey) {
-    throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk mengimpor transaksi.");
+    return { success: false, error: "Sesi enkripsi telah berakhir. Silakan login kembali untuk mengimpor transaksi." };
   }
   const publicKey = await getUserPublicKey(userId);
 
@@ -947,14 +970,14 @@ export async function importTransactionsBatch(
       }
     }
 
-    return { success: true, count: imported };
+    return { success: true as const, count: imported };
   });
 
   if (result.count > 0) {
     await incrementUserTransactionCount(userId, result.count);
   }
 
-  return result;
+  return { success: true, count: result.count };
 }
 
 

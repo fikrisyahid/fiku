@@ -155,7 +155,10 @@ export function QuickModals({
     setDeleteLoading(true);
     setError(null);
     try {
-      await deleteAccount(deleteConfirmation.target.id, userId, familyId);
+      const res = await deleteAccount(deleteConfirmation.target.id, userId, familyId);
+      if (!res.success) {
+        throw new Error(res.error);
+      }
       setDeleteConfirmation({ isOpen: false, type: "account", target: null });
       await onRefresh();
     } catch (err: unknown) {
@@ -177,11 +180,14 @@ export function QuickModals({
     setLoading(true);
     try {
       if (editingCategory) {
-        await updateCategory(editingCategory.id, userId, {
+        const res = await updateCategory(editingCategory.id, userId, {
           name: categoryName,
           type: categoryType,
           icon: categoryIcon,
         }, familyId);
+        if (!res.success) {
+          throw new Error(res.error);
+        }
       } else {
         await createCategory({
           userId,
@@ -213,7 +219,10 @@ export function QuickModals({
     setDeleteLoading(true);
     setError(null);
     try {
-      await deleteCategory(deleteConfirmation.target.id, userId, familyId);
+      const res = await deleteCategory(deleteConfirmation.target.id, userId, familyId);
+      if (!res.success) {
+        throw new Error(res.error);
+      }
       setDeleteConfirmation({ isOpen: false, type: "category", target: null });
       await onRefresh();
     } catch (err: unknown) {

@@ -169,10 +169,10 @@ export async function deleteAccount(
   accountId: string,
   userId: string,
   _familyId?: string | null
-) {
+): Promise<{ success: true; data: any } | { success: false; error: string; data?: never }> {
   const account = await getAccountById(accountId, userId);
   if (!account) {
-    throw new Error("Dompet tidak ditemukan.");
+    return { success: false, error: "Dompet tidak ditemukan." };
   }
 
   // Check whether the account has existing transactions
@@ -181,15 +181,16 @@ export async function deleteAccount(
   });
 
   if (tx) {
-    throw new Error(
-      `Dompet "${account.name}" tidak dapat dihapus karena sudah memiliki riwayat transaksi. Kamu bisa mengedit namanya atau mentransfer saldonya ke dompet lain.`
-    );
+    return {
+      success: false,
+      error: `Dompet "${account.name}" tidak dapat dihapus karena sudah memiliki riwayat transaksi. Kamu bisa mengedit namanya atau mentransfer saldonya ke dompet lain.`,
+    };
   }
 
   // Check if this is the only remaining account
   const allAccounts = await getUserAccounts(userId);
   if (allAccounts.length <= 1) {
-    throw new Error("Kamu tidak bisa menghapus dompet terakhirmu!");
+    return { success: false, error: "Kamu tidak bisa menghapus dompet terakhirmu!" };
   }
 
   const [deleted] = await db
@@ -205,14 +206,14 @@ export async function deleteAccount(
     }
   }
 
-  return deleted;
+  return { success: true, data: deleted };
 }
 
 export async function setDefaultAccount(
   accountId: string,
   userId: string,
   _familyId?: string | null
-) {
+): Promise<{ success: true; data: any } | { success: false; error: string; data?: never }> {
   // 1. Clear isDefault flag from all wallets of the user
   await db
     .update(accounts)
@@ -227,10 +228,10 @@ export async function setDefaultAccount(
     .returning();
 
   if (!updated) {
-    throw new Error("Dompet tidak ditemukan.");
+    return { success: false, error: "Dompet tidak ditemukan." };
   }
 
-  return updated;
+  return { success: true, data: updated };
 }
 
 export async function transferBetweenAccounts(data: {
@@ -241,7 +242,10 @@ export async function transferBetweenAccounts(data: {
   note?: string;
   transactionDate?: string;
   familyId?: string | null;
-}) {
+}): Promise<
+  | { success: true; fromAccount: any; toAccount: any; amount: number }
+  | { success: false; error: string; fromAccount?: never; toAccount?: never; amount?: never }
+> {
   const {
     userId,
     fromAccountId,
@@ -252,26 +256,26 @@ export async function transferBetweenAccounts(data: {
   } = data;
 
   if (amount <= 0) {
-    throw new Error("Nominal transfer harus lebih dari 0.");
+    return { success: false, error: "Nominal transfer harus lebih dari 0." };
   }
 
   if (fromAccountId === toAccountId) {
-    throw new Error("Dompet asal dan dompet tujuan tidak boleh sama!");
+    return { success: false, error: "Dompet asal dan dompet tujuan tidak boleh sama!" };
   }
 
   const privKey = await getActiveUserPrivateKey(userId);
   if (!privKey) {
-    throw new Error("Sesi enkripsi telah berakhir. Silakan login kembali untuk melakukan transfer.");
+    return { success: false, error: "Sesi enkripsi telah berakhir. Silakan login kembali untuk melakukan transfer." };
   }
 
   const fromAccount = await getAccountById(fromAccountId, userId);
   if (!fromAccount) {
-    throw new Error("Dompet asal tidak ditemukan.");
+    return { success: false, error: "Dompet asal tidak ditemukan." };
   }
 
   const toAccount = await getAccountById(toAccountId, userId);
   if (!toAccount) {
-    throw new Error("Dompet tujuan tidak ditemukan.");
+    return { success: false, error: "Dompet tujuan tidak ditemukan." };
   }
 
   const fromBalance = parseFloat(fromAccount.balance);
@@ -287,9 +291,10 @@ export async function transferBetweenAccounts(data: {
       maximumFractionDigits: 0,
     }).format(amount);
 
-    throw new Error(
-      `Saldo tidak mencukupi! Saldo "${fromAccount.name}" saat ini hanya ${fmtCurrent}, tidak cukup untuk transfer sebesar ${fmtAmount}.`
-    );
+    return {
+      success: false,
+      error: `Saldo tidak mencukupi! Saldo "${fromAccount.name}" saat ini hanya ${fmtCurrent}, tidak cukup untuk transfer sebesar ${fmtAmount}.`,
+    };
   }
 
   const toBalance = parseFloat(toAccount.balance);
@@ -312,7 +317,7 @@ export async function transferBetweenAccounts(data: {
     allCategories.find((c) => c.type === "income");
 
   if (!expenseTransferCat || !incomeTransferCat) {
-    throw new Error("Kategori transaksi tidak tersedia di sistem.");
+    return { success: false, error: "Kategori transaksi tidak tersedia di sistem." };
   }
 
   const transferNoteOut = note
@@ -366,6 +371,7 @@ export async function transferBetweenAccounts(data: {
   });
 
   return {
+    success: true,
     fromAccount: { ...fromAccount, balance: fromNewBalance.toString() },
     toAccount: { ...toAccount, balance: toNewBalance.toString() },
     amount,
