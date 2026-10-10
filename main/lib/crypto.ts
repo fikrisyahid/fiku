@@ -154,12 +154,34 @@ export function encryptWithPublicKey(plaintext: string, recipientPublicKeyPem: s
   return `enc:v1:${ephemPubPem}:${iv.toString("base64")}:${authTag}:${encrypted}`;
 }
 
+// In-Memory cache for parsed private KeyObjects to avoid heavy createPrivateKey() PEM parsing on every decrypt
+const privateKeyObjectCache = new Map<string, crypto.KeyObject>();
+
 /**
- * Decrypt ciphertext payload using recipient Private Key.
+ * Returns a cached or newly parsed crypto.KeyObject for a given privateKeyPem.
+ */
+export function getOrCreatePrivateKeyObject(privateKeyPem: string): crypto.KeyObject {
+  let keyObj = privateKeyObjectCache.get(privateKeyPem);
+  if (!keyObj) {
+    keyObj = crypto.createPrivateKey(privateKeyPem);
+    // Keep cache bounded to prevent memory growth across lambdas
+    if (privateKeyObjectCache.size > 200) {
+      privateKeyObjectCache.clear();
+    }
+    privateKeyObjectCache.set(privateKeyPem, keyObj);
+  }
+  return keyObj;
+}
+
+/**
+ * Decrypt ciphertext payload using recipient Private Key (PEM string or KeyObject).
  * Used when READING balances/history once the user unlocks their session.
  */
-export function decryptWithPrivateKey(ciphertextPayload: string, privateKeyPem: string): string {
-  if (!ciphertextPayload.startsWith("enc:v1:")) {
+export function decryptWithPrivateKey(
+  ciphertextPayload: string,
+  privateKey: string | crypto.KeyObject
+): string {
+  if (!ciphertextPayload || !ciphertextPayload.startsWith("enc:v1:")) {
     // If legacy plaintext data, return as-is
     return ciphertextPayload;
   }
@@ -177,7 +199,11 @@ export function decryptWithPrivateKey(ciphertextPayload: string, privateKeyPem: 
     type: "spki",
   });
 
-  const privKey = crypto.createPrivateKey(privateKeyPem);
+  const privKey =
+    typeof privateKey === "string"
+      ? getOrCreatePrivateKeyObject(privateKey)
+      : privateKey;
+
   const sharedSecret = crypto.diffieHellman({
     privateKey: privKey,
     publicKey: ephemPublicKey,
