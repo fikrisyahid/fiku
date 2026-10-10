@@ -39,8 +39,8 @@ export default async function LoginPage() {
           <span>{dict.login.backToHome}</span>
         </Link>
         <div className="flex items-center gap-2">
-          <ThemeSwitcher compact />
-          <LanguageSwitcher currentLocale={locale} compact />
+          <ThemeSwitcher />
+          <LanguageSwitcher currentLocale={locale} />
         </div>
       </div>
 

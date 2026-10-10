@@ -121,7 +121,7 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
           </div>
 
           {/* Desktop Right User & Logout & Theme Switcher & Language Switcher */}
-          <div className="hidden md:flex items-center gap-2.5">
+          <div className="hidden md:flex items-center gap-2">
             <ThemeSwitcher />
             <LanguageSwitcher currentLocale={locale} />
             {user ? (
@@ -146,17 +146,17 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
             )}
           </div>
 
-          {/* Mobile Sidebar Hamburger & Quick Switchers */}
+          {/* Mobile Right Quick Switchers & Drawer Trigger */}
           <div className="flex md:hidden items-center gap-1.5">
-            <ThemeSwitcher compact />
-            <LanguageSwitcher currentLocale={locale} compact />
+            <ThemeSwitcher />
+            <LanguageSwitcher currentLocale={locale} />
             <button
               type="button"
               onClick={() => setIsSidebarOpen(true)}
-              aria-label="Buka menu navigasi"
-              className="p-2 rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer ml-0.5"
+              aria-label="Buka menu profil & opsi"
+              className="p-2 rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
             >
-              <Menu className="w-6 h-6" />
+              <Menu className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -211,16 +211,6 @@ export function AppNavbar({ user, locale = "id" }: AppNavbarProps) {
                     </Link>
                   );
                 })}
-              </div>
-
-              {/* Theme & Preferences in Mobile Drawer */}
-              <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider px-2">
-                  {dict.nav.themeToggle}
-                </p>
-                <div className="px-1">
-                  <ThemeSwitcher fullWidth />
-                </div>
               </div>
 
               {/* Install PWA Button (Hidden when running as standalone PWA) */}
