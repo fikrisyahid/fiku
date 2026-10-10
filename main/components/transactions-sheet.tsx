@@ -611,7 +611,7 @@ export function TransactionsSheet({
               </th>
               <th
                 onClick={() => toggleSort("transactionDate")}
-                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-36 whitespace-nowrap"
+                className="p-2 sm:p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-28 sm:w-36 whitespace-nowrap"
               >
                 <div className="flex items-center gap-1">
                   <span>{dict.transaksi.colDate}</span>
@@ -624,7 +624,7 @@ export function TransactionsSheet({
               </th>
               <th
                 onClick={() => toggleSort("type")}
-                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-32 whitespace-nowrap"
+                className="p-2 sm:p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-24 sm:w-32 whitespace-nowrap"
               >
                 <div className="flex items-center gap-1">
                   <span>{dict.transaksi.colType}</span>
@@ -637,7 +637,7 @@ export function TransactionsSheet({
               </th>
               <th
                 onClick={() => toggleSort("category")}
-                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-44 whitespace-nowrap"
+                className="p-2 sm:p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-36 sm:w-44 whitespace-nowrap"
               >
                 <div className="flex items-center gap-1">
                   <span>{dict.transaksi.colCategory}</span>
@@ -650,7 +650,7 @@ export function TransactionsSheet({
               </th>
               <th
                 onClick={() => toggleSort("account")}
-                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-52 whitespace-nowrap"
+                className="p-2 sm:p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-36 sm:w-52 whitespace-nowrap"
               >
                 <div className="flex items-center gap-1">
                   <span>{dict.transaksi.colWallet}</span>
@@ -663,7 +663,7 @@ export function TransactionsSheet({
               </th>
               <th
                 onClick={() => toggleSort("amount")}
-                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-36 whitespace-nowrap"
+                className="p-2 sm:p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-32 sm:w-36 whitespace-nowrap"
               >
                 <div className="flex items-center gap-1">
                   <span>{dict.transaksi.colAmount(currency)}</span>
@@ -676,7 +676,7 @@ export function TransactionsSheet({
               </th>
               <th
                 onClick={() => toggleSort("note")}
-                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors min-w-[200px] whitespace-nowrap"
+                className="p-2 sm:p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors min-w-[220px] sm:min-w-[260px] whitespace-nowrap"
               >
                 <div className="flex items-center gap-1">
                   <span>{dict.transaksi.colNote}</span>
@@ -735,7 +735,7 @@ export function TransactionsSheet({
                     </td>
 
                     {/* Tanggal */}
-                    <td className="p-2">
+                    <td className="p-1.5 sm:p-2">
                       <div className="relative flex items-center">
                         <input
                           type="date"
@@ -744,7 +744,7 @@ export function TransactionsSheet({
                           onChange={(e) =>
                             handleCellChange(row.id, "transactionDate", e.target.value)
                           }
-                          className={`w-full h-8 px-2.5 rounded-lg bg-zinc-50/60 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono font-medium text-zinc-800 dark:text-zinc-200 outline-hidden transition-all shadow-2xs ${
+                          className={`w-full h-8 px-1.5 sm:px-2.5 rounded-lg bg-zinc-50/60 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-[11px] sm:text-xs font-mono font-medium text-zinc-800 dark:text-zinc-200 outline-hidden transition-all shadow-2xs ${
                             isSaving ? "opacity-50 cursor-not-allowed" : ""
                           }`}
                         />
@@ -752,7 +752,7 @@ export function TransactionsSheet({
                     </td>
 
                     {/* Tipe */}
-                    <td className="p-2">
+                    <td className="p-1.5 sm:p-2">
                       <CustomSelect
                         disabled={isSaving}
                         value={row.type}
@@ -764,7 +764,7 @@ export function TransactionsSheet({
                           { value: "income", label: dict.txTypes.income, badge: "in", badgeClassName: "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300" },
                           { value: "transfer", label: dict.txTypes.transfer, badge: "tf", badgeClassName: "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300" },
                         ]}
-                        triggerClassName={`h-8 font-semibold ${
+                        triggerClassName={`h-8 font-semibold px-2 sm:px-2.5 ${
                           row.type === "income"
                             ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/30"
                             : row.type === "expense"
@@ -775,7 +775,7 @@ export function TransactionsSheet({
                     </td>
 
                     {/* Kategori */}
-                    <td className="p-2">
+                    <td className="p-1.5 sm:p-2">
                       {row.type === "transfer" ? (
                         <div className="text-[11px] text-zinc-400 italic px-2">
                           {dict.transaksi.internalTransfer}
@@ -794,15 +794,15 @@ export function TransactionsSheet({
                               label: c.name,
                               icon: getCategoryIcon(c),
                             }))}
-                          triggerClassName={`h-8 ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
+                          triggerClassName={`h-8 px-2 sm:px-2.5 ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
                         />
                       )}
                     </td>
 
                     {/* Kantong */}
-                    <td className="p-2">
+                    <td className="p-1.5 sm:p-2 align-middle">
                       {row.type === "transfer" ? (
-                        <div className="flex items-center gap-1">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1">
                           <CustomSelect
                             disabled={isSaving}
                             value={row.accountId}
@@ -814,11 +814,14 @@ export function TransactionsSheet({
                               label: a.name,
                               icon: a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱",
                             }))}
-                            triggerClassName={`h-8 border-zinc-200 dark:border-zinc-700 ${
+                            triggerClassName={`h-7 sm:h-8 px-2 sm:px-2.5 border-zinc-200 dark:border-zinc-700 ${
                               isSaving ? "opacity-50 cursor-not-allowed" : ""
                             }`}
                           />
-                          <span className="text-[10px] text-zinc-400">➔</span>
+                          <div className="flex items-center justify-center text-[10px] text-zinc-400 select-none py-0.5 sm:py-0">
+                            <span className="sm:hidden">↓</span>
+                            <span className="hidden sm:inline">➔</span>
+                          </div>
                           <CustomSelect
                             disabled={isSaving}
                             value={row.toAccountId || ""}
@@ -830,7 +833,7 @@ export function TransactionsSheet({
                               label: a.name,
                               icon: a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱",
                             }))}
-                            triggerClassName={`h-8 border-zinc-200 dark:border-zinc-700 ${
+                            triggerClassName={`h-7 sm:h-8 px-2 sm:px-2.5 border-zinc-200 dark:border-zinc-700 ${
                               isSaving ? "opacity-50 cursor-not-allowed" : ""
                             }`}
                           />
@@ -847,17 +850,24 @@ export function TransactionsSheet({
                             label: a.name,
                             icon: a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱",
                             badge: formatCurrency(parseFloat(a.balance)),
-                            badgeClassName: "font-mono font-normal text-zinc-500",
+                            badgeClassName: "hidden sm:inline-block font-mono font-normal text-zinc-500",
                           }))}
-                          triggerClassName={`h-8 ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
+                          triggerClassName={`h-8 px-2 sm:px-2.5 ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
                         />
                       )}
                     </td>
 
                     {/* Nominal */}
-                    <td className="p-2">
+                    <td className="p-1.5 sm:p-2 align-middle">
                       <div className="relative flex items-center">
-                        <span className="absolute left-2.5 text-xs font-semibold text-zinc-400 select-none pointer-events-none">
+                        <span className={`absolute left-2.5 text-xs font-semibold select-none pointer-events-none ${
+                          row.type === "expense"
+                            ? "text-rose-500/70 dark:text-rose-400/70"
+                            : row.type === "income"
+                            ? "text-emerald-500/70 dark:text-emerald-400/70"
+                            : "text-blue-500/70 dark:text-blue-400/70"
+                        }`}>
+                          {row.type === "expense" ? "-" : row.type === "income" ? "+" : ""}
                           {getCurrencySymbol(currency)}
                         </span>
                         <input
@@ -873,14 +883,18 @@ export function TransactionsSheet({
                           }}
                           placeholder="0"
                           className={`w-full h-8 pl-8 pr-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono font-bold outline-hidden ${
-                            isSaving ? "opacity-50 cursor-not-allowed" : ""
-                          }`}
+                            row.type === "expense"
+                              ? "text-rose-600 dark:text-rose-400"
+                              : row.type === "income"
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : "text-blue-600 dark:text-blue-400"
+                          } ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
                         />
                       </div>
                     </td>
 
                     {/* Keterangan */}
-                    <td className="p-2">
+                    <td className="p-1.5 sm:p-2 align-middle">
                       <input
                         type="text"
                         disabled={isSaving}
@@ -889,7 +903,7 @@ export function TransactionsSheet({
                           handleCellChange(row.id, "note", e.target.value)
                         }
                         placeholder={dict.transaksi.notePlaceholder}
-                        className={`w-full h-8 px-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs outline-hidden ${
+                        className={`w-full h-8 px-2.5 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs outline-hidden ${
                           isSaving ? "opacity-50 cursor-not-allowed" : ""
                         }`}
                       />
