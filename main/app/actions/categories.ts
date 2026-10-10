@@ -6,9 +6,16 @@ import { eq, or, and, isNull } from "drizzle-orm";
 
 import { getServerLocale } from "@/lib/i18n/server";
 import { translateCategoryName } from "@/lib/i18n/dictionary";
+import {
+  encryptWithPublicKey,
+  decryptWithPrivateKey,
+  getActiveUserPrivateKey,
+  getUserPublicKey,
+} from "@/lib/crypto";
 
 export async function getCategories(userId?: string, _familyId?: string | null) {
   const locale = await getServerLocale();
+  const privKey = userId ? await getActiveUserPrivateKey(userId) : null;
 
   let results;
   // Ambil kategori default sistem (userId null / isDefault true) + kategori custom milik user
@@ -27,11 +34,22 @@ export async function getCategories(userId?: string, _familyId?: string | null) 
     });
   }
 
-  return results.map((cat) => ({
-    ...cat,
-    name: translateCategoryName(cat.name, locale),
-    rawName: cat.name,
-  }));
+  return results.map((cat) => {
+    let plainName = cat.name;
+    if (privKey && cat.name.startsWith("enc:v1:")) {
+      try {
+        plainName = decryptWithPrivateKey(cat.name, privKey);
+      } catch (e) {
+        console.error("Failed to decrypt category name for category", cat.id, e);
+      }
+    }
+
+    return {
+      ...cat,
+      name: translateCategoryName(plainName, locale),
+      rawName: plainName,
+    };
+  });
 }
 
 export async function createCategory(data: {
@@ -42,19 +60,25 @@ export async function createCategory(data: {
   familyId?: string | null;
 }) {
   const { userId, name, type, icon } = data;
+  const publicKey = await getUserPublicKey(userId);
+  const trimmedName = name.trim();
+  const storedName = publicKey ? encryptWithPublicKey(trimmedName, publicKey) : trimmedName;
 
   const [newCategory] = await db
     .insert(categories)
     .values({
       userId,
-      name: name.trim(),
+      name: storedName,
       type,
       icon: icon || (type === "income" ? "💰" : "💸"),
       isDefault: false,
     })
     .returning();
 
-  return newCategory;
+  return {
+    ...newCategory,
+    name: trimmedName,
+  };
 }
 
 export async function deleteCategory(
@@ -125,7 +149,11 @@ export async function updateCategory(
   }
 
   const updateValues: Partial<typeof categories.$inferInsert> = {};
-  if (data.name !== undefined) updateValues.name = data.name.trim();
+  if (data.name !== undefined) {
+    const trimmed = data.name.trim();
+    const publicKey = await getUserPublicKey(userId);
+    updateValues.name = publicKey ? encryptWithPublicKey(trimmed, publicKey) : trimmed;
+  }
   if (data.type !== undefined) updateValues.type = data.type;
   if (data.icon !== undefined) updateValues.icon = data.icon.trim();
 
@@ -135,5 +163,11 @@ export async function updateCategory(
     .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
     .returning();
 
-  return { success: true, data: updated };
+  return {
+    success: true,
+    data: {
+      ...updated,
+      name: data.name !== undefined ? data.name.trim() : updated.name,
+    },
+  };
 }

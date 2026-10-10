@@ -67,6 +67,33 @@ function mapAndDecryptTransaction(tx: any, privKey: string | null, locale: any) 
     }
   }
 
+  let accPlainName = tx.account?.name;
+  if (privKey && tx.account?.name?.startsWith("enc:v1:")) {
+    try {
+      accPlainName = decryptWithPrivateKey(tx.account.name, privKey);
+    } catch (e) {
+      console.error("Failed to decrypt account name for tx", tx.id, e);
+    }
+  }
+
+  let toAccPlainName = tx.toAccount?.name;
+  if (privKey && tx.toAccount?.name?.startsWith("enc:v1:")) {
+    try {
+      toAccPlainName = decryptWithPrivateKey(tx.toAccount.name, privKey);
+    } catch (e) {
+      console.error("Failed to decrypt toAccount name for tx", tx.id, e);
+    }
+  }
+
+  let catPlainName = tx.category?.name;
+  if (privKey && tx.category?.name?.startsWith("enc:v1:")) {
+    try {
+      catPlainName = decryptWithPrivateKey(tx.category.name, privKey);
+    } catch (e) {
+      console.error("Failed to decrypt category name for tx", tx.id, e);
+    }
+  }
+
   return {
     ...tx,
     amount: plainAmount,
@@ -78,8 +105,8 @@ function mapAndDecryptTransaction(tx: any, privKey: string | null, locale: any) 
           ...tx.account,
           balance: accPlainBalance ?? tx.account.balance,
           rawBalance: tx.account.balance,
-          name: translateAccountName(tx.account.name, locale),
-          rawName: tx.account.name,
+          name: translateAccountName(accPlainName ?? tx.account.name, locale),
+          rawName: accPlainName ?? tx.account.name,
         }
       : tx.account,
     toAccount: tx.toAccount
@@ -87,12 +114,16 @@ function mapAndDecryptTransaction(tx: any, privKey: string | null, locale: any) 
           ...tx.toAccount,
           balance: toAccPlainBalance ?? tx.toAccount.balance,
           rawBalance: tx.toAccount.balance,
-          name: translateAccountName(tx.toAccount.name, locale),
-          rawName: tx.toAccount.name,
+          name: translateAccountName(toAccPlainName ?? tx.toAccount.name, locale),
+          rawName: toAccPlainName ?? tx.toAccount.name,
         }
       : tx.toAccount,
     category: tx.category
-      ? { ...tx.category, name: translateCategoryName(tx.category.name, locale), rawName: tx.category.name }
+      ? {
+          ...tx.category,
+          name: translateCategoryName(catPlainName ?? tx.category.name, locale),
+          rawName: catPlainName ?? tx.category.name,
+        }
       : tx.category,
   };
 }
@@ -320,6 +351,18 @@ export async function createTransaction(data: {
     return parseFloat(storedBalance);
   };
 
+  // Helper to decrypt name if encrypted
+  const getPlainName = (storedName: string) => {
+    if (privKey && storedName.startsWith("enc:v1:")) {
+      try {
+        return decryptWithPrivateKey(storedName, privKey);
+      } catch (e) {
+        console.error("Failed to decrypt name", e);
+      }
+    }
+    return storedName;
+  };
+
   // Helper to encrypt with publicKey if available
   const encryptVal = (val: string) => {
     return publicKey ? encryptWithPublicKey(val, publicKey) : val;
@@ -344,6 +387,8 @@ export async function createTransaction(data: {
 
     const fromBalance = getPlainBalance(fromAccount.balance);
     const toBalance = getPlainBalance(toAccount.balance);
+    const fromName = getPlainName(fromAccount.name);
+    const toName = getPlainName(toAccount.name);
 
     if (amount > fromBalance) {
       const fmtFrom = new Intl.NumberFormat("id-ID", {
@@ -359,7 +404,7 @@ export async function createTransaction(data: {
 
       return {
         success: false,
-        error: `Saldo tidak mencukupi! Saldo "${fromAccount.name}" saat ini hanya ${fmtFrom}, tidak cukup untuk transfer sebesar ${fmtAmount}.`,
+        error: `Saldo tidak mencukupi! Saldo "${fromName}" saat ini hanya ${fmtFrom}, tidak cukup untuk transfer sebesar ${fmtAmount}.`,
       };
     }
 
@@ -369,7 +414,7 @@ export async function createTransaction(data: {
     const fromBalStored = encryptVal(fromNewBalance.toString());
     const toBalStored = encryptVal(toNewBalance.toString());
     const amountStored = encryptVal(amount.toString());
-    const rawNote = note?.trim() || `Transfer ke ${toAccount.name}`;
+    const rawNote = note?.trim() || `Transfer ke ${toName}`;
     const noteStored = rawNote ? encryptVal(rawNote) : null;
 
     let createdTx: any;
@@ -416,6 +461,7 @@ export async function createTransaction(data: {
       },
       updatedAccount: {
         ...fromAccount,
+        name: fromName,
         balance: fromNewBalance.toString(),
       },
     };
@@ -431,6 +477,7 @@ export async function createTransaction(data: {
   }
 
   const currentBalance = getPlainBalance(account.balance);
+  const accountName = getPlainName(account.name);
 
   // Balance validation: expense amount cannot exceed existing balance
   if (type === "expense" && amount > currentBalance) {
@@ -447,7 +494,7 @@ export async function createTransaction(data: {
 
     return {
       success: false,
-      error: `Saldo tidak mencukupi! Saldo "${account.name}" saat ini hanya ${fmtCurrent}, tidak cukup untuk pengeluaran sebesar ${fmtAmount}.`,
+      error: `Saldo tidak mencukupi! Saldo "${accountName}" saat ini hanya ${fmtCurrent}, tidak cukup untuk pengeluaran sebesar ${fmtAmount}.`,
     };
   }
 
@@ -733,6 +780,17 @@ export async function updateTransaction(
     return parseFloat(val);
   };
 
+  const getPlainName = (val: string) => {
+    if (privKey && val.startsWith("enc:v1:")) {
+      try {
+        return decryptWithPrivateKey(val, privKey);
+      } catch (e) {
+        console.error("Failed to decrypt name", e);
+      }
+    }
+    return val;
+  };
+
   const encryptVal = (val: string) => {
     return publicKey ? encryptWithPublicKey(val, publicKey) : val;
   };
@@ -802,7 +860,7 @@ export async function updateTransaction(
           maximumFractionDigits: 0,
         }).format(newAmount);
 
-        txError = `Saldo tidak mencukupi! Saldo "${fromAcc.name}" saat ini ${fmtFrom}, tidak cukup untuk transfer sebesar ${fmtAmount}.`;
+        txError = `Saldo tidak mencukupi! Saldo "${getPlainName(fromAcc.name)}" saat ini ${fmtFrom}, tidak cukup untuk transfer sebesar ${fmtAmount}.`;
         tx.rollback();
         return;
       }
@@ -831,7 +889,7 @@ export async function updateTransaction(
           maximumFractionDigits: 0,
         }).format(newAmount);
 
-        txError = `Saldo tidak mencukupi! Saldo "${targetAcc.name}" saat ini ${fmtCurrent}, tidak cukup untuk pengeluaran sebesar ${fmtAmount}.`;
+        txError = `Saldo tidak mencukupi! Saldo "${getPlainName(targetAcc.name)}" saat ini ${fmtCurrent}, tidak cukup untuk pengeluaran sebesar ${fmtAmount}.`;
         tx.rollback();
         return;
       }

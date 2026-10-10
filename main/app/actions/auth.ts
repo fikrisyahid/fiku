@@ -180,19 +180,20 @@ export async function registerWithEmailPassword(
   const saltRounds = 10;
   const passwordHash = await bcrypt.hash(password, saltRounds);
 
-  // Use onboardUser to create default starter wallets (Cash, Bank, e-Wallet)
-  const onboard = await onboardUser({
-    fullName: name,
-    email,
-  });
-
-  // Generate and securely store user keypair with Double Protection (Password + APP_SECRET_KEY)
+  // Generate securely user keypair with Double Protection (Password + APP_SECRET_KEY)
   const keyPair = generateUserKeyPair();
   const encryptedPrivateKey = encryptPrivateKeyWithSecret(
     keyPair.privateKeyPem,
     password,
     keyPair.salt
   );
+
+  // Use onboardUser to create default starter wallets (Cash, Bank, e-Wallet) encrypted with user's publicKey
+  const onboard = await onboardUser({
+    fullName: name,
+    email,
+    publicKey: keyPair.publicKeyPem,
+  });
 
   // Update passwordHash & cryptographic keys, and ensure email & fullName
   const [updatedUser] = await db

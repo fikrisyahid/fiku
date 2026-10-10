@@ -3,6 +3,7 @@ import { users, accounts, userSettings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 import { Locale, getDictionary, DEFAULT_LOCALE } from "@/lib/i18n/dictionary";
+import { encryptWithPublicKey } from "@/lib/crypto";
 
 export interface OnboardUserInput {
   fullName: string;
@@ -12,6 +13,7 @@ export interface OnboardUserInput {
   initialBankBalance?: number;
   initialEwalletBalance?: number;
   locale?: Locale;
+  publicKey?: string | null;
 }
 
 export interface OnboardUserResult {
@@ -30,6 +32,7 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
     fullName,
     email: rawEmail,
     phone,
+    publicKey = null,
   } = input;
 
   const email = rawEmail?.trim().toLowerCase() || null;
@@ -98,26 +101,31 @@ export async function onboardUser(input: OnboardUserInput): Promise<OnboardUserR
     const dict = getDictionary(input.locale || DEFAULT_LOCALE);
 
     if (userAccounts.length === 0) {
+      const activePub = publicKey || currentUser.publicKey;
+      const encryptVal = (val: string) => {
+        return activePub ? encryptWithPublicKey(val, activePub) : val;
+      };
+
       const defaultWallets = [
         {
           userId: currentUser.id,
-          name: dict.defaultWallets.cash,
+          name: encryptVal(dict.defaultWallets.cash),
           type: "cash",
-          balance: "0",
+          balance: encryptVal("0"),
           isDefault: true,
         },
         {
           userId: currentUser.id,
-          name: dict.defaultWallets.bank,
+          name: encryptVal(dict.defaultWallets.bank),
           type: "bank",
-          balance: "0",
+          balance: encryptVal("0"),
           isDefault: false,
         },
         {
           userId: currentUser.id,
-          name: dict.defaultWallets.ewallet,
+          name: encryptVal(dict.defaultWallets.ewallet),
           type: "ewallet",
-          balance: "0",
+          balance: encryptVal("0"),
           isDefault: false,
         },
       ];

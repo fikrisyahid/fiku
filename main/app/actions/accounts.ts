@@ -35,11 +35,20 @@ export async function getUserAccounts(userId: string, _familyId?: string | null)
       plainBalance = "0";
     }
 
+    let plainName = a.name;
+    if (privKey && a.name.startsWith("enc:v1:")) {
+      try {
+        plainName = decryptWithPrivateKey(a.name, privKey);
+      } catch (e) {
+        console.error("Failed to decrypt account name for account", a.id, e);
+      }
+    }
+
     return {
       ...a,
       balance: plainBalance,
-      name: translateAccountName(a.name, locale),
-      rawName: a.name,
+      name: translateAccountName(plainName, locale),
+      rawName: plainName,
     };
   });
 }
@@ -56,20 +65,30 @@ export async function getAccountById(
   if (!acc) return null;
 
   const privKey = await getActiveUserPrivateKey(userId);
-    let plainBalance = acc.balance;
-    if (privKey && acc.balance.startsWith("enc:v1:")) {
-      try {
-        plainBalance = decryptWithPrivateKey(acc.balance, privKey);
-      } catch (e) {
-        console.error("Failed to decrypt account balance for account", acc.id, e);
-        plainBalance = "0";
-      }
-    } else if (!privKey && acc.balance.startsWith("enc:v1:")) {
+  let plainBalance = acc.balance;
+  if (privKey && acc.balance.startsWith("enc:v1:")) {
+    try {
+      plainBalance = decryptWithPrivateKey(acc.balance, privKey);
+    } catch (e) {
+      console.error("Failed to decrypt account balance for account", acc.id, e);
       plainBalance = "0";
     }
+  } else if (!privKey && acc.balance.startsWith("enc:v1:")) {
+    plainBalance = "0";
+  }
+
+  let plainName = acc.name;
+  if (privKey && acc.name.startsWith("enc:v1:")) {
+    try {
+      plainName = decryptWithPrivateKey(acc.name, privKey);
+    } catch (e) {
+      console.error("Failed to decrypt account name for account", acc.id, e);
+    }
+  }
 
   return {
     ...acc,
+    name: plainName,
     balance: plainBalance,
   };
 }
@@ -99,15 +118,19 @@ export async function createAccount(data: {
 
   const publicKey = await getUserPublicKey(userId);
   const rawBalanceStr = balance.toString();
+  const trimmedName = name.trim();
   const storedBalance = publicKey
     ? encryptWithPublicKey(rawBalanceStr, publicKey)
     : rawBalanceStr;
+  const storedName = publicKey
+    ? encryptWithPublicKey(trimmedName, publicKey)
+    : trimmedName;
 
   const [newAccount] = await db
     .insert(accounts)
     .values({
       userId,
-      name: name.trim(),
+      name: storedName,
       type: type.toLowerCase(),
       balance: storedBalance,
       isDefault,
@@ -116,6 +139,7 @@ export async function createAccount(data: {
 
   return {
     ...newAccount,
+    name: trimmedName,
     balance: rawBalanceStr,
   };
 }
@@ -142,10 +166,14 @@ export async function updateAccount(
     updatedAt: new Date(),
   };
 
-  if (data.name !== undefined) updateValues.name = data.name.trim();
+  const publicKey = await getUserPublicKey(userId);
+
+  if (data.name !== undefined) {
+    const trimmed = data.name.trim();
+    updateValues.name = publicKey ? encryptWithPublicKey(trimmed, publicKey) : trimmed;
+  }
   if (data.type !== undefined) updateValues.type = data.type.toLowerCase();
   if (data.balance !== undefined) {
-    const publicKey = await getUserPublicKey(userId);
     const rawBalanceStr = data.balance.toString();
     updateValues.balance = publicKey
       ? encryptWithPublicKey(rawBalanceStr, publicKey)
@@ -161,6 +189,7 @@ export async function updateAccount(
 
   return updated ? {
     ...updated,
+    name: data.name !== undefined ? data.name.trim() : updated.name,
     balance: data.balance !== undefined ? data.balance.toString() : updated.balance,
   } : null;
 }
