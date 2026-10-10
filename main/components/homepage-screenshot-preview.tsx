@@ -940,10 +940,10 @@ export function HomepageScreenshotPreview() {
 
               {/* 4. Full-Featured Spreadsheet Table */}
               <div className="overflow-x-auto border border-zinc-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full text-left text-xs border-collapse whitespace-nowrap">
                   <thead>
-                    <tr className="bg-zinc-100/80 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 border-b border-zinc-200 dark:border-zinc-800 font-semibold select-none">
-                      <th className="p-3 w-12 text-center">
+                    <tr className="bg-zinc-100/80 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 border-b border-zinc-200 dark:border-zinc-800 font-semibold select-none whitespace-nowrap">
+                      <th className="p-3 w-12 text-center whitespace-nowrap">
                         <input
                           type="checkbox"
                           checked={filteredRows.length > 0 && filteredRows.every((r) => selectedIds.has(r.id))}
@@ -957,7 +957,7 @@ export function HomepageScreenshotPreview() {
                           className="w-4 h-4 rounded-md border-zinc-300 dark:border-zinc-700 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer accent-emerald-600"
                         />
                       </th>
-                      <th className="p-3 w-36">
+                      <th className="p-3 w-36 whitespace-nowrap">
                         <div className="flex items-center gap-1 cursor-pointer" onClick={() => {
                           setSortField("transactionDate");
                           setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -966,12 +966,12 @@ export function HomepageScreenshotPreview() {
                           <ArrowUpDown className="w-3 h-3 text-zinc-400" />
                         </div>
                       </th>
-                      <th className="p-3 w-32">{dict.transaksi.colType}</th>
-                      <th className="p-3 w-52">{dict.transaksi.colCategory}</th>
-                      <th className="p-3 w-52">{dict.transaksi.colWallet}</th>
-                      <th className="p-3 w-36">{dict.transaksi.colAmount()}</th>
-                      <th className="p-3 min-w-[180px]">{dict.transaksi.colNote}</th>
-                      <th className="p-3 w-28 text-center">{dict.transaksi.colActions}</th>
+                      <th className="p-3 w-32 whitespace-nowrap">{dict.transaksi.colType}</th>
+                      <th className="p-3 w-52 whitespace-nowrap">{dict.transaksi.colCategory}</th>
+                      <th className="p-3 w-52 whitespace-nowrap">{dict.transaksi.colWallet}</th>
+                      <th className="p-3 w-36 whitespace-nowrap">{dict.transaksi.colAmount()}</th>
+                      <th className="p-3 min-w-[200px] whitespace-nowrap">{dict.transaksi.colNote}</th>
+                      <th className="p-3 w-28 text-center whitespace-nowrap">{dict.transaksi.colActions}</th>
                     </tr>
                   </thead>
 
@@ -985,7 +985,7 @@ export function HomepageScreenshotPreview() {
                       return (
                         <tr
                           key={row.id}
-                          className={`transition-colors ${
+                          className={`transition-colors whitespace-nowrap ${
                             isSelected
                               ? "bg-emerald-500/[0.08] dark:bg-emerald-500/[0.12]"
                               : row.isNew

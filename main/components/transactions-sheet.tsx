@@ -590,10 +590,10 @@ export function TransactionsSheet({
           </div>
         )}
 
-        <table className="w-full text-left text-xs border-collapse">
+        <table className="w-full text-left text-xs border-collapse whitespace-nowrap">
           <thead>
-            <tr className="bg-zinc-100/80 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 border-b border-zinc-200 dark:border-zinc-800 font-semibold select-none">
-              <th className="p-3 w-12 text-center">
+            <tr className="bg-zinc-100/80 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 border-b border-zinc-200 dark:border-zinc-800 font-semibold select-none whitespace-nowrap">
+              <th className="p-3 w-12 text-center whitespace-nowrap">
                 <div className="flex items-center justify-center gap-1.5">
                   <input
                     type="checkbox"
@@ -609,7 +609,7 @@ export function TransactionsSheet({
               </th>
               <th
                 onClick={() => toggleSort("transactionDate")}
-                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-36"
+                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-36 whitespace-nowrap"
               >
                 <div className="flex items-center gap-1">
                   <span>{dict.transaksi.colDate}</span>
@@ -622,7 +622,7 @@ export function TransactionsSheet({
               </th>
               <th
                 onClick={() => toggleSort("type")}
-                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-32"
+                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-32 whitespace-nowrap"
               >
                 <div className="flex items-center gap-1">
                   <span>{dict.transaksi.colType}</span>
@@ -635,7 +635,7 @@ export function TransactionsSheet({
               </th>
               <th
                 onClick={() => toggleSort("category")}
-                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-44"
+                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-44 whitespace-nowrap"
               >
                 <div className="flex items-center gap-1">
                   <span>{dict.transaksi.colCategory}</span>
@@ -648,7 +648,7 @@ export function TransactionsSheet({
               </th>
               <th
                 onClick={() => toggleSort("account")}
-                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-52"
+                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-52 whitespace-nowrap"
               >
                 <div className="flex items-center gap-1">
                   <span>{dict.transaksi.colWallet}</span>
@@ -661,7 +661,7 @@ export function TransactionsSheet({
               </th>
               <th
                 onClick={() => toggleSort("amount")}
-                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-36"
+                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors w-36 whitespace-nowrap"
               >
                 <div className="flex items-center gap-1">
                   <span>{dict.transaksi.colAmount(currency)}</span>
@@ -674,7 +674,7 @@ export function TransactionsSheet({
               </th>
               <th
                 onClick={() => toggleSort("note")}
-                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors min-w-[180px]"
+                className="p-3 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors min-w-[200px] whitespace-nowrap"
               >
                 <div className="flex items-center gap-1">
                   <span>{dict.transaksi.colNote}</span>
@@ -685,7 +685,7 @@ export function TransactionsSheet({
                   )}
                 </div>
               </th>
-              <th className="p-3 w-28 text-center">{dict.transaksi.colActions}</th>
+              <th className="p-3 w-28 text-center whitespace-nowrap">{dict.transaksi.colActions}</th>
             </tr>
           </thead>
 
@@ -708,7 +708,7 @@ export function TransactionsSheet({
                 return (
                   <tr
                     key={row.id}
-                    className={`transition-colors ${
+                    className={`transition-colors whitespace-nowrap ${
                       isSelected
                         ? "bg-emerald-500/[0.08] dark:bg-emerald-500/[0.12]"
                         : row.isNew
