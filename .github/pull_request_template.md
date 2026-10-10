@@ -1,31 +1,31 @@
-## Ringkasan Perubahan
+## Summary
 
-<!-- Jelaskan secara singkat masalah yang diselesaikan dan solusi/fitur yang diimplementasikan. -->
+<!-- Provide a brief description of the problem solved and the implementation details. -->
 
-## Jenis Perubahan
+## Type of Change
 
-- [ ] 🚀 **Fitur Baru** (`feat`)
-- [ ] 🐛 **Perbaikan Bug** (`fix`)
-- [ ] ⚡ **Optimalisasi / Performa** (`perf`)
-- [ ] 📝 **Dokumentasi** (`docs`)
-- [ ] 🧪 **Pengujian / Test** (`test`)
+- [ ] 🚀 **New Feature** (`feat`)
+- [ ] 🐛 **Bug Fix** (`fix`)
+- [ ] ⚡ **Performance Optimization** (`perf`)
+- [ ] 📝 **Documentation** (`docs`)
+- [ ] 🧪 **Tests** (`test`)
 - [ ] 🛠️ **Refactoring / Maintenance** (`refactor` / `chore`)
 
-## Pengujian & Verifikasi
+## Verification & Testing
 
-<!-- Jelaskan langkah pengujian yang telah dilakukan di lingkungan lokal. -->
-- [ ] `bun run test` (Seluruh unit & integration test lolos tanpa kegagalan)
-- [ ] `bun run check` (TypeScript type check lolos tanpa error)
-- [ ] `bun run lint` (ESLint bersih)
-- [ ] `bun run build` (Build Next.js produksi berhasil)
+<!-- Describe the verification steps taken in your local development environment. -->
+- [ ] `bun run test` (All unit & integration test suites pass without failures)
+- [ ] `bun run check` (TypeScript type check passes with zero errors)
+- [ ] `bun run lint` (ESLint checks pass)
+- [ ] `bun run build` (Next.js production build succeeds)
 
 ## Zero-Knowledge & Security Compliance
 
-- [ ] **Tidak ada nilai finansial plaintext** (nominal, saldo, catatan) yang disimpan atau dibocorkan langsung ke database tanpa enkripsi `X25519` + `AES-256-GCM`.
-- [ ] Tidak ada data sensitif (API key, server pepper, private key) yang ter-commit ke repositori.
+- [ ] **No plaintext financial values** (amounts, balances, notes) are stored or leaked into the database without `X25519` + `AES-256-GCM` encryption.
+- [ ] No secrets or sensitive data (API keys, peppers, private keys) are committed to the repository.
 
-## Checklist Kontributor
+## Contributor Checklist
 
-- [ ] Target branch PR adalah **`staging`** (bukan langsung `main`).
-- [ ] Pesan commit mengikuti konvensi Semantic Commit (`feat:`, `fix:`, `perf:`, dsb).
-- [ ] Dokumentasi yang relevan telah diperbarui di folder `docs/` (jika ada perubahan skema, perintah, atau alur).
+- [ ] Target branch for this PR is **`staging`** (not `main`).
+- [ ] Commit messages follow the Conventional Commits specification (`feat:`, `fix:`, `perf:`, etc.).
+- [ ] Relevant documentation in `docs/` has been updated (if schemas, commands, or behaviors changed).

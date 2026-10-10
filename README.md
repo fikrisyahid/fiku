@@ -4,7 +4,7 @@
 
 <h1 align="center">Fiku</h1>
 <p align="center"><strong>Zero-Knowledge Personal Finance Platform</strong></p>
-<p align="center">Catat Cepat, Kendalikan Keuangan Pribadi dengan Enkripsi End-to-End</p>
+<p align="center">Log Quickly, Master Your Personal Finances with End-to-End Encryption</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js" alt="Next.js 16" />
@@ -132,7 +132,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 We welcome community contributions! To maintain code quality and production stability:
 - All Pull Requests must target the **`staging`** branch. Direct PRs to `main` are restricted.
 - Review our complete contributor guide, branching strategy, and local environment setup in:
-  👉 **[Panduan Kontribusi (docs/CONTRIBUTIONS.md)](docs/CONTRIBUTIONS.md)**
+  👉 **[Contributor Guide (docs/CONTRIBUTIONS.md)](docs/CONTRIBUTIONS.md)**
 
 ---
 

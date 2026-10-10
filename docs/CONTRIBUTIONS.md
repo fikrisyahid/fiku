@@ -1,172 +1,173 @@
-# Panduan Kontribusi (Contributing Guide)
+# Contributing Guide
 
-Terima kasih atas ketertarikan Anda untuk berkontribusi pada pengembangan **Fiku**! 🌟
+Thank you for your interest in contributing to **Fiku**! 🌟
 
-Fiku adalah platform manajemen keuangan pribadi dengan arsitektur **Zero-Knowledge Encryption** (ECIES X25519 + AES-256-GCM). Dokumen ini menjelaskan alur kerja, standar kode, dan langkah-langkah praktis untuk berkontribusi.
+Fiku is a personal finance management platform built with an end-to-end **Zero-Knowledge Encryption** architecture (ECIES X25519 + AES-256-GCM). This document outlines the branch workflow, coding standards, security requirements, and practical steps to set up your local development environment.
 
 ---
 
-## 🧭 Alur Kerja Branch & Git (Branch Flow)
+## 🧭 Branch & Git Workflow
 
-Untuk menjaga stabilitas lingkungan produksi (Continuous Deployment di Vercel), Fiku menerapkan alur kerja **Staged Trunk-Based Development**:
+To maintain production stability for continuous deployments on Vercel, Fiku follows a **Staged Trunk-Based Development** model:
 
 ```text
-[ Fork Kontributor ]
-       │  (feat/... atau fix/...)
+[ Contributor Fork ]
+       │  (feat/... or fix/...)
        ▼
- [ PR ke staging ] ──▶ [ Review & CI Test Suite ] ──▶ [ Merge ke staging ]
-                                                              │
-                                                              ▼ (Promote/PR oleh Maintainer)
-                                                         [ branch main ] ──▶ [ Vercel Production Auto-Deploy ]
+ [ PR to staging ] ──▶ [ Review & CI Test Suite ] ──▶ [ Merge into staging ]
+                                                             │
+                                                             ▼ (Promote/PR by Maintainer)
+                                                        [ branch main ] ──▶ [ Vercel Production Auto-Deploy ]
 ```
 
-### Aturan Utama:
-1. **Target Branch PR adalah `staging`**:
-   - Kontributor **TIDAK DIPERBOLEHKAN** membuat Pull Request langsung ke branch `main`.
-   - Branch `main` dilindungi oleh GitHub Ruleset dan Gatekeeper CI. PR langsung ke `main` dari kontributor luar akan otomatis diblokir/gagal.
-2. **Promosi Staging ke Main**:
-   - Setelah fitur teruji di branch `staging`, maintainer repository (`@fikrisyahid`) akan menggabungkan perubahan ke `main` untuk memicu deployment resmi ke Vercel production.
+### Core Rules:
+1. **Target Branch is `staging`**:
+   - All contributor Pull Requests **MUST target the `staging` branch**.
+   - Direct PRs to `main` are restricted by GitHub Rulesets and automated CI Gatekeepers, and will be rejected automatically.
+2. **Promoting Staging to Main**:
+   - Once features and fixes have stabilized in `staging`, the repository maintainer (`@fikrisyahid`) will promote changes into `main` to trigger the production deployment.
 
 ---
 
-## 🛠️ Prasyarat & Lingkungan Pengembangan (Prerequisites)
+## 🛠️ Prerequisites & Environment Setup
 
-Pastikan perkakas berikut telah terpasang di sistem operasi Anda (Linux/WSL2/macOS):
+Ensure the following tools are installed on your development machine (Linux / WSL2 / macOS):
 
-- **[Bun](https://bun.sh/)** (`bun >= 1.4`): Runtime JavaScript & package runner utama.
-- **[uv](https://docs.astral.sh/uv/)** (Python >= 3.11): Digunakan oleh ops workflow runner untuk sinkronisasi `.env` otomatis.
+- **[Bun](https://bun.sh/)** (`bun >= 1.4`): Primary JavaScript runtime, package manager, and test runner.
+- **[uv](https://docs.astral.sh/uv/)** (Python >= 3.11): Used by the ops task runner for automatic `.env` synchronization.
 - **PostgreSQL Database**:
-  - Rekomendasi: Instance database [Supabase](https://supabase.com/) gratis (Session Pooler).
-  - Atau database PostgreSQL lokal (versi 15+).
-- **Git** (Dianjurkan mengonfigurasi GPG commit signing).
+  - Recommended: Free [Supabase](https://supabase.com/) PostgreSQL instance (Session Pooler).
+  - Alternatively: Local PostgreSQL instance (v15+).
+- **Git** (Configured with GPG commit signing recommended).
 
 ---
 
-## 🚀 Langkah Menyiapkan Proyek (Step-by-Step Setup)
+## 🚀 Step-by-Step Local Setup
 
-### 1. Fork & Clone Repository
+### 1. Fork & Clone the Repository
 ```bash
-# 1. Fork repositori fikrisyahid/fiku di GitHub
-# 2. Clone fork Anda ke lokal
-git clone https://github.com/<username-anda>/fiku.git
+# 1. Fork the fikrisyahid/fiku repository on GitHub
+# 2. Clone your fork locally
+git clone https://github.com/<your-username>/fiku.git
 cd fiku
 
-# 3. Buat branch baru dari branch staging
+# 3. Create your working branch branched off staging
 git checkout staging 2>/dev/null || git checkout -b staging origin/staging
-git checkout -b feat/nama-fitur-anda
+git checkout -b feat/your-feature-name
 ```
 
-### 2. Konfigurasi Environment Variables
-Salin file template konfigurasi di direktori root:
+### 2. Configure Environment Variables
+Copy the root environment template:
 ```bash
 cp .env.example .env
 ```
-Buka `.env` dan lengkapi konfigurasi berikut:
+Open `.env` and fill in the required variables:
 ```env
-# URL PostgreSQL Supabase
+# PostgreSQL connection string (Supabase Session Pooler or direct)
 DATABASE_URL=postgresql://postgres.[REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres
 
-# Server Pepper (kriptografi PBKDF2)
+# Server Pepper for PBKDF2 cryptographic key derivation
 ENCRYPTION_PEPPER=fana_secure_server_pepper_default_2026
 
-# Kunci Rahasia Utama Aplikasi (Double Protection)
+# Master Application Secret Key (Double Protection layer)
 APP_SECRET_KEY=fana_app_secret_key_double_protection_2026
 ```
-*(Sistem ops Fiku akan otomatis menyinkronkan `.env` root ke `main/.env`).*
+*(The Fiku ops workflow automatically mirrors the root `.env` to `main/.env`).*
 
-### 3. Instalasi Dependensi
+### 3. Install Dependencies
 ```bash
 bun run install:main
 ```
 
-### 4. Sinkronisasi Skema Database
-Sinkronkan tabel, kolom, dan index komposit ke database PostgreSQL Anda:
+### 4. Synchronize Database Schema
+Apply tables, columns, constraints, and composite indexes to your database:
 ```bash
 bun run db:sync
 ```
 
-*(Opsional: Jika Anda ingin mengisi data akun dummy demo untuk pengujian):*
+*(Optional: Populate demo accounts with encrypted dummy records for testing):*
 ```bash
 bun run seed:dummy
 ```
 
-### 5. Jalankan Server Pengembangan
+### 5. Start the Development Server
 ```bash
 bun run dev
 ```
-Buka [http://localhost:3000](http://localhost:3000) di browser Anda.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 📋 Daftar Perintah (CLI Reference)
+## 📋 CLI Reference
 
-Jalankan semua perintah ini dari direktori root:
+Run these commands from the repository root:
 
-| Perintah | Deskripsi |
+| Command | Description |
 | :--- | :--- |
-| `bun run dev` | Menjalankan Next.js development server pada port 3000 |
-| `bun run test` | Menjalankan seluruh unit & integration test suite (`tests/`) |
-| `bun run check` | Memeriksa validasi tipe TypeScript (`tsc --noEmit`) |
-| `bun run lint` | Menjalankan ESLint pada seluruh berkas kode |
-| `bun run build` | Membuat build produksi Next.js untuk memastikan bebas error kompilasi |
-| `bun run db:sync` | Menyinkronkan struktur tabel dan index ke PostgreSQL |
-| `bun run db:studio` | Membuka antarmuka visual Drizzle Studio di browser |
-| `bun run db:reset` | Mengosongkan seluruh data tabel database |
-| `bun run sync:env` | Menyinkronkan berkas `.env` antara root dan direktori `main/` |
+| `bun run dev` | Starts the Next.js development server on port 3000 |
+| `bun run test` | Runs the full unit & integration test suite (`tests/`) |
+| `bun run check` | Validates TypeScript types across the codebase (`tsc --noEmit`) |
+| `bun run lint` | Runs ESLint checks across all files |
+| `bun run build` | Builds an optimized production bundle to ensure zero compilation errors |
+| `bun run db:sync` | Synchronizes PostgreSQL schema definitions and indexes (`scripts/db-sync.ts`) |
+| `bun run db:studio` | Launches Drizzle Studio in the browser for visual database inspection |
+| `bun run db:reset` | Wipes and resets all database table rows (`scripts/db-reset.ts`) |
+| `bun run sync:env` | Synchronizes `.env` files between root and the `main/` directory |
 
 ---
 
-## 🔐 Standar Keamanan Zero-Knowledge (Wajib Diikuti)
+## 🔐 Zero-Knowledge Security Compliance (Mandatory)
 
-Fiku menjunjung tinggi privasi data keuangan pengguna. Setiap kontributor wajib mematuhi aturan berikut:
+Fiku prioritizes strict privacy and user data sovereignty. All contributors must adhere to these cryptographic principles:
 
-1. **Dilarang Menyimpan Nilai Finansial Plaintext**:
-   - Kolom `accounts.balance`, `transactions.amount`, dan `transactions.note` **WAJIB** dienkripsi menggunakan public key pengguna (`encryptWithPublicKey`) sebelum ditulis ke database.
-   - Nilai tersimpan di database harus selalu berformat ciphertext: `enc:v1:<ephemeralPubDer>:<iv>:<authTag>:<ciphertext>`.
-2. **Isolasi Private Key**:
-   - Private key pengguna hanya boleh didekripsi di dalam memori saat sesi aktif dan disegel di dalam cookie HTTP-only terenkripsi (`fana_key_vault`). Jangan pernah mencatat (*log*) atau menyimpan private key plaintext ke disk atau database.
-3. **Penyimpanan Password & PIN**:
-   - Password menggunakan bcrypt (10 rounds).
-   - PIN menggunakan SHA-256 hash dengan salt per-pengguna dan server pepper via `crypto.timingSafeEqual`.
+1. **No Plaintext Financial Values**:
+   - `accounts.balance`, `transactions.amount`, and `transactions.note` **MUST NEVER** be stored as raw plaintext in the database.
+   - Values must be encrypted with the user's public key (`encryptWithPublicKey`) before being written to PostgreSQL.
+   - Ciphertext stored in the database must always follow the format: `enc:v1:<ephemeralPubDer>:<iv>:<authTag>:<ciphertext>`.
+2. **Private Key Isolation**:
+   - Private keys are decrypted in-memory only during an active user session and sealed inside an encrypted HTTP-only cookie (`fana_key_vault`). Plaintext private keys must never be logged or written to disk/database.
+3. **Password & PIN Security**:
+   - Passwords are encrypted using bcrypt (10 rounds).
+   - PINs are hashed using SHA-256 combined with per-user salts and server peppers, compared strictly via `crypto.timingSafeEqual`.
 
 ---
 
-## 🧪 Pengujian (Testing)
+## 🧪 Testing Guidelines
 
-Setiap penambahan fitur atau perbaikan bug harus disertai pengujian yang relevan di direktori `tests/`:
+Every new feature or bug fix must include relevant test coverage in the `tests/` directory:
 
-- **Unit Test** (`tests/unit/`): Logika murni independen (fungsi kriptografi, format mata uang, perhitungan rentang tanggal).
-- **Integration Test** (`tests/integration/`): Logika gabungan (pengurai teks alami Smart Input, logika paginasi & sorting).
+- **Unit Tests** (`tests/unit/`): Isolated pure logic (cryptography routines, currency formatting, date range calculations).
+- **Integration Tests** (`tests/integration/`): Multi-component logic (Smart Input natural language parsing, pagination, and sorting fallbacks).
 
-Jalankan pengujian lokal sebelum mengajukan PR:
+Run tests locally before submitting your Pull Request:
 ```bash
-# 1. Jalankan test suite
+# 1. Run all test suites
 bun run test
 
-# 2. Pastikan type check bersih
+# 2. Verify TypeScript type safety
 bun run check
 
-# 3. Pastikan build Next.js lulus
+# 3. Verify production build passes
 bun run build
 ```
 
 ---
 
-## 📝 Standar Commit & Pengajuan Pull Request
+## 📝 Commit Conventions & Pull Request Submission
 
-### Konvensi Pesan Commit (Conventional Commits):
-Format: `<type>(<scope>): <deskripsi singkat>`
-- `feat(smart-input): tambahkan dukungan multi-currency pada transfer`
-- `fix(summary): perbaiki kalkulasi saldo pada filter tahunan`
-- `perf(db): tambahkan composite index untuk optimasi sorting tanggal`
-- `test(crypto): tambahkan unit test untuk session vault`
-- `docs(readme): perbarui panduan kontribusi`
+### Commit Message Guidelines (Conventional Commits):
+Format: `<type>(<scope>): <short description>`
+- `feat(smart-input): add multi-currency transfer support`
+- `fix(summary): resolve annual balance aggregation edge case`
+- `perf(db): optimize date sorting with composite index`
+- `test(crypto): add test case for in-memory session vault`
+- `docs(contributions): translate guidelines into English`
 
-### Mengajukan Pull Request:
-1. Pastikan branch lokal Anda sudah sinkron dengan branch `staging` terbaru (`git pull origin staging`).
-2. Buat Pull Request di GitHub dengan **base branch: `staging`** (bukan `main`).
-3. Isi deskripsi PR sesuai template yang telah disediakan ([`.github/pull_request_template.md`](../.github/pull_request_template.md)).
-4. Pastikan seluruh automated check (GitHub Actions CI) berstatus **hijau / lulus**.
-5. Maintainer akan meninjau (*review*) kode Anda dan memberikan masukan atau menyetujui perubahan.
+### Submitting a Pull Request:
+1. Rebase or pull the latest changes from `staging` into your branch (`git pull origin staging`).
+2. Open a Pull Request on GitHub with the **base branch set to `staging`** (never `main`).
+3. Complete the Pull Request template ([`.github/pull_request_template.md`](../.github/pull_request_template.md)).
+4. Ensure all automated GitHub Actions CI checks are **green**.
+5. The maintainer will review your code, provide constructive feedback, or merge the PR.
 
-Terima kasih atas kontribusi Anda dalam membangun platform keuangan pribadi yang aman dan berorientasi privasi! 🚀
+Thank you for helping build a secure, privacy-first personal finance platform! 🚀
