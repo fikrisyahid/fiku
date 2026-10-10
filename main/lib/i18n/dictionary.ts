@@ -440,7 +440,7 @@ export const idDict: Dictionary = {
   nav: {
     transactions: "Transaksi",
     summary: "Ringkasan",
-    security: "Keamanan & Privasi",
+    security: "Keamanan",
     settings: "Pengaturan",
     signIn: "Masuk",
     signOut: "Keluar",
@@ -819,7 +819,7 @@ export const enDict: Dictionary = {
   nav: {
     transactions: "Transactions",
     summary: "Summary",
-    security: "Security & Privacy",
+    security: "Security",
     settings: "Settings",
     signIn: "Sign In",
     signOut: "Sign Out",
