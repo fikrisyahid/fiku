@@ -7,6 +7,7 @@ import {
   timestamp,
   date,
   boolean,
+  index,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -79,7 +80,13 @@ export const transactions = pgTable("transactions", {
   transactionDate: date("transaction_date").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_transactions_user_date").on(
+    table.userId,
+    table.transactionDate.desc(),
+    table.createdAt.desc()
+  ),
+]);
 
 /**
  * 5. SESSIONS (Web Login Sessions)

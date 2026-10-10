@@ -154,6 +154,13 @@ async function main() {
     ALTER COLUMN category_id DROP NOT NULL;
   `;
 
+  // 8. Composite indexes for high-speed date sorting and user scoping
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_transactions_user_date 
+    ON transactions (user_id, transaction_date DESC, created_at DESC);
+  `;
+  console.log("✅ Composite index idx_transactions_user_date ready");
+
   // 8. Seed default categories if empty
   const existingCats = await sql`SELECT count(*) FROM categories WHERE is_default = true;`;
   if (parseInt(existingCats[0].count) === 0) {
