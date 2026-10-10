@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/app/actions/auth";
 import {
   Sparkles,
@@ -28,6 +29,10 @@ export async function generateMetadata() {
 
 export default async function HomePage() {
   const user = await getCurrentUser();
+  if (user) {
+    redirect("/transaction");
+  }
+
   const locale = await getServerLocale();
   const dict = await getServerDictionary();
 
