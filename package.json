@@ -14,6 +14,7 @@
     "db:studio": "uv run ops/workflow.py db studio",
     "db:sync": "uv run ops/workflow.py db sync",
     "db:reset": "uv run ops/workflow.py db reset",
+    "test": "bun test tests/",
     "fiku": "uv run ops/workflow.py"
   },
   "packageManager": "bun@1.4.2"

@@ -157,6 +157,16 @@ def check() -> None:
     sys.exit(code)
 
 
+@cli.command("test")
+def test_cmd() -> None:
+    """Run comprehensive unit and integration test suite."""
+    console.print(Panel.fit("[bold cyan]Fiku Test Suite - Bun Runner[/bold cyan]", border_style="cyan"))
+    code = run_command(["bun", "test", "tests/"], cwd=ROOT_DIR)
+    if code == 0:
+        console.print("[bold green]✔ All test suites passed successfully![/bold green]")
+    sys.exit(code)
+
+
 @cli.group("db")
 def db_group() -> None:
     """Database management commands for PostgreSQL & Drizzle ORM."""
