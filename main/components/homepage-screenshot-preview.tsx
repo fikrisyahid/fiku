@@ -15,7 +15,6 @@ import {
   PieChart,
   Plus,
   Trash2,
-  Save,
   RotateCcw,
   CheckCircle2,
   RefreshCw,
@@ -1021,9 +1020,12 @@ export function HomepageScreenshotPreview() {
                             <div className="relative flex items-center">
                               <input
                                 type="date"
+                                disabled={isSaving}
                                 value={row.transactionDate}
                                 onChange={(e) => handleCellChange(row.id, "transactionDate", e.target.value)}
-                                className="w-full h-8 px-2.5 rounded-lg bg-zinc-50/60 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono font-medium text-zinc-800 dark:text-zinc-200 outline-hidden transition-all shadow-2xs"
+                                className={`w-full h-8 px-2.5 rounded-lg bg-zinc-50/60 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono font-medium text-zinc-800 dark:text-zinc-200 outline-hidden transition-all shadow-2xs ${
+                                  isSaving ? "opacity-50 cursor-not-allowed" : ""
+                                }`}
                               />
                             </div>
                           </td>
@@ -1031,6 +1033,7 @@ export function HomepageScreenshotPreview() {
                           {/* Tipe with CustomSelect */}
                           <td className="p-2">
                             <CustomSelect
+                              disabled={isSaving}
                               value={row.type}
                               onChange={(val) => handleCellChange(row.id, "type", val as any)}
                               options={[
@@ -1059,7 +1062,7 @@ export function HomepageScreenshotPreview() {
                                   : row.type === "expense"
                                   ? "text-rose-600 dark:text-rose-400 bg-rose-50/50 dark:bg-rose-950/30"
                                   : "text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30"
-                              }`}
+                              } ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
                             />
                           </td>
 
@@ -1071,6 +1074,7 @@ export function HomepageScreenshotPreview() {
                               </div>
                             ) : (
                               <CustomSelect
+                                disabled={isSaving}
                                 value={row.categoryId}
                                 onChange={(val) => handleCellChange(row.id, "categoryId", val)}
                                 options={demoCategories
@@ -1080,7 +1084,7 @@ export function HomepageScreenshotPreview() {
                                     label: c.name,
                                     icon: c.icon,
                                   }))}
-                                triggerClassName="h-8"
+                                triggerClassName={`h-8 ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
                               />
                             )}
                           </td>
@@ -1090,6 +1094,7 @@ export function HomepageScreenshotPreview() {
                             {row.type === "transfer" ? (
                               <div className="flex items-center gap-1">
                                 <CustomSelect
+                                  disabled={isSaving}
                                   value={row.accountId}
                                   onChange={(val) => handleCellChange(row.id, "accountId", val)}
                                   options={demoAccounts.map((a) => ({
@@ -1097,10 +1102,13 @@ export function HomepageScreenshotPreview() {
                                     label: a.name,
                                     icon: a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱",
                                   }))}
-                                  triggerClassName="h-8 border-zinc-200 dark:border-zinc-700"
+                                  triggerClassName={`h-8 border-zinc-200 dark:border-zinc-700 ${
+                                    isSaving ? "opacity-50 cursor-not-allowed" : ""
+                                  }`}
                                 />
                                 <span className="text-[10px] text-zinc-400">➔</span>
                                 <CustomSelect
+                                  disabled={isSaving}
                                   value={row.toAccountId || demoAccounts[1].id}
                                   onChange={(val) => handleCellChange(row.id, "toAccountId", val)}
                                   options={demoAccounts.map((a) => ({
@@ -1108,11 +1116,14 @@ export function HomepageScreenshotPreview() {
                                     label: a.name,
                                     icon: a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱",
                                   }))}
-                                  triggerClassName="h-8 border-zinc-200 dark:border-zinc-700"
+                                  triggerClassName={`h-8 border-zinc-200 dark:border-zinc-700 ${
+                                    isSaving ? "opacity-50 cursor-not-allowed" : ""
+                                  }`}
                                 />
                               </div>
                             ) : (
                               <CustomSelect
+                                disabled={isSaving}
                                 value={row.accountId}
                                 onChange={(val) => handleCellChange(row.id, "accountId", val)}
                                 options={demoAccounts.map((a) => ({
@@ -1122,7 +1133,7 @@ export function HomepageScreenshotPreview() {
                                   badge: formatCurrency(a.balance),
                                   badgeClassName: "font-mono font-normal text-zinc-500",
                                 }))}
-                                triggerClassName="h-8"
+                                triggerClassName={`h-8 ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
                               />
                             )}
                           </td>
@@ -1136,6 +1147,7 @@ export function HomepageScreenshotPreview() {
                               <input
                                 type="text"
                                 inputMode="numeric"
+                                disabled={isSaving}
                                 value={row.amount ? row.amount.toLocaleString(locale === "en" ? "en-US" : "id-ID") : ""}
                                 onChange={(e) => {
                                   const rawDigits = e.target.value.replace(/\D/g, "");
@@ -1143,7 +1155,9 @@ export function HomepageScreenshotPreview() {
                                   handleCellChange(row.id, "amount", numericVal);
                                 }}
                                 placeholder="0"
-                                className="w-full h-8 pl-8 pr-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono font-bold outline-hidden"
+                                className={`w-full h-8 pl-8 pr-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono font-bold outline-hidden ${
+                                  isSaving ? "opacity-50 cursor-not-allowed" : ""
+                                }`}
                               />
                             </div>
                           </td>
@@ -1152,10 +1166,13 @@ export function HomepageScreenshotPreview() {
                           <td className="p-2">
                             <input
                               type="text"
+                              disabled={isSaving}
                               value={row.note}
                               onChange={(e) => handleCellChange(row.id, "note", e.target.value)}
                               placeholder={dict.transaksi.notePlaceholder}
-                              className="w-full h-8 px-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs outline-hidden"
+                              className={`w-full h-8 px-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs outline-hidden ${
+                                isSaving ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
                             />
                           </td>
 
@@ -1172,22 +1189,15 @@ export function HomepageScreenshotPreview() {
                                   <CheckCircle2 className="w-4 h-4" />
                                 </div>
                               )}
-                              {!isSaving && !isSaved && (
-                                <button
-                                  type="button"
-                                  onClick={() => markRowSaving(row.id)}
-                                  title={dict.transaksi.tooltipSave}
-                                  className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all"
-                                >
-                                  <Save className="w-4 h-4" />
-                                </button>
-                              )}
 
                               <button
                                 type="button"
+                                disabled={isSaving}
                                 onClick={() => handleDeleteRow(row.id)}
                                 title={dict.transaksi.tooltipDelete}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all"
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all ${
+                                  isSaving ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
+                                }`}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>

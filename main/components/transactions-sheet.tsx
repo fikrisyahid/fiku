@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Plus,
   Trash2,
-  Save,
   RefreshCw,
   Search,
   ArrowUpDown,
@@ -704,11 +703,14 @@ export function TransactionsSheet({
                       <div className="relative flex items-center">
                         <input
                           type="date"
+                          disabled={isSaving}
                           value={row.transactionDate}
                           onChange={(e) =>
                             handleCellChange(row.id, "transactionDate", e.target.value)
                           }
-                          className="w-full h-8 px-2.5 rounded-lg bg-zinc-50/60 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono font-medium text-zinc-800 dark:text-zinc-200 outline-hidden transition-all shadow-2xs"
+                          className={`w-full h-8 px-2.5 rounded-lg bg-zinc-50/60 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono font-medium text-zinc-800 dark:text-zinc-200 outline-hidden transition-all shadow-2xs ${
+                            isSaving ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
                         />
                       </div>
                     </td>
@@ -716,6 +718,7 @@ export function TransactionsSheet({
                     {/* Tipe */}
                     <td className="p-2">
                       <CustomSelect
+                        disabled={isSaving}
                         value={row.type}
                         onChange={(val) =>
                           handleCellChange(row.id, "type", val as any)
@@ -731,7 +734,7 @@ export function TransactionsSheet({
                             : row.type === "expense"
                             ? "text-rose-600 dark:text-rose-400 bg-rose-50/50 dark:bg-rose-950/30"
                             : "text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30"
-                        }`}
+                        } ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
                       />
                     </td>
 
@@ -743,6 +746,7 @@ export function TransactionsSheet({
                         </div>
                       ) : (
                         <CustomSelect
+                          disabled={isSaving}
                           value={row.categoryId}
                           onChange={(val) =>
                             handleCellChange(row.id, "categoryId", val)
@@ -754,7 +758,7 @@ export function TransactionsSheet({
                               label: c.name,
                               icon: c.icon || "🏷️",
                             }))}
-                          triggerClassName="h-8"
+                          triggerClassName={`h-8 ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
                         />
                       )}
                     </td>
@@ -764,6 +768,7 @@ export function TransactionsSheet({
                       {row.type === "transfer" ? (
                         <div className="flex items-center gap-1">
                           <CustomSelect
+                            disabled={isSaving}
                             value={row.accountId}
                             onChange={(val) =>
                               handleCellChange(row.id, "accountId", val)
@@ -773,10 +778,13 @@ export function TransactionsSheet({
                               label: a.name,
                               icon: a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱",
                             }))}
-                            triggerClassName="h-8 border-zinc-200 dark:border-zinc-700"
+                            triggerClassName={`h-8 border-zinc-200 dark:border-zinc-700 ${
+                              isSaving ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
                           />
                           <span className="text-[10px] text-zinc-400">➔</span>
                           <CustomSelect
+                            disabled={isSaving}
                             value={row.toAccountId || ""}
                             onChange={(val) =>
                               handleCellChange(row.id, "toAccountId", val)
@@ -786,11 +794,14 @@ export function TransactionsSheet({
                               label: a.name,
                               icon: a.type === "cash" ? "💵" : a.type === "bank" ? "🏦" : "📱",
                             }))}
-                            triggerClassName="h-8 border-zinc-200 dark:border-zinc-700"
+                            triggerClassName={`h-8 border-zinc-200 dark:border-zinc-700 ${
+                              isSaving ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
                           />
                         </div>
                       ) : (
                         <CustomSelect
+                          disabled={isSaving}
                           value={row.accountId}
                           onChange={(val) =>
                             handleCellChange(row.id, "accountId", val)
@@ -802,7 +813,7 @@ export function TransactionsSheet({
                             badge: formatCurrency(parseFloat(a.balance)),
                             badgeClassName: "font-mono font-normal text-zinc-500",
                           }))}
-                          triggerClassName="h-8"
+                          triggerClassName={`h-8 ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
                         />
                       )}
                     </td>
@@ -816,6 +827,7 @@ export function TransactionsSheet({
                         <input
                           type="text"
                           inputMode="numeric"
+                          disabled={isSaving}
                           value={row.amount ? row.amount.toLocaleString(locale === "en" ? "en-US" : "id-ID") : ""}
                           onChange={(e) => {
                             // Strip everything except digits
@@ -824,7 +836,9 @@ export function TransactionsSheet({
                             handleCellChange(row.id, "amount", numericVal);
                           }}
                           placeholder="0"
-                          className="w-full h-8 pl-8 pr-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono font-bold outline-hidden"
+                          className={`w-full h-8 pl-8 pr-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs font-mono font-bold outline-hidden ${
+                            isSaving ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
                         />
                       </div>
                     </td>
@@ -833,12 +847,15 @@ export function TransactionsSheet({
                     <td className="p-2">
                       <input
                         type="text"
+                        disabled={isSaving}
                         value={row.note}
                         onChange={(e) =>
                           handleCellChange(row.id, "note", e.target.value)
                         }
                         placeholder={dict.transaksi.notePlaceholder}
-                        className="w-full h-8 px-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs outline-hidden"
+                        className={`w-full h-8 px-2 rounded-lg bg-transparent border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 text-xs outline-hidden ${
+                          isSaving ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
                       />
                     </td>
 
@@ -875,27 +892,15 @@ export function TransactionsSheet({
                             </span>
                           </div>
                         )}
-                        {!isSaving && (
-                          <div className="relative group/tooltip flex items-center justify-center">
-                            <button
-                              type="button"
-                              onClick={() => saveRow(row.id)}
-                              aria-label={dict.transaksi.tooltipSave}
-                              className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all"
-                            >
-                              <Save className="w-4 h-4" />
-                            </button>
-                            <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-medium px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
-                              {dict.transaksi.tooltipSave}
-                            </span>
-                          </div>
-                        )}
                         <div className="relative group/tooltip flex items-center justify-center">
                           <button
                             type="button"
+                            disabled={isSaving}
                             onClick={() => handleDeleteRow(row)}
                             aria-label={dict.transaksi.tooltipDelete}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all"
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all ${
+                              isSaving ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
+                            }`}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
