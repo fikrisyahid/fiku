@@ -6,6 +6,8 @@ import { Globe } from "lucide-react";
 import { Locale } from "@/lib/i18n/dictionary";
 import { setLocaleCookie } from "@/app/actions/locale";
 
+import { useI18n } from "@/lib/i18n/context";
+
 interface LanguageSwitcherProps {
   currentLocale: Locale;
   compact?: boolean;
@@ -13,14 +15,25 @@ interface LanguageSwitcherProps {
 
 export function LanguageSwitcher({ currentLocale, compact = false }: LanguageSwitcherProps) {
   const router = useRouter();
+  const { isChangingLocale, setIsChangingLocale } = useI18n();
   const [isPending, startTransition] = useTransition();
 
-  function handleToggle(newLocale: Locale) {
-    if (newLocale === currentLocale || isPending) return;
+  const loading = isPending || isChangingLocale;
 
+  function handleToggle(newLocale: Locale) {
+    if (newLocale === currentLocale || loading) return;
+
+    setIsChangingLocale(true);
     startTransition(async () => {
-      await setLocaleCookie(newLocale);
-      router.refresh();
+      try {
+        await setLocaleCookie(newLocale);
+        router.refresh();
+      } finally {
+        // Small delay so refresh completes before hiding overlay
+        setTimeout(() => {
+          setIsChangingLocale(false);
+        }, 300);
+      }
     });
   }
 
@@ -30,7 +43,7 @@ export function LanguageSwitcher({ currentLocale, compact = false }: LanguageSwi
         <button
           type="button"
           onClick={() => handleToggle("id")}
-          disabled={isPending}
+          disabled={loading}
           className={`px-2 py-1 rounded-lg transition-all ${
             currentLocale === "id"
               ? "bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs font-bold"
@@ -42,7 +55,7 @@ export function LanguageSwitcher({ currentLocale, compact = false }: LanguageSwi
         <button
           type="button"
           onClick={() => handleToggle("en")}
-          disabled={isPending}
+          disabled={loading}
           className={`px-2 py-1 rounded-lg transition-all ${
             currentLocale === "en"
               ? "bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs font-bold"
@@ -61,7 +74,7 @@ export function LanguageSwitcher({ currentLocale, compact = false }: LanguageSwi
       <button
         type="button"
         onClick={() => handleToggle("id")}
-        disabled={isPending}
+        disabled={loading}
         className={`px-2.5 py-1 rounded-lg transition-all ${
           currentLocale === "id"
             ? "bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs font-bold"
@@ -74,7 +87,7 @@ export function LanguageSwitcher({ currentLocale, compact = false }: LanguageSwi
       <button
         type="button"
         onClick={() => handleToggle("en")}
-        disabled={isPending}
+        disabled={loading}
         className={`px-2.5 py-1 rounded-lg transition-all ${
           currentLocale === "en"
             ? "bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs font-bold"

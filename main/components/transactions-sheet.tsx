@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useTransition } from "react";
 import {
   Plus,
   Trash2,
@@ -18,6 +18,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ShieldCheck,
+  Settings,
 } from "lucide-react";
 import {
   createTransaction,
@@ -145,8 +146,17 @@ export function TransactionsSheet({
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Pagination navigation state & transition tracking
+  const [isNavigatingPage, setIsNavigatingPage] = useState(false);
+  const [isPendingTransition, startTransition] = useTransition();
+
   // Helper to update URL params and trigger server refetch
   const updateUrlParams = (newParams: Record<string, string | number | undefined>) => {
+    const isPageChange = newParams.page !== undefined || newParams.limit !== undefined;
+    if (isPageChange) {
+      setIsNavigatingPage(true);
+    }
+
     const params = new URLSearchParams(searchParams?.toString() || "");
     Object.entries(newParams).forEach(([key, val]) => {
       if (val === undefined || val === "") {
@@ -155,8 +165,16 @@ export function TransactionsSheet({
         params.set(key, String(val));
       }
     });
-    router.push(`/transaction?${params.toString()}`);
+
+    startTransition(() => {
+      router.push(`/transaction?${params.toString()}`);
+    });
   };
+
+  // Reset isNavigatingPage whenever server data updates
+  useEffect(() => {
+    setIsNavigatingPage(false);
+  }, [initialTransactions, serverPage, serverPageSize]);
 
   // Sync searchQuery changes to URL (debounced)
   const handleSearchChange = (val: string) => {
@@ -556,7 +574,22 @@ export function TransactionsSheet({
       </div>
 
       {/* Spreadsheet Table Container */}
-      <div className="overflow-x-auto border border-zinc-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm">
+      <div className="relative overflow-x-auto border border-zinc-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm">
+        {/* Gear Loading Overlay when navigating pages */}
+        {(isNavigatingPage || isPendingTransition) && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/70 dark:bg-zinc-950/70 backdrop-blur-[2px] transition-all animate-in fade-in duration-150">
+            <div className="flex flex-col items-center gap-2.5 p-4 rounded-2xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800 shadow-xl">
+              <div className="relative flex items-center justify-center">
+                <Settings className="w-8 h-8 text-emerald-600 dark:text-emerald-400 animate-spin" />
+                <Settings className="w-4 h-4 text-emerald-500/70 absolute -top-1 -right-1 animate-[spin_1.5s_linear_infinite_reverse]" />
+              </div>
+              <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                {locale === "id" ? "Memuat halaman..." : "Loading page..."}
+              </span>
+            </div>
+          </div>
+        )}
+
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="bg-zinc-100/80 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 border-b border-zinc-200 dark:border-zinc-800 font-semibold select-none">
