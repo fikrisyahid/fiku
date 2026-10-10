@@ -21,6 +21,7 @@ import { getServerTheme } from "@/lib/theme/server";
 import { THEME_COOKIE_NAME } from "@/lib/theme/types";
 import { ThemeProvider } from "@/lib/theme/context";
 import { InstallPwaBanner } from "@/components/install-pwa-banner";
+import NextTopLoader from "nextjs-toploader";
 
 export const metadata: Metadata = {
   title: "Fiku - Catat Keuangan Cerdas Tanpa Ribet",
@@ -72,6 +73,18 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider initialTheme={theme}>
+          <NextTopLoader
+            color="#10b981"
+            initialPosition={0.08}
+            crawlSpeed={200}
+            height={3}
+            crawl={true}
+            showSpinner={false}
+            easing="ease"
+            speed={200}
+            shadow="0 0 10px #10b981,0 0 5px #10b981"
+            zIndex={99999}
+          />
           <I18nProvider locale={locale}>
             {children}
             <InstallPwaBanner />
