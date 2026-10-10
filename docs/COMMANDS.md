@@ -15,6 +15,7 @@ This document describes all available commands configured in the root [`package.
 | `bun run start` | Starts the Next.js production server. |
 | `bun run lint` | Runs ESLint across the entire codebase. |
 | `bun run check` | Runs TypeScript type checking (`tsc --noEmit`). |
+| `bun run test` | Runs comprehensive unit and integration test suites via Bun (`tests/`). |
 
 ### Database (PostgreSQL & Drizzle ORM)
 

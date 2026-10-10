@@ -37,6 +37,9 @@ fana/
 │   ├── DEPLOYMENT.md   # Deployment guide for Vercel & environment variables
 │   ├── SMART_INPUT.md  # Quick entry syntax guide for Smart Input (ID & EN)
 │   └── COMMANDS.md     # CLI commands and task runner reference
+├── tests/             # Unit and integration test suites (Bun test runner)
+│   ├── unit/          # Crypto, currency formatting, date summary calculations
+│   └── integration/   # Smart natural language input parsing, pagination logic
 ├── ops/               # Task runner & automatic synchronization
 │   ├── workflow.py    # Python runner & .env sync between root <-> main/.env
 │   └── pyproject.toml # Ops runner configuration
@@ -115,6 +118,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `bun run dev` | Runs the Next.js Web App on port 3000 |
 | `bun run check` | Checks TypeScript types (`tsc --noEmit`) |
 | `bun run lint` | Runs ESLint across the codebase |
+| `bun run test` | Runs unit & integration test suites (`bun test tests/`) |
 | `bun run build` | Creates an optimized production build |
 | `bun run db:sync` | Synchronizes database schema columns & constraints |
 | `bun run db:reset` | Clears all data from database tables |

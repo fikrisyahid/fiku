@@ -16,16 +16,18 @@ Database administrators or any third party viewing the database cannot read raw 
 ## 🗄️ Core Tables
 
 ### 1. `users`
-Stores user profile information and asymmetric cryptographic key pairs.
+Stores user profile information, authentication hashes, and asymmetric cryptographic key pairs.
 - `id`: UUID (Primary Key, default `gen_random_uuid()`).
 - `email`: Text (Unique, Not Null).
-- `fullName`: Text (Not Null).
+- `fullName`: Text (Not Null, column `full_name`).
 - `phone`: Text (Nullable).
-- `passwordHash`: Text (Bcrypt password hash).
-- `pinHash`, `pinSalt`: Text (Per-user salt for PBKDF2 key derivation).
-- `publicKey`: Text (X25519 public key in PEM format).
-- `encryptedPrivateKey`: Text (Private key encrypted using Password + Salt + Server Secret).
-- `createdAt`, `updatedAt`: Timestamp with timezone.
+- `passwordHash`: Text (Nullable, Bcrypt password hash, column `password_hash`).
+- `pinHash`: Text (Nullable, SHA-256 PIN hash for fast verification, column `pin_hash`).
+- `pinSalt`: Text (Nullable, Per-user 16-byte hex salt for PBKDF2 key derivation, column `pin_salt`).
+- `publicKey`: Text (Nullable, X25519 public key in PEM format, column `public_key`).
+- `encryptedPrivateKey`: Text (Nullable, Private key encrypted with user secret via AES-256-GCM, column `encrypted_private_key`).
+- `createdAt`: Timestamp with timezone (Default `now()`, column `created_at`).
+- `updatedAt`: Timestamp with timezone (Default `now()`, column `updated_at`).
 
 ### 2. `sessions`
 Stores active web sessions using random 64-character hex tokens.
@@ -41,7 +43,7 @@ Financial wallets, bank accounts, e-wallets, or physical cash.
 - `name`: Text (e.g., "Cash", "Bank Account", "e-Wallet (GoPay/OVO)").
 - `type`: Text (`bank` | `ewallet` | `cash`).
 - `balance`: Text (Zero-Knowledge encrypted ciphertext, default `"0"`).
-- `isDefault`: Boolean.
+- `isDefault`: Boolean (Default `false`).
 - `createdAt`, `updatedAt`: Timestamp with timezone.
 
 ### 4. `categories`
@@ -51,7 +53,7 @@ Income and expense transaction categories.
 - `name`: Text (e.g., "Food & Beverage", "Salary & Income").
 - `type`: Text (`income` | `expense`).
 - `icon`: Text (Emoji / icon identifier).
-- `isDefault`: Boolean.
+- `isDefault`: Boolean (Default `false`).
 - `createdAt`: Timestamp with timezone.
 
 ### 5. `transactions`
@@ -60,20 +62,23 @@ Daily income/expense transactions and inter-wallet transfers.
 - `userId`: UUID (Foreign Key -> `users.id`, onDelete cascade).
 - `accountId`: UUID (Foreign Key -> `accounts.id`, source wallet).
 - `toAccountId`: UUID (Nullable, Foreign Key -> `accounts.id`, destination wallet for transfers).
-- `categoryId`: UUID (Nullable, Foreign Key -> `categories.id`).
+- `categoryId`: UUID (Nullable, Foreign Key -> `categories.id`, onDelete set null).
 - `amount`: Text (Zero-Knowledge encrypted ciphertext).
 - `type`: Text (`income` | `expense` | `transfer`).
 - `note`: Text (Nullable, Zero-Knowledge encrypted ciphertext).
-- `transactionDate`: Date string (`YYYY-MM-DD`).
+- `transactionDate`: Date string (`YYYY-MM-DD`, column `transaction_date`).
 - `createdAt`, `updatedAt`: Timestamp with timezone.
+
+**Indexes**:
+- `idx_transactions_user_date`: Composite B-Tree index on `(user_id, transaction_date DESC, created_at DESC)` for high-speed chronological range scans and server-side date pagination.
 
 ### 6. `user_settings`
 Global user configuration and denormalized counter caches.
 - `id`: UUID (Primary Key).
 - `userId`: UUID (Unique Foreign Key -> `users.id`, onDelete cascade).
-- `transactionCount`: Text (Counter cache representing total transactions, default `"0"`).
+- `transactionCount`: Text (Denormalized counter cache representing total user transactions, default `"0"`, column `transaction_count`).
 - `currency`: Text (User's preferred global currency code, e.g. `"IDR"`, `"USD"`, `"EUR"`, default `"IDR"`).
-- `emailNotifications`: Boolean (Notification flag reserved for future email features, default `false`).
+- `emailNotifications`: Boolean (Notification flag reserved for future email features, default `false`, column `email_notifications`).
 - `createdAt`, `updatedAt`: Timestamp with timezone.
 
 ---
