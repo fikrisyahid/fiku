@@ -537,7 +537,9 @@ export async function createTransaction(data: {
       transaction: {
         ...createdTx,
         amount: amount.toString(),
+        rawAmount: createdTx.amount,
         note: rawNote,
+        rawNote: createdTx.note,
       },
       updatedAccount: {
         ...fromAccount,
@@ -617,7 +619,9 @@ export async function createTransaction(data: {
     transaction: {
       ...newTx,
       amount: amount.toString(),
+      rawAmount: newTx.amount,
       note: rawNote,
+      rawNote: newTx.note,
     },
     updatedAccount: {
       ...account,

@@ -48,7 +48,9 @@ export interface TransactionRow {
   accountId: string;
   toAccountId?: string;
   amount: number;
+  rawAmount?: string;
   note: string;
+  rawNote?: string;
   isNew?: boolean;
   createdAt?: string;
 }
@@ -104,7 +106,9 @@ export function TransactionsSheet({
     accountId: tx.accountId,
     toAccountId: tx.toAccountId || undefined,
     amount: parseFloat(tx.amount || "0"),
+    rawAmount: tx.rawAmount || (typeof tx.amount === "string" && tx.amount.startsWith("enc:v1:") ? tx.amount : undefined),
     note: tx.note || "",
+    rawNote: tx.rawNote || (typeof tx.note === "string" && tx.note.startsWith("enc:v1:") ? tx.note : undefined),
     createdAt: tx.createdAt ? new Date(tx.createdAt).toISOString() : undefined,
   });
 
@@ -302,6 +306,8 @@ export function TransactionsSheet({
               ? {
                   ...r,
                   id: res.transaction.id,
+                  rawAmount: res.transaction.rawAmount,
+                  rawNote: res.transaction.rawNote,
                   isNew: false,
                   createdAt: res.transaction.createdAt
                     ? new Date(res.transaction.createdAt).toISOString()
